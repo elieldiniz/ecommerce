@@ -14,7 +14,10 @@ export default defineConfig({
             ],
             refresh: true,
             fonts: [
-                bunny('Instrument Sans', {
+                bunny('Plus Jakarta Sans', {
+                    weights: [500, 600, 700, 800],
+                }),
+                bunny('IBM Plex Sans', {
                     weights: [400, 500, 600],
                 }),
             ],

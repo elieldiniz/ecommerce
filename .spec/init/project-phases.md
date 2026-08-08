@@ -39,7 +39,7 @@ US-8.2, US-8.3, US-8.4, US-8.5
 
 ### Phase 1.1: Tokens de design e tipografia
 
-- [ ] **Task:** Configurar tokens de cor no Tailwind (`resources/css/app.css`, bloco `@theme`)
+- [x] **Task:** Configurar tokens de cor no Tailwind (`resources/css/app.css`, bloco `@theme`)
   - **Acceptance criteria:**
     - Tokens definidos: `--color-brand: #E40044`, `--color-ink: #14110f`, `--color-muted: #6b6660`,
       `--color-muted-light: #9c968e`, `--color-surface-alt: #f7f5f2`, `--color-border: #e7e3de`,
@@ -48,7 +48,7 @@ US-8.2, US-8.3, US-8.4, US-8.5
   - **Design ref:** `.spec/init/design/Digital Lock Mockups.dc.html#home`
   - **Traces:** US-8.2
 
-- [ ] **Task:** Trocar a tipografia do starter kit pela do mockup
+- [x] **Task:** Trocar a tipografia do starter kit pela do mockup
   - **Acceptance criteria:**
     - `vite.config.js`: `bunny()` troca `'Instrument Sans'` por `'Plus Jakarta Sans'` (pesos 500/600/700/800)
       e `'IBM Plex Sans'` (pesos 400/500/600), igual ao `<helmet>` do mockup
@@ -59,14 +59,14 @@ US-8.2, US-8.3, US-8.4, US-8.5
   - **Design ref:** `.spec/init/design/Digital Lock Mockups.dc.html#home`
   - **Traces:** US-8.2
 
-- [ ] **Task:** Definir convenção de botão (raio de borda)
+- [x] **Task:** Definir convenção de botão (raio de borda)
   - **Acceptance criteria:**
     - Todo botão/CTA usa `rounded-lg` (8px), igual ao mockup — nenhum usa `rounded-full`
     - Decisão registrada: supera a menção a "botões em formato pill" em `project-description.md`
   - **Design ref:** `.spec/init/design/Digital Lock Mockups.dc.html#home`
   - **Traces:** US-8.2
 
-- [ ] **Task:** Registrar a regra de nomenclatura obrigatória como checklist de revisão de conteúdo
+- [x] **Task:** Registrar a regra de nomenclatura obrigatória como checklist de revisão de conteúdo
   - **Acceptance criteria:**
     - Documentado (comentário no componente de conteúdo ou nota em `CLAUDE.md`/`.ai/rules`) o uso obrigatório
       de: "Certificado Digital" (nunca "Certificado" isolado), "e-CNPJ"/"e-CPF" (nunca "PJ"/"PF" isolados),
@@ -80,7 +80,7 @@ US-8.2, US-8.3, US-8.4, US-8.5
 
 ### Phase 1.2: Layout público e navegação
 
-- [ ] **Task:** Criar `x-layout` (`resources/views/components/layout.blade.php`)
+- [x] **Task:** Criar `x-layout` (`resources/views/components/layout.blade.php`)
   - **Acceptance criteria:**
     - Header: fundo branco, logo (círculo com borda 2.5px `#E40044` + wordmark "digital**lock**"), nav
       horizontal com 5 itens (Certificados, MEI, Renovação, Como emitir, Suporte), botão "Comprar" fixo à
@@ -92,7 +92,7 @@ US-8.2, US-8.3, US-8.4, US-8.5
   - **Design ref:** `.spec/init/design/Digital Lock Mockups.dc.html#home`
   - **Traces:** US-8.1, US-8.2
 
-- [ ] **Task:** Criar `x-breadcrumb`
+- [x] **Task:** Criar `x-breadcrumb`
   - **Acceptance criteria:**
     - Formato `Início › [Seção] › [Subseção]`, separador "›"
     - Ausente apenas na Home; texto correto por página: Hub "Início › Certificado Digital"; e-CNPJ "Início ›
@@ -102,7 +102,7 @@ US-8.2, US-8.3, US-8.4, US-8.5
   - **Design ref:** `.spec/init/design/Digital Lock Mockups.dc.html#hub`
   - **Traces:** US-8.1, US-8.5
 
-- [ ] **Task:** Criar `x-eyebrow` (rótulo pequeno em destaque)
+- [x] **Task:** Criar `x-eyebrow` (rótulo pequeno em destaque)
   - **Acceptance criteria:**
     - Texto em `#E40044`, uppercase, 11–12px, peso 600
     - Aceita o texto via slot; usado para "Etapa N", "Exclusivo desta página", "Painel editável sem dev",
@@ -112,7 +112,7 @@ US-8.2, US-8.3, US-8.4, US-8.5
 
 ### Phase 1.3: Componentes de conteúdo compartilhado
 
-- [ ] **Task:** Criar `x-elegibilidade-videoconferencia`
+- [x] **Task:** Criar `x-elegibilidade-videoconferencia`
   - **Acceptance criteria:**
     - Reproduz o texto oficial sem alteração: "Já teve certificado digital emitido a partir de 2018, com
       coleta de biometria facial e digital, em qualquer Autoridade de Registro, ou tem CNH emitida ou
@@ -123,7 +123,7 @@ US-8.2, US-8.3, US-8.4, US-8.5
   - **Design ref:** `.spec/init/design/Digital Lock Mockups.dc.html#home`
   - **Traces:** US-8.1
 
-- [ ] **Task:** Criar `x-passo-a-passo`
+- [x] **Task:** Criar `x-passo-a-passo`
   - **Acceptance criteria:**
     - 4 passos idênticos onde aparece: "Escolha e pague / Agende / Valide ao vivo / Baixe e instale",
       numerados em círculo vermelho `#E40044`
@@ -134,7 +134,7 @@ US-8.2, US-8.3, US-8.4, US-8.5
   - **Design ref:** `.spec/init/design/Digital Lock Mockups.dc.html#home`
   - **Traces:** US-8.1, US-3.1
 
-- [ ] **Task:** Criar `x-credenciamento`
+- [x] **Task:** Criar `x-credenciamento`
   - **Acceptance criteria:**
     - Ícone circular (check) + título "Autoridade de Registro credenciada" + texto padrão sobre ICP-Brasil/AC
       Digital Múltipla + link "Ver listagem oficial do ITI →"
@@ -142,7 +142,7 @@ US-8.2, US-8.3, US-8.4, US-8.5
   - **Design ref:** `.spec/init/design/Digital Lock Mockups.dc.html#ecnpj`
   - **Traces:** US-8.1, US-6.1
 
-- [ ] **Task:** Criar `x-card-produto`
+- [x] **Task:** Criar `x-card-produto`
   - **Acceptance criteria:**
     - Props: título, descrição curta, preço ("R$ [PREÇO]"), texto e destino do botão
     - Prop `:featured` aplica borda 2px `#E40044` (variação destacada — usada no card e-CNPJ da Home e no
@@ -151,7 +151,7 @@ US-8.2, US-8.3, US-8.4, US-8.5
   - **Design ref:** `.spec/init/design/Digital Lock Mockups.dc.html#home`
   - **Traces:** US-8.1, US-1.1, US-1.2
 
-- [ ] **Task:** Criar `x-comparison-table`
+- [x] **Task:** Criar `x-comparison-table`
   - **Acceptance criteria:**
     - Recebe colunas e linhas via prop/slot; cabeçalho `#f7f5f2`, bordas `#e7e3de`, células `13px`
     - Reutilizado nas 5 tabelas comparativas do site (A1×A3 no Hub, A1×A3 nas páginas e-CNPJ/e-CPF, tabela
@@ -162,7 +162,7 @@ US-8.2, US-8.3, US-8.4, US-8.5
 
 ### Phase 1.4: Componentes interativos (Alpine.js)
 
-- [ ] **Task:** Criar `x-faq-accordion`
+- [x] **Task:** Criar `x-faq-accordion`
   - **Acceptance criteria:**
     - Construído com Alpine.js puro (`x-data`, `x-show`) — não usa o componente Accordion do Flux (exclusivo
       Pro)
@@ -172,7 +172,7 @@ US-8.2, US-8.3, US-8.4, US-8.5
   - **Design ref:** `.spec/init/design/Digital Lock Mockups.dc.html#home`
   - **Traces:** US-8.1, US-5.1, US-5.2
 
-- [ ] **Task:** Criar `x-purchase-panel` (seletor A1/A3 + preço + CTA)
+- [x] **Task:** Criar `x-purchase-panel` (seletor A1/A3 + preço + CTA)
   - **Acceptance criteria:**
     - Construído com Alpine.js puro — não usa o componente Tabs do Flux (exclusivo Pro)
     - Prop `:show-selector` controla se o seletor A1/A3 aparece (`true` em e-CNPJ/e-CPF, `false` em MEI, que

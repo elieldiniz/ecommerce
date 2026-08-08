@@ -9,7 +9,18 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+    --font-sans: 'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+    --font-heading: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+
+    --color-brand: #E40044;
+    --color-ink: #14110f;
+    --color-muted: #6b6660;
+    --color-muted-light: #9c968e;
+    --color-surface-alt: #f7f5f2;
+    --color-border: #e7e3de;
+    --color-border-light: #d8d3cc;
+    --color-highlight: #fdecf1;
+    --color-cta-secondary: #DB3861;
 
     --color-zinc-50: #fafafa;
     --color-zinc-100: #f5f5f5;
@@ -45,6 +56,10 @@
     ::file-selector-button {
         border-color: var(--color-gray-200, currentColor);
     }
+}
+
+[x-cloak] {
+    display: none !important;
 }
 
 [data-flux-field]:not(ui-radio, ui-checkbox) {
