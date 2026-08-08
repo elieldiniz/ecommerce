@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 -c ' *)",
+      "Bash(pdfinfo \"docs/oficial-docs/Digital_Lock_Estrutura_e_Conteudo_Ecommerce_v1.0.pdf\")",
+      "Bash(pip3 install *)",
+      "Bash(sudo -n apt-get install -y poppler-utils)",
+      "Bash(python3 -m pip --version)",
+      "Bash(python3 -m ensurepip --version)",
+      "Bash(apt-get install *)",
+      "Read(//tmp/**)",
+      "Bash(curl -s https://pypi.org/pypi/pypdf/json)",
+      "Bash(mkdir -p /tmp/claude-1000/-home-eliel-workspace-projetos-digitallock-ecommerce/d8bd03b6-686a-45d8-a575-a55e900de98d/scratchpad/pdflib)",
+      "Bash(curl -sL -o pypdf.whl \"https://files.pythonhosted.org/packages/af/72/ce3067ac31e214a66388159f8462ddb8c13dd00170f24d555a1f1ae8ee91/pypdf-6.15.0-py3-none-any.whl\")",
+      "Bash(unzip -q pypdf.whl -d .)"
+    ]
+  },
+  "enabledMcpjsonServers": [
+    "laravel-boost"
+  ]
+}
