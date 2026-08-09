@@ -126,6 +126,13 @@
         </div>
     </section>
 
+    {{-- Bloco 7.5: credenciamento --}}
+    <section class="w-full bg-white px-6 py-9 md:px-10">
+        <div class="mx-auto max-w-6xl">
+            <x-credenciamento />
+        </div>
+    </section>
+
     {{-- Bloco 8: FAQ curto --}}
     <section class="w-full bg-surface-alt px-6 py-11 md:px-10 md:py-14">
         <div class="mx-auto max-w-6xl">
