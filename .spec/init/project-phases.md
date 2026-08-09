@@ -190,7 +190,7 @@ US-8.2, US-8.3, US-8.4, US-8.5
 **Goal:** implementar a Home 100% estática, substituindo a `welcome` do starter kit. · **Depends on:** Phase 1
 · **Covers:** US-1.1, US-3.1, US-1.3, US-5.1, US-8.4
 
-- [ ] **Task:** Rota e esqueleto da página
+- [x] **Task:** Rota e esqueleto da página
   - **Acceptance criteria:**
     - `Route::view('/', 'pages.home')->name('home')` substitui a rota `welcome` atual
     - `<title>`: "Certificado Digital A1 e A3 | e-CPF e e-CNPJ Online | Digital Lock"; meta description
@@ -199,14 +199,14 @@ US-8.2, US-8.3, US-8.4, US-8.5
   - **Design ref:** `.spec/init/design/Digital Lock Mockups.dc.html#home`
   - **Traces:** US-1.1, workflow "5. Frontend estático das páginas"
 
-- [ ] **Task:** Bloco 1 — dobra inicial
+- [x] **Task:** Bloco 1 — dobra inicial
   - **Acceptance criteria:**
     - H1 "Certificado Digital sem sair de onde você está", linha de apoio, botões "Ver certificados"/"Falar
       no WhatsApp", selos abaixo dos botões
   - **Design ref:** `.spec/init/design/Digital Lock Mockups.dc.html#home`
   - **Traces:** US-1.1
 
-- [ ] **Task:** Bloco 2 — escolha de perfil (3× `x-card-produto`)
+- [x] **Task:** Bloco 2 — escolha de perfil (3× `x-card-produto`)
   - **Acceptance criteria:**
     - Cards e-CPF / e-CNPJ (`:featured`) / Sou MEI, cada um com preço "A partir de [PREÇO]" e botão próprio
     - Preço e destino dos 3 cartões renderizados no HTML, sem chamada assíncrona
@@ -214,14 +214,14 @@ US-8.2, US-8.3, US-8.4, US-8.5
   - **Design ref:** `.spec/init/design/Digital Lock Mockups.dc.html#home`
   - **Traces:** US-1.1
 
-- [ ] **Task:** Blocos 3–4 — elegibilidade e passo a passo
+- [x] **Task:** Blocos 3–4 — elegibilidade e passo a passo
   - **Acceptance criteria:**
     - `x-elegibilidade-videoconferencia` e `x-passo-a-passo` inseridos sem HTML próprio adicional
     - Link "Veja o passo a passo completo →" para `/como-emitir-certificado-digital/`
   - **Design ref:** `.spec/init/design/Digital Lock Mockups.dc.html#home`
   - **Traces:** US-3.1, US-8.1
 
-- [ ] **Task:** Blocos 5–7 — A1 ou A3, diferenciais, renovação
+- [x] **Task:** Blocos 5–7 — A1 ou A3, diferenciais, renovação
   - **Acceptance criteria:**
     - Bloco 5: comparativo resumido A1/A3 (2 cards) + link "Ver comparativo completo →" para
       `/certificado-digital/`
@@ -230,7 +230,7 @@ US-8.2, US-8.3, US-8.4, US-8.5
   - **Design ref:** `.spec/init/design/Digital Lock Mockups.dc.html#home`
   - **Traces:** US-1.3
 
-- [ ] **Task:** Bloco 8 — FAQ curto + Bloco 9 — contato
+- [x] **Task:** Bloco 8 — FAQ curto + Bloco 9 — contato
   - **Acceptance criteria:**
     - `x-faq-accordion` com 4 perguntas das categorias 1 (Antes de comprar) e 3 (Videoconferência e
       validação); link "Ver todas as dúvidas →" para `/como-emitir-certificado-digital/`
@@ -239,7 +239,7 @@ US-8.2, US-8.3, US-8.4, US-8.5
   - **Design ref:** `.spec/init/design/Digital Lock Mockups.dc.html#home`
   - **Traces:** US-5.1
 
-- [ ] **Task:** Ordem de blocos no mobile
+- [x] **Task:** Ordem de blocos no mobile
   - **Acceptance criteria:**
     - Em telas mobile a ordem vertical é 1, 2, 4, 3, 5, 6, 7, 8, 9 (o bloco de elegibilidade desce uma
       posição em relação ao desktop)

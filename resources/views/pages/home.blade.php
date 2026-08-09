@@ -19,7 +19,7 @@
     {{-- Bloco 2: escolha de perfil --}}
     <section class="w-full bg-surface-alt px-6 py-11 md:px-10 md:py-14">
         <div class="mx-auto max-w-6xl">
-            <h2 class="mb-5 font-heading text-2xl font-bold text-ink">Qual certificado você precisa</h2>
+            <h2 class="mb-5 font-heading text-2xl font-bold text-ink">Qual Certificado Digital você precisa</h2>
             <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
                 <x-card-produto
                     titulo="e-CPF"
@@ -150,7 +150,7 @@
                 ],
                 [
                     'pergunta' => 'A Digital Lock é uma Autoridade de Registro ou uma Autoridade Certificadora?',
-                    'resposta' => 'A Digital Lock é uma Autoridade de Registro credenciada no ICP-Brasil, vinculada à AC Digital Múltipla. A AR valida a identidade do titular e autoriza a emissão; quem emite tecnicamente o certificado é a AC Digital Múltipla.',
+                    'resposta' => 'A Digital Lock é uma Autoridade de Registro credenciada no ICP-Brasil, vinculada à AC Digital Múltipla. A AR valida a identidade do titular e autoriza a emissão; quem emite tecnicamente o Certificado Digital é a AC Digital Múltipla.',
                     'ancora' => 'sao-autoridade-de-registro',
                 ],
                 [
