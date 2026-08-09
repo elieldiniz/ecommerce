@@ -5,6 +5,7 @@
     'ctaTexto',
     'ctaHref',
     'featured' => false,
+    'ctaColor' => null,
 ])
 
 <div {{ $attributes->class([
@@ -19,8 +20,9 @@
         href="{{ $ctaHref }}"
         @class([
             'block rounded-lg px-2.5 py-2.5 text-center font-heading text-[13px] font-semibold',
-            'bg-brand text-white' => $featured,
-            'border border-border-light bg-white text-ink' => ! $featured,
+            'bg-cta-secondary text-white' => $ctaColor === 'secondary',
+            'bg-brand text-white' => $ctaColor !== 'secondary' && $featured,
+            'border border-border-light bg-white text-ink' => $ctaColor !== 'secondary' && ! $featured,
         ])
     >{{ $ctaTexto }}</a>
 </div>
