@@ -49,7 +49,7 @@ class CertificadoDigitalTest extends TestCase
         $response->assertSee('A partir de R$ 249,90');
         $response->assertSee('href="/certificado-digital/e-cpf/"', false);
         $response->assertSee('href="/certificado-digital/e-cnpj/"', false);
-        $response->assertSee('São Certificados Digitais independentes.');
+        $response->assertSee('São certificados independentes.');
     }
 
     public function test_block_3_renders_full_a1_a3_comparison_table_with_nine_criteria(): void
@@ -108,7 +108,7 @@ class CertificadoDigitalTest extends TestCase
         $response->assertSee('Tem CNH emitida ou renovada a partir de 2017');
         $response->assertSee('Escolha e pague');
         $response->assertSee('Baixe e instale');
-        $response->assertSee('Renovar meu Certificado Digital');
+        $response->assertSee('Renovar meu certificado');
         $response->assertSee('href="/renovacao-certificado-digital/"', false);
         $response->assertSee('Autoridade de Registro credenciada');
         $response->assertSee('Ver listagem oficial do ITI →');

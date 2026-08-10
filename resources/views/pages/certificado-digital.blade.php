@@ -39,7 +39,7 @@
                     cta-href="/certificado-digital/e-cnpj/"
                 />
             </div>
-            <p class="mt-3.5 font-sans text-[13px] text-muted-light">Tem empresa e também precisa assinar como pessoa física? São Certificados Digitais independentes.</p>
+            <p class="mt-3.5 font-sans text-[13px] text-muted-light">Tem empresa e também precisa assinar como pessoa física? São certificados independentes.</p>
         </div>
     </section>
 
@@ -164,7 +164,7 @@
                 <h2 class="mb-1 font-heading text-xl font-bold text-ink">Já tem Certificado Digital e está vencendo?</h2>
                 <p class="font-sans text-[13px] text-muted">Renovar segue o mesmo processo da primeira emissão.</p>
             </div>
-            <a href="/renovacao-certificado-digital/" class="rounded-lg bg-cta-secondary px-5 py-2.5 text-center font-heading text-[13px] font-semibold whitespace-nowrap text-white">Renovar meu Certificado Digital</a>
+            <a href="/renovacao-certificado-digital/" class="rounded-lg bg-cta-secondary px-5 py-2.5 text-center font-heading text-[13px] font-semibold whitespace-nowrap text-white">Renovar meu certificado</a>
         </div>
     </section>
 
@@ -175,7 +175,7 @@
         </div>
     </section>
 
-    {{-- Bloco 10: FAQ categoria 1 --}}
+    {{-- FAQ: categoria 1 (Antes de comprar) --}}
     <section class="w-full bg-surface-alt px-6 py-11 md:px-10 md:py-14">
         <div class="mx-auto max-w-6xl">
             <h2 class="mb-4.5 font-heading text-2xl font-bold text-ink">Perguntas frequentes</h2>
