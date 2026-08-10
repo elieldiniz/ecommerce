@@ -1,6 +1,7 @@
 @props([
     'columns' => [],
     'rows' => [],
+    'rowIds' => [],
 ])
 
 <table {{ $attributes->class(['w-full border-collapse font-sans text-[13px]']) }}>
@@ -12,8 +13,8 @@
         </tr>
     </thead>
     <tbody>
-        @foreach ($rows as $row)
-            <tr>
+        @foreach ($rows as $index => $row)
+            <tr @if ($rowIds[$index] ?? null) id="{{ $rowIds[$index] }}" @endif>
                 @foreach ($row as $cell)
                     <td class="border border-border px-3 py-2.5 text-left text-[13px] text-ink">{{ $cell }}</td>
                 @endforeach
