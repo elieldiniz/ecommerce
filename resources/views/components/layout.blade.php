@@ -15,9 +15,8 @@
 <body class="bg-white font-sans text-ink antialiased">
     <header class="border-b border-border bg-white">
         <div class="mx-auto flex max-w-6xl items-center justify-between gap-6 px-6 py-4">
-            <a href="/" class="flex items-center gap-2">
-                <span class="inline-block h-3.5 w-3.5 rounded-full border-[2.5px] border-brand"></span>
-                <span class="font-heading text-lg font-bold text-ink">digital<span class="text-brand">lock</span></span>
+            <a href="/" class="flex items-center">
+                <img src="{{ asset('digitallock-logo.png') }}" alt="Digital Lock" class="h-7 w-auto md:h-8">
             </a>
 
             <nav class="hidden items-center gap-6 font-sans text-sm font-medium text-ink/80 md:flex">
