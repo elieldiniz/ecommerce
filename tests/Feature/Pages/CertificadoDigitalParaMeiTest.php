@@ -143,6 +143,16 @@ class CertificadoDigitalParaMeiTest extends TestCase
         $response->assertSee('x-data', false);
     }
 
+    public function test_block_10_faq_also_includes_selected_items_from_categories_1_and_3(): void
+    {
+        $response = $this->get(route('certificado-digital-para-mei'));
+
+        $response->assertSee('O que é um certificado digital?');
+        $response->assertSee('Posso ter o e-CPF e o e-CNPJ ao mesmo tempo?');
+        $response->assertSee('A videoconferência tem custo?');
+        $response->assertSee('Outra pessoa pode fazer a validação por mim?');
+    }
+
     public function test_block_11_renders_closing_with_mei_buy_button(): void
     {
         $response = $this->get(route('certificado-digital-para-mei'));

@@ -158,6 +158,26 @@
                     'resposta' => 'Sim, a compra e a emissão do certificado não dependem da regularidade do CNPJ. Mas pendências podem impedir o uso do certificado para algumas finalidades, como emitir nota fiscal, então recomendamos regularizar o quanto antes.',
                     'ancora' => 'mei-com-pendencia-posso-comprar',
                 ],
+                [
+                    'pergunta' => 'O que é um certificado digital?',
+                    'resposta' => 'É a sua identidade eletrônica. Ele permite assinar documentos, emitir nota fiscal e acessar sistemas do governo com a mesma validade jurídica de uma assinatura em papel com firma reconhecida em cartório.',
+                    'ancora' => 'o-que-e-certificado-digital',
+                ],
+                [
+                    'pergunta' => 'Posso ter o e-CPF e o e-CNPJ ao mesmo tempo?',
+                    'resposta' => 'Sim. São certificados independentes, com finalidades diferentes.',
+                    'ancora' => 'posso-ter-ecpf-e-ecnpj-ao-mesmo-tempo',
+                ],
+                [
+                    'pergunta' => 'A videoconferência tem custo?',
+                    'resposta' => 'Não. Você paga apenas o valor do certificado.',
+                    'ancora' => 'videoconferencia-tem-custo',
+                ],
+                [
+                    'pergunta' => 'Outra pessoa pode fazer a validação por mim?',
+                    'resposta' => 'Não. A validação é feita pelo próprio titular, ou pelo responsável legal no caso de pessoa jurídica. As exceções são procuração pública lavrada em cartório, com poder específico para validação de certificado ICP-Brasil e validade de 90 dias, e curatela nos casos previstos em lei.',
+                    'ancora' => 'outra-pessoa-pode-fazer-validacao',
+                ],
             ]" />
         </div>
     </section>
