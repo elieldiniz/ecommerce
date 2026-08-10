@@ -13,11 +13,25 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="bg-white font-sans text-ink antialiased">
-    <header class="border-b border-border bg-white">
+    <header class="relative border-b border-border bg-white" x-data="{ mobileMenuOpen: false }" @keydown.escape.window="mobileMenuOpen = false">
         <div class="mx-auto flex max-w-6xl items-center justify-between gap-6 px-6 py-4">
-            <a href="/" class="flex items-center">
-                <img src="{{ asset('digitallock-logo.png') }}" alt="Digital Lock" class="h-7 w-auto md:h-8">
-            </a>
+            <div class="flex items-center gap-3">
+                <button
+                    type="button"
+                    class="md:hidden"
+                    @click="mobileMenuOpen = ! mobileMenuOpen"
+                    :aria-expanded="mobileMenuOpen.toString()"
+                    aria-controls="mobile-menu"
+                    :aria-label="mobileMenuOpen ? 'Fechar menu de navegação' : 'Abrir menu de navegação'"
+                >
+                    <flux:icon.bars-3 x-show="! mobileMenuOpen" class="size-6 text-ink" />
+                    <flux:icon.x-mark x-show="mobileMenuOpen" x-cloak class="size-6 text-ink" />
+                </button>
+
+                <a href="/" class="flex items-center">
+                    <img src="{{ asset('digitallock-logo.png') }}" alt="Digital Lock" class="h-7 w-auto md:h-8">
+                </a>
+            </div>
 
             <nav class="hidden items-center gap-6 font-sans text-sm font-medium text-ink/80 md:flex">
                 <a href="/certificado-digital/" class="hover:text-ink">Certificados</a>
@@ -29,6 +43,22 @@
 
             <a href="/certificado-digital/" class="rounded-lg bg-brand px-4.5 py-2.5 font-heading text-sm font-semibold text-white">Comprar</a>
         </div>
+
+        <nav
+            id="mobile-menu"
+            x-show="mobileMenuOpen"
+            x-cloak
+            class="absolute inset-x-0 top-full z-20 flex flex-col gap-1 border-t border-b border-border bg-white px-6 py-4 font-sans text-sm font-medium text-ink/80 shadow-lg md:hidden"
+        >
+            <a href="/certificado-digital/" class="rounded-md px-2 py-2.5 hover:bg-surface-alt hover:text-ink">Certificados Digitais</a>
+            <a href="/certificado-digital/e-cpf/" class="rounded-md px-2 py-2.5 hover:bg-surface-alt hover:text-ink">e-CPF</a>
+            <a href="/certificado-digital/e-cnpj/" class="rounded-md px-2 py-2.5 hover:bg-surface-alt hover:text-ink">e-CNPJ</a>
+            <a href="/certificado-digital-para-mei/" class="rounded-md px-2 py-2.5 hover:bg-surface-alt hover:text-ink">MEI</a>
+            <a href="/renovacao-certificado-digital/" class="rounded-md px-2 py-2.5 hover:bg-surface-alt hover:text-ink">Renovação</a>
+            <a href="/como-emitir-certificado-digital/" class="rounded-md px-2 py-2.5 hover:bg-surface-alt hover:text-ink">Como emitir</a>
+            <a href="/suporte/" class="rounded-md px-2 py-2.5 hover:bg-surface-alt hover:text-ink">Suporte</a>
+            <a href="/quem-somos/" class="rounded-md px-2 py-2.5 hover:bg-surface-alt hover:text-ink">Quem Somos</a>
+        </nav>
     </header>
 
     <main>
@@ -45,9 +75,9 @@
             </div>
             <div>
                 <div class="mb-1.5 font-sans text-xs font-semibold tracking-wide text-white uppercase">Navegação</div>
-                Certificados · e-CPF · e-CNPJ<br>
-                MEI · Renovação · Como emitir<br>
-                FAQ · Suporte · Quem somos
+                <a href="/certificado-digital/" class="hover:text-white">Certificados</a> · <a href="/certificado-digital/e-cpf/" class="hover:text-white">e-CPF</a> · <a href="/certificado-digital/e-cnpj/" class="hover:text-white">e-CNPJ</a><br>
+                <a href="/certificado-digital-para-mei/" class="hover:text-white">MEI</a> · <a href="/renovacao-certificado-digital/" class="hover:text-white">Renovação</a> · <a href="/como-emitir-certificado-digital/" class="hover:text-white">Como emitir</a><br>
+                FAQ · <a href="/suporte/" class="hover:text-white">Suporte</a> · <a href="/quem-somos/" class="hover:text-white">Quem somos</a>
             </div>
             <div>
                 <div class="mb-1.5 font-sans text-xs font-semibold tracking-wide text-white uppercase">Confiança e legal</div>

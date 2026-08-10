@@ -69,52 +69,54 @@
     <section id="todos-os-certificados" class="w-full bg-surface-alt px-6 py-11 md:px-10 md:py-14">
         <div class="mx-auto max-w-6xl">
             <h2 class="mb-4.5 font-heading text-2xl font-bold text-ink">Todos os Certificados Digitais</h2>
-            <table class="w-full border-collapse bg-white font-sans text-[13px]">
-                <thead>
-                    <tr>
-                        <th class="border-b-2 border-border px-3 py-2.5 text-left text-xs font-semibold text-ink">Certificado Digital</th>
-                        <th class="border-b-2 border-border px-3 py-2.5 text-left text-xs font-semibold text-ink">Para quem</th>
-                        <th class="border-b-2 border-border px-3 py-2.5 text-left text-xs font-semibold text-ink">Tipo</th>
-                        <th class="border-b-2 border-border px-3 py-2.5 text-left text-xs font-semibold text-ink">Validade</th>
-                        <th class="border-b-2 border-border px-3 py-2.5 text-left text-xs font-semibold text-ink">Preço</th>
-                        <th class="border-b-2 border-border px-3 py-2.5"></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td class="border-b border-border px-3 py-2.5 text-ink">e-CPF A1</td>
-                        <td class="border-b border-border px-3 py-2.5 text-ink">Pessoa física</td>
-                        <td class="border-b border-border px-3 py-2.5 text-ink">Arquivo</td>
-                        <td class="border-b border-border px-3 py-2.5 text-ink">1 ano</td>
-                        <td class="border-b border-border px-3 py-2.5 text-ink">R$ 139,90</td>
-                        <td class="border-b border-border px-3 py-2.5"><a href="/certificado-digital/e-cpf/" class="inline-block rounded-md bg-brand px-3 py-1.5 font-heading text-xs font-semibold text-white">Comprar</a></td>
-                    </tr>
-                    <tr>
-                        <td class="border-b border-border px-3 py-2.5 text-ink">e-CPF A3</td>
-                        <td class="border-b border-border px-3 py-2.5 text-ink">Pessoa física</td>
-                        <td class="border-b border-border px-3 py-2.5 text-ink">Token ou cartão</td>
-                        <td class="border-b border-border px-3 py-2.5 text-ink">1 a 3 anos</td>
-                        <td class="border-b border-border px-3 py-2.5 text-ink">R$ 219,90</td>
-                        <td class="border-b border-border px-3 py-2.5"><a href="/certificado-digital/e-cpf/" class="inline-block rounded-md bg-brand px-3 py-1.5 font-heading text-xs font-semibold text-white">Comprar</a></td>
-                    </tr>
-                    <tr>
-                        <td class="border-b border-border px-3 py-2.5 text-ink">e-CNPJ A1</td>
-                        <td class="border-b border-border px-3 py-2.5 text-ink">Empresa e MEI</td>
-                        <td class="border-b border-border px-3 py-2.5 text-ink">Arquivo</td>
-                        <td class="border-b border-border px-3 py-2.5 text-ink">1 ano</td>
-                        <td class="border-b border-border px-3 py-2.5 text-ink">R$ 249,90</td>
-                        <td class="border-b border-border px-3 py-2.5"><a href="/certificado-digital/e-cnpj/" class="inline-block rounded-md bg-brand px-3 py-1.5 font-heading text-xs font-semibold text-white">Comprar</a></td>
-                    </tr>
-                    <tr>
-                        <td class="px-3 py-2.5 text-ink">e-CNPJ A3</td>
-                        <td class="px-3 py-2.5 text-ink">Empresa e MEI</td>
-                        <td class="px-3 py-2.5 text-ink">Token ou cartão</td>
-                        <td class="px-3 py-2.5 text-ink">1 a 3 anos</td>
-                        <td class="px-3 py-2.5 text-ink">R$ 349,90</td>
-                        <td class="px-3 py-2.5"><a href="/certificado-digital/e-cnpj/" class="inline-block rounded-md bg-brand px-3 py-1.5 font-heading text-xs font-semibold text-white">Comprar</a></td>
-                    </tr>
-                </tbody>
-            </table>
+            <div class="overflow-x-auto">
+                <table class="w-full min-w-[640px] border-collapse bg-white font-sans text-[13px]">
+                    <thead>
+                        <tr>
+                            <th class="border-b-2 border-border px-3 py-2.5 text-left text-xs font-semibold text-ink">Certificado Digital</th>
+                            <th class="border-b-2 border-border px-3 py-2.5 text-left text-xs font-semibold text-ink">Para quem</th>
+                            <th class="border-b-2 border-border px-3 py-2.5 text-left text-xs font-semibold text-ink">Tipo</th>
+                            <th class="border-b-2 border-border px-3 py-2.5 text-left text-xs font-semibold text-ink">Validade</th>
+                            <th class="border-b-2 border-border px-3 py-2.5 text-left text-xs font-semibold text-ink">Preço</th>
+                            <th class="border-b-2 border-border px-3 py-2.5"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="border-b border-border px-3 py-2.5 text-ink">e-CPF A1</td>
+                            <td class="border-b border-border px-3 py-2.5 text-ink">Pessoa física</td>
+                            <td class="border-b border-border px-3 py-2.5 text-ink">Arquivo</td>
+                            <td class="border-b border-border px-3 py-2.5 text-ink">1 ano</td>
+                            <td class="border-b border-border px-3 py-2.5 text-ink">R$ 139,90</td>
+                            <td class="border-b border-border px-3 py-2.5"><a href="/certificado-digital/e-cpf/" class="inline-block rounded-md bg-brand px-3 py-1.5 font-heading text-xs font-semibold text-white">Comprar</a></td>
+                        </tr>
+                        <tr>
+                            <td class="border-b border-border px-3 py-2.5 text-ink">e-CPF A3</td>
+                            <td class="border-b border-border px-3 py-2.5 text-ink">Pessoa física</td>
+                            <td class="border-b border-border px-3 py-2.5 text-ink">Token ou cartão</td>
+                            <td class="border-b border-border px-3 py-2.5 text-ink">1 a 3 anos</td>
+                            <td class="border-b border-border px-3 py-2.5 text-ink">R$ 219,90</td>
+                            <td class="border-b border-border px-3 py-2.5"><a href="/certificado-digital/e-cpf/" class="inline-block rounded-md bg-brand px-3 py-1.5 font-heading text-xs font-semibold text-white">Comprar</a></td>
+                        </tr>
+                        <tr>
+                            <td class="border-b border-border px-3 py-2.5 text-ink">e-CNPJ A1</td>
+                            <td class="border-b border-border px-3 py-2.5 text-ink">Empresa e MEI</td>
+                            <td class="border-b border-border px-3 py-2.5 text-ink">Arquivo</td>
+                            <td class="border-b border-border px-3 py-2.5 text-ink">1 ano</td>
+                            <td class="border-b border-border px-3 py-2.5 text-ink">R$ 249,90</td>
+                            <td class="border-b border-border px-3 py-2.5"><a href="/certificado-digital/e-cnpj/" class="inline-block rounded-md bg-brand px-3 py-1.5 font-heading text-xs font-semibold text-white">Comprar</a></td>
+                        </tr>
+                        <tr>
+                            <td class="px-3 py-2.5 text-ink">e-CNPJ A3</td>
+                            <td class="px-3 py-2.5 text-ink">Empresa e MEI</td>
+                            <td class="px-3 py-2.5 text-ink">Token ou cartão</td>
+                            <td class="px-3 py-2.5 text-ink">1 a 3 anos</td>
+                            <td class="px-3 py-2.5 text-ink">R$ 349,90</td>
+                            <td class="px-3 py-2.5"><a href="/certificado-digital/e-cnpj/" class="inline-block rounded-md bg-brand px-3 py-1.5 font-heading text-xs font-semibold text-white">Comprar</a></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </section>
 

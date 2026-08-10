@@ -135,10 +135,20 @@ class CertificadoDigitalTest extends TestCase
         $response->assertSee('Fale com a gente no WhatsApp');
     }
 
-    public function test_page_avoids_fixed_pixel_widths_that_would_force_horizontal_scroll(): void
+    public function test_page_only_uses_fixed_widths_inside_scrollable_table_wrappers(): void
     {
         $response = $this->get(route('certificado-digital'));
 
-        $response->assertDontSee('w-[', false);
+        $content = $response->getContent();
+
+        preg_match_all('/(?<!min-)w-\[/', $content, $strayFixedWidths);
+        $this->assertSame([], $strayFixedWidths[0], 'Found a fixed pixel width outside the min-w-[] scrollable table pattern.');
+
+        preg_match_all('/min-w-\[/', $content, $minWidthTables);
+        $this->assertSame(
+            substr_count($content, 'overflow-x-auto'),
+            count($minWidthTables[0]),
+            'Every min-w-[] table must be wrapped in an overflow-x-auto container.'
+        );
     }
 }

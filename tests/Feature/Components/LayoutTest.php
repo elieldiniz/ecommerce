@@ -44,9 +44,8 @@ class LayoutTest extends TestCase
         $view = $this->blade('<x-layout title="Página"><p>Corpo</p></x-layout>');
 
         $view->assertSee('bg-white', false);
-        $view->assertSee('border-brand', false);
-        $view->assertSee('digital', false);
-        $view->assertSee('lock', false);
+        $view->assertSee('digitallock-logo.png', false);
+        $view->assertSee('alt="Digital Lock"', false);
     }
 
     public function test_header_nav_has_five_items_and_comprar_button(): void
@@ -62,6 +61,36 @@ class LayoutTest extends TestCase
             'Comprar',
         ]);
         $view->assertSee('rounded-lg bg-brand', false);
+    }
+
+    public function test_header_has_mobile_menu_toggle_with_accessible_attributes(): void
+    {
+        $view = $this->blade('<x-layout title="Página"><p>Corpo</p></x-layout>');
+
+        $view->assertSee('aria-controls="mobile-menu"', false);
+        $view->assertSee(':aria-expanded="mobileMenuOpen.toString()"', false);
+        $view->assertSee('id="mobile-menu"', false);
+    }
+
+    public function test_mobile_menu_has_all_eight_navigation_links(): void
+    {
+        $view = $this->blade('<x-layout title="Página"><p>Corpo</p></x-layout>');
+
+        $view->assertSeeInOrder([
+            'id="mobile-menu"',
+            'Certificados Digitais',
+            'e-CPF',
+            'e-CNPJ',
+            'MEI',
+            'Renovação',
+            'Como emitir',
+            'Suporte',
+            'Quem Somos',
+        ], false);
+
+        $view->assertSee('href="/certificado-digital/e-cpf/"', false);
+        $view->assertSee('href="/certificado-digital/e-cnpj/"', false);
+        $view->assertSee('href="/quem-somos/"', false);
     }
 
     public function test_comprar_button_is_not_a_pill_button(): void
@@ -87,5 +116,19 @@ class LayoutTest extends TestCase
 
         $view->assertSee('Autoridade de Registro credenciada no ICP-Brasil');
         $view->assertSee('↑ Topo');
+    }
+
+    public function test_footer_navigation_items_are_real_links(): void
+    {
+        $view = $this->blade('<x-layout title="Página"><p>Corpo</p></x-layout>');
+
+        $view->assertSee('<a href="/certificado-digital/" class="hover:text-white">Certificados</a>', false);
+        $view->assertSee('<a href="/certificado-digital/e-cpf/" class="hover:text-white">e-CPF</a>', false);
+        $view->assertSee('<a href="/certificado-digital/e-cnpj/" class="hover:text-white">e-CNPJ</a>', false);
+        $view->assertSee('<a href="/certificado-digital-para-mei/" class="hover:text-white">MEI</a>', false);
+        $view->assertSee('<a href="/renovacao-certificado-digital/" class="hover:text-white">Renovação</a>', false);
+        $view->assertSee('<a href="/como-emitir-certificado-digital/" class="hover:text-white">Como emitir</a>', false);
+        $view->assertSee('<a href="/suporte/" class="hover:text-white">Suporte</a>', false);
+        $view->assertSee('<a href="/quem-somos/" class="hover:text-white">Quem somos</a>', false);
     }
 }

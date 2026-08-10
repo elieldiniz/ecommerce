@@ -54,4 +54,18 @@ class ComparisonTableTest extends TestCase
         $view->assertSee('border-border', false);
         $view->assertSee('text-[13px]', false);
     }
+
+    public function test_table_is_wrapped_in_horizontal_scroll_container(): void
+    {
+        $view = $this->blade(
+            '<x-comparison-table :columns="$columns" :rows="$rows" />',
+            [
+                'columns' => ['Critério', 'A1'],
+                'rows' => [['Onde fica', 'Arquivo']],
+            ]
+        );
+
+        $view->assertSeeInOrder(['<div class="overflow-x-auto">', '<table'], false);
+        $view->assertSee('min-w-[480px]', false);
+    }
 }
