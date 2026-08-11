@@ -35,6 +35,8 @@
 
             <nav class="hidden items-center gap-6 font-sans text-sm font-medium text-ink/80 md:flex">
                 <a href="/certificado-digital/" class="hover:text-ink">Certificados</a>
+                <a href="/certificado-digital/e-cpf/" class="hover:text-ink">e-CPF</a>
+                <a href="/certificado-digital/e-cnpj/" class="hover:text-ink">e-CNPJ</a>
                 <a href="/certificado-digital-para-mei/" class="hover:text-ink">MEI</a>
                 <a href="/renovacao-certificado-digital/" class="hover:text-ink">Renovação</a>
                 <a href="/como-emitir-certificado-digital/" class="hover:text-ink">Como emitir</a>

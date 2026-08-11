@@ -48,12 +48,14 @@ class LayoutTest extends TestCase
         $view->assertSee('alt="Digital Lock"', false);
     }
 
-    public function test_header_nav_has_five_items_and_comprar_button(): void
+    public function test_header_nav_has_seven_items_and_comprar_button(): void
     {
         $view = $this->blade('<x-layout title="Página"><p>Corpo</p></x-layout>');
 
         $view->assertSeeInOrder([
             'Certificados',
+            'e-CPF',
+            'e-CNPJ',
             'MEI',
             'Renovação',
             'Como emitir',
