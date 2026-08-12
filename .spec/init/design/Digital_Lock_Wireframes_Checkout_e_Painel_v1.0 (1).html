@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Digital Lock · Wireframes do checkout e do painel</title>
+<style>
+*{box-sizing:border-box}
+:root{--ink:#22262d;--mut:#6b7280;--soft:#9aa1ab;--line:#e2e5ea;--bg:#f6f7f9;--card:#fff;--navy:#1f3556;--red:#b3252b;--tint:#eef2f8}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+.wrap{max-width:1160px;margin:0 auto;padding:40px 24px 80px}
+.doc{margin-bottom:32px;border-bottom:2px solid var(--navy);padding-bottom:22px}
+.doc .eyebrow{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--red);font-weight:600;margin-bottom:8px}
+.doc h1{font-size:30px;margin:0 0 8px;color:var(--navy);font-weight:600}
+.doc p{color:var(--mut);margin:0;max-width:720px}
+.idxg{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--soft);margin:0 0 8px}
+.idx{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px}
+.idx a{font-size:13px;text-decoration:none;color:var(--navy);background:var(--card);border:1px solid var(--line);border-radius:6px;padding:6px 12px}
+.idx a:hover{border-color:var(--navy)}
+.page{margin-bottom:52px;scroll-margin-top:20px}
+.phead{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--line)}
+.phead h1{font-size:20px;margin:0 0 3px;color:var(--navy);font-weight:600}
+.phead code{font-size:12px;color:var(--mut);font-family:ui-monospace,Menlo,Consolas,monospace}
+.papel{font-size:12px;color:var(--mut);text-align:right;max-width:380px}
+.browser{background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.bar{display:flex;align-items:center;gap:6px;padding:8px 12px;background:var(--bg);border-bottom:1px solid var(--line)}
+.dot{width:9px;height:9px;border-radius:50%;background:#d5d9df}
+.bar .url{margin-left:10px;font-size:11px;color:var(--soft);font-family:ui-monospace,Menlo,Consolas,monospace}
+.nav{display:flex;align-items:center;justify-content:space-between;padding:11px 20px;border-bottom:1px solid var(--line);font-size:12px}
+.nav b{font-size:14px}.nav span{color:var(--mut)}.nav i{font-style:normal;color:var(--navy)}
+.steps{display:flex;gap:0;border-bottom:1px solid var(--line);font-size:12px}
+.steps span{flex:1;padding:10px 14px;color:var(--soft);border-right:1px solid var(--line)}
+.steps span:last-child{border-right:none}
+.steps .on{color:var(--navy);font-weight:600;background:var(--tint)}
+.steps .ok{color:var(--mut)}
+.blk{padding:18px 20px;border-bottom:1px solid var(--line)}
+.blk.alt{background:#fafbfc}
+.tag{font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:var(--red);font-weight:600;margin-bottom:10px}
+.blk h2{font-size:16px;margin:0 0 8px;font-weight:600}
+.blk p{margin:0 0 8px;font-size:13px;color:#4b5260}
+.link{font-size:12px!important;color:var(--navy)!important;margin-top:8px!important}
+.two{display:grid;grid-template-columns:1fr 320px}
+.col{border-right:1px solid var(--line)}
+.resumo{padding:18px 20px;background:#fafbfc}
+.resumo h2{font-size:15px;margin:0 0 12px;font-weight:600;color:var(--ink)}
+.ri span,.ri b,.tot b{color:var(--ink)}
+.ri{display:flex;justify-content:space-between;gap:10px;font-size:12px;padding-bottom:12px;border-bottom:1px solid var(--line)}
+.ri em{display:block;font-style:normal;color:var(--soft);font-size:11px}
+.cup{display:flex;gap:6px;margin:12px 0}
+.cup .inp{flex:1}
+.tot{display:flex;justify-content:space-between;font-size:12px;color:var(--mut);padding:3px 0}
+.tot.hl{color:var(--navy)}
+.tot.big{font-size:16px;color:var(--ink);font-weight:600;border-top:1px solid var(--line);margin-top:8px;padding-top:10px}
+.selos{font-size:11px;color:var(--soft);margin-top:14px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.fld span{display:block;font-size:11px;color:var(--mut);margin-bottom:4px}
+.inp{border:1px solid var(--line);border-radius:6px;padding:8px 10px;font-size:12px;color:var(--soft);background:#fff;min-height:34px}
+.inp.mono{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11px;overflow:hidden;white-space:nowrap}
+.inp.sel{display:flex;justify-content:space-between;color:var(--ink)}
+.inp.sel i{font-style:normal;color:var(--soft)}
+.sec{font-size:12px;font-weight:600;color:var(--navy);margin:16px 0 8px;padding-bottom:5px;border-bottom:1px solid var(--line)}
+.chk{font-size:12px;color:var(--mut);display:flex;align-items:center;gap:7px;margin-top:10px}
+.box{width:14px;height:14px;border:1px solid #c9ced6;border-radius:3px;display:inline-block}
+.pgs2{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.pgo{border:1px solid var(--line);border-radius:8px;padding:11px;font-size:12px}
+.pgo.on{border:2px solid var(--navy)}
+.pgo b{display:block;margin-bottom:2px}
+.pgo span{display:block;color:var(--mut);font-size:11px}
+.pgo em{display:block;font-style:normal;color:var(--navy);font-size:11px;margin-top:4px}
+.btn{display:inline-block;font-size:12px;border:1px solid #c9ced6;border-radius:6px;padding:7px 14px;color:var(--ink);text-decoration:none;background:#fff;white-space:nowrap}
+.btn.p{background:var(--navy);border-color:var(--navy);color:#fff}
+.btn.big{padding:10px 24px}
+.btn.xs{padding:3px 9px;font-size:11px}
+.row{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-top:10px}
+.row2{display:flex;gap:8px;margin-top:10px}
+.pix{display:grid;grid-template-columns:150px 1fr;gap:18px;align-items:start}
+.qr{height:150px;border:1px solid var(--line);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--soft);background:#fafbfc}
+.copia{display:flex;gap:6px;margin:8px 0}
+.copia .inp{flex:1}
+.wait{margin-top:12px;background:var(--tint);border-radius:8px;padding:10px;font-size:12px;color:var(--navy)}
+.spin{display:inline-block;width:8px;height:8px;background:var(--navy);border-radius:50%;vertical-align:0;margin-right:7px}
+.ok{display:flex;gap:12px;align-items:center;background:#eef6f0;border-radius:8px;padding:13px}
+.ok span{width:30px;height:30px;flex:none;border-radius:50%;background:#cfe6d6;color:#1e5c34;display:flex;align-items:center;justify-content:center}
+.ok b{display:block;font-size:14px}
+.ok p{margin:0!important;font-size:12px!important}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.step{border:1px solid var(--line);border-radius:8px;padding:10px;font-size:12px;font-weight:600}
+.step span{display:block;font-size:11px;color:var(--soft);font-weight:400}
+.step em{display:block;font-style:normal;font-size:11px;color:var(--mut);font-weight:400;margin-top:3px}
+.ped{border:1px solid var(--line);border-radius:8px;margin-bottom:10px;overflow:hidden}
+.ped.alerta{border-color:#e0b23c}
+.pedh{display:flex;justify-content:space-between;align-items:center;padding:10px 13px;background:#fafbfc;border-bottom:1px solid var(--line);font-size:13px}
+.pedb{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:12px 13px;font-size:12px}
+.pedb span{display:block;color:var(--soft);font-size:11px}
+.pedf{display:flex;gap:6px;padding:0 13px 12px}
+.bdg{font-size:11px;border-radius:20px;padding:3px 10px;background:#eef0f3;color:#4b5260;white-space:nowrap}
+.bdg.ok{background:#e4f0e8;color:#1e5c34}
+.bdg.go{background:var(--tint);color:var(--navy)}
+.bdg.wr{background:#fbf0d8;color:#7a5606}
+.bdg.er{background:#fbe9e9;color:#8f2020}
+.bdg.wt{background:#eef0f3;color:#5c626c}
+.bdg.n{background:transparent;color:var(--soft)}
+table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:4px;table-layout:fixed}
+th{text-align:left;background:#fafbfc;font-weight:600;padding:8px 9px;border:1px solid var(--line);font-size:11px}
+td{padding:8px 9px;border:1px solid var(--line);color:#4b5260;word-wrap:break-word}
+td b.er{color:#8f2020}td b.wr{color:#7a5606}
+.adm{display:grid;grid-template-columns:172px 1fr;min-height:420px}
+aside{background:#1f3556;padding:14px 0;color:#c8d2e2;font-size:12px}
+aside b{display:block;color:#fff;font-size:14px;padding:0 16px 14px;border-bottom:1px solid rgba(255,255,255,.12);margin-bottom:8px}
+aside span{display:block;padding:7px 16px}
+aside span.on{background:rgba(255,255,255,.12);color:#fff;font-weight:600}
+aside .user{margin-top:18px;padding:12px 16px 0;border-top:1px solid rgba(255,255,255,.12);color:#8fa2bd;font-size:11px}
+main{min-width:0}
+.admtop{display:flex;justify-content:space-between;align-items:center;padding:12px 20px;border-bottom:1px solid var(--line)}
+.admtop h3{margin:0;font-size:16px;font-weight:600}
+.admtop span{font-size:12px;color:var(--mut);border:1px solid var(--line);border-radius:6px;padding:5px 11px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px}
+.kpi{background:#fafbfc;border-radius:8px;padding:11px}
+.kpi span{display:block;font-size:11px;color:var(--mut)}
+.kpi b{display:block;font-size:19px;font-weight:600;margin-top:2px}
+.kpi em{display:block;font-style:normal;font-size:11px;color:var(--soft)}
+.funil{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.funil div{border:1px solid var(--line);border-radius:8px;padding:11px;text-align:center}
+.funil b{display:block;font-size:19px;font-weight:600}
+.funil span{display:block;font-size:11px;color:var(--mut)}
+.funil em{display:block;font-style:normal;font-size:11px;color:var(--navy);margin-top:3px}
+.chart{height:130px;border:1px dashed var(--line);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--soft)}
+.filtros{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.pill{font-size:11px;border:1px solid var(--line);border-radius:20px;padding:5px 12px;color:var(--mut);background:#fff}
+.pill i{font-style:normal;color:var(--soft)}
+.pill.busca{flex:1;min-width:200px;border-radius:6px;color:var(--soft)}
+.pag{display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--mut);margin-top:10px}
+.pgs i{font-style:normal;display:inline-block;border:1px solid var(--line);border-radius:5px;padding:3px 9px;margin-left:4px}
+.pgs i.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+.card{border:1px solid var(--line);border-radius:8px;padding:12px}
+.tl div{font-size:12px;color:#4b5260;padding:6px 0 6px 14px;border-left:2px solid var(--line);position:relative}
+.tl b{color:var(--ink);margin-right:6px}
+.tl em{font-style:normal;color:var(--soft);font-size:11px}
+.rels{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.rel{border:1px solid var(--line);border-radius:8px;padding:11px;font-size:12px}
+.rel.on{border:2px solid var(--navy)}
+.rel b{display:block;margin-bottom:3px}
+.rel span{color:var(--mut);font-size:11px}
+.top{position:fixed;right:20px;bottom:20px;background:var(--navy);color:#fff;font-size:12px;padding:8px 14px;border-radius:6px;text-decoration:none}
+@media print{.top,.idx,.idxg{display:none}.page{page-break-after:always}body{background:#fff}}
+@media(max-width:900px){.two,.pix,.adm{grid-template-columns:1fr}.col{border-right:none}.grid2,.grid3,.pgs2,.g4,.funil,.rels{grid-template-columns:1fr}.phead{flex-direction:column;align-items:flex-start}.papel{text-align:left}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="doc">
+<div class="eyebrow">Digital Lock · e-commerce próprio</div>
+<h1>Wireframes do checkout e do painel</h1>
+<p>Modelo estrutural das telas de venda e de gestão. Mostra a ordem dos blocos, os campos de cada formulário e a origem de cada dado no banco. Não define identidade visual, tipografia nem paleta. Acompanha o documento de estrutura de banco de dados, versão 1.0.</p>
+</header>
+<div class="idxg">Loja</div>
+<nav class="idx"><a href="#checkout">Checkout</a><a href="#pix">Aguardando Pix</a><a href="#emissao-pf">Emissão · PF</a><a href="#emissao-pj">Emissão · PJ</a><a href="#conta">Minha conta</a></nav>
+<div class="idxg">Painel administrativo</div>
+<nav class="idx"><a href="#visao">Visão geral</a><a href="#vendas">Vendas</a><a href="#venda">Detalhe da venda</a><a href="#fila">Fila de recuperação</a><a href="#produtos">Produtos</a><a href="#pagamento">Pagamento e cupons</a><a href="#clientes">Clientes</a><a href="#relatorios">Relatórios</a></nav>
+<article class="page" id="checkout">
+<div class="phead"><div><h1>Checkout · fase 1</h1><code>/checkout/</code></div><div class="papel">Seis campos. Só o necessário para cobrar e faturar. Nenhum dado de titular aqui.</div></div>
+<div class="browser">
+<div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><div class="url">ardigitallock.com/checkout/</div></div>
+<div class="nav"><b>Digital Lock</b><span>Compra segura</span><i>Ajuda</i></div>
+<div class="steps"><span class="ok">1. Carrinho</span><span class="on">2. Dados e pagamento</span><span class="">3. Dados de emissão</span></div><div class="two">
+<div class="col">
+<section class="blk"><div class="tag">Bloco 1 · identificação</div><h2>Seus dados</h2>
+<div class="grid2">
+<div class="fld" style="grid-column:span 2"><span>Tipo de pessoa</span><div class="inp sel">Pessoa jurídica <i>▾</i></div></div>
+<div class="fld"><span>CNPJ</span><div class="inp">00.000.000/0000-00</div></div>
+<div class="fld"><span>Razão social</span><div class="inp"></div></div>
+<div class="fld"><span>E-mail</span><div class="inp"></div></div>
+<div class="fld"><span>Telefone com DDD</span><div class="inp"></div></div>
+<div class="fld" style="grid-column:span 2"><span>CEP</span><div class="inp"></div></div>
+</div>
+<p class="link">O tipo de pessoa alterna o rótulo entre CPF e CNPJ, e entre nome completo e razão social. Nada além disso muda nesta fase.</p>
+<div class="chk"><span class="box"></span>Quero receber novidades e ofertas por e-mail e WhatsApp</div></section>
+
+<section class="blk alt"><div class="tag">Bloco 2 · forma de pagamento</div><h2>Como você prefere pagar</h2>
+<div class="pgs2">
+<div class="pgo on"><b>Pix</b><span>Confirmação imediata</span><em>5% de desconto</em></div>
+<div class="pgo"><b>Cartão de crédito</b><span>Até 12x</span><em>Sem desconto</em></div>
+<div class="pgo"><b>Boleto</b><span>Compensa em 1 a 3 dias úteis</span><em>Sem desconto</em></div>
+</div>
+<p class="link">O desconto vem da tabela formas_pagamento. Ao trocar a opção, o resumo à direita recalcula sem recarregar a página.</p></section>
+
+<section class="blk"><div class="tag">Bloco 3 · confirmação</div><div class="row"><a class="btn p big">Finalizar compra</a></div>
+<p class="link">Ao concluir, o pedido nasce com status aguardando_pagamento e status_emissao aguardando_dados.</p></section>
+</div>
+
+<aside class="resumo">
+<div class="tag">Resumo · fixo na lateral</div>
+<h2>Seu pedido</h2>
+<div class="ri"><span>Certificado Digital e-CNPJ<em>A1 · 12 meses</em></span><b>R$ 249,90</b></div>
+<div class="cup"><div class="inp">Cupom de desconto</div><a class="btn">Aplicar</a></div>
+<div class="tot"><span>Subtotal</span><b>R$ 249,90</b></div>
+<div class="tot"><span>Desconto cupom</span><b>− R$ 0,00</b></div>
+<div class="tot hl"><span>Desconto Pix 5%</span><b>− R$ 12,50</b></div>
+<div class="tot big"><span>Total</span><b>R$ 237,40</b></div>
+<p class="link">Valor original, desconto e valor final sempre visíveis. Exigência do briefing.</p>
+<div class="selos">Ambiente seguro · Padrão ICP-Brasil</div>
+</aside>
+</div></div>
+</article><article class="page" id="pix">
+<div class="phead"><div><h1>Aguardando pagamento · Pix</h1><code>/pedido/1042/pagamento/</code></div><div class="papel">Tela de espera. Faz polling do status e avança sozinha quando o webhook confirma.</div></div>
+<div class="browser">
+<div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><div class="url">ardigitallock.com/pedido/1042/pagamento/</div></div>
+<div class="nav"><b>Digital Lock</b><span>Compra segura</span><i>Ajuda</i></div>
+<div class="steps"><span class="ok">1. Carrinho</span><span class="on">2. Dados e pagamento</span><span class="">3. Dados de emissão</span></div><section class="blk"><div class="tag">Bloco 1 · cobrança gerada</div><h2>Escaneie para pagar</h2>
+<div class="pix">
+<div class="qr">QR Code</div>
+<div>
+<p>Pedido <b>#1042</b> · R$ 237,40</p>
+<div class="copia"><div class="inp mono">00020126580014BR.GOV.BCB.PIX0136...</div><a class="btn">Copiar código</a></div>
+<p class="link">Expira em 29:47</p>
+<div class="wait"><span class="spin"></span> Aguardando confirmação. Esta tela avança sozinha assim que o pagamento cair.</div>
+</div>
+</div>
+<p class="link">Polling no status do pagamento. A transição é disparada pelo webhook, nunca por clique do cliente.</p></section><section class="blk alt"><div class="tag">Bloco 2 · variação boleto</div><p>Quando a forma escolhida for boleto, este bloco troca o QR Code pela linha digitável e pelo botão de download, e a mensagem de espera passa a informar que a compensação leva de 1 a 3 dias úteis e que o formulário de emissão será enviado por e-mail.</p></section></div>
+</article><article class="page" id="emissao-pf">
+<div class="phead"><div><h1>Confirmação e dados de emissão · pessoa física</h1><code>/pedido/1042/emissao/</code></div><div class="papel">Fase 2. Aparece na própria tela de confirmação, sem redirecionamento e sem esperar e-mail.</div></div>
+<div class="browser">
+<div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><div class="url">ardigitallock.com/pedido/1042/emissao/</div></div>
+<div class="nav"><b>Digital Lock</b><span>Compra segura</span><i>Ajuda</i></div>
+<div class="steps"><span class="ok">1. Carrinho</span><span class="ok">2. Dados e pagamento</span><span class="on">3. Dados de emissão</span></div><section class="blk"><div class="tag">Bloco 1 · confirmação</div><div class="ok"><span>✓</span><div><b>Pagamento confirmado</b><p>Pedido #1042 · R$ 237,40 no Pix</p></div></div>
+<p class="link">A confirmação e o formulário ficam na mesma tela. Quem acabou de pagar está com atenção alta e completa aqui mesmo.</p></section><section class="blk alt"><div class="tag">Bloco 2 · formulário de emissão</div><h2>Falta só uma etapa: os dados de quem vai receber o certificado</h2>
+<p>Estes dados vão para a validação por videoconferência e não podem ser alterados depois.</p>
+<div class="sec">Titular</div>
+<div class="grid2">
+<div class="fld" style="grid-column:span 2"><span>Nome completo</span><div class="inp"></div></div>
+<div class="fld"><span>CPF</span><div class="inp"></div></div>
+<div class="fld"><span>Data de nascimento</span><div class="inp"></div></div>
+<div class="fld"><span>E-mail</span><div class="inp"></div></div>
+<div class="fld"><span>Telefone com DDD</span><div class="inp"></div></div>
+</div>
+<p class="link">O e-mail informado aqui recebe o link de agendamento da videoconferência.</p>
+<div class="sec">Endereço</div>
+<div class="grid3">
+<div class="fld"><span>CEP</span><div class="inp"></div></div>
+<div class="fld" style="grid-column:span 2"><span>Logradouro</span><div class="inp"></div></div>
+<div class="fld"><span>Número</span><div class="inp"></div></div>
+<div class="fld"><span>Complemento</span><div class="inp"></div></div>
+<div class="fld"><span>Bairro</span><div class="inp"></div></div>
+<div class="fld" style="grid-column:span 2"><span>Município</span><div class="inp"></div></div>
+<div class="fld"><span>UF</span><div class="inp sel"> <i>▾</i></div></div>
+</div>
+<p class="link">CEP preenche logradouro, bairro, município e UF automaticamente. Cada um é campo próprio, nunca um campo único de endereço.</p>
+<div class="row"><a class="btn p big">Concluir e enviar para emissão</a></div></section><section class="blk"><div class="tag">Bloco 3 · próximos passos</div><h2>O que acontece agora</h2>
+<div class="g4">
+<div class="step"><span>1</span>Recebe o e-mail<em>Com o link de agendamento</em></div>
+<div class="step"><span>2</span>Agenda<em>Dia e horário que preferir</em></div>
+<div class="step"><span>3</span>Valida ao vivo<em>Poucos minutos</em></div>
+<div class="step"><span>4</span>Baixa e instala<em>Com suporte incluído</em></div>
+</div></section></div>
+</article><article class="page" id="emissao-pj">
+<div class="phead"><div><h1>Dados de emissão · pessoa jurídica</h1><code>/pedido/1042/emissao/</code></div><div class="papel">Mesma tela, variação condicional quando o produto tem tipo_titular PJ.</div></div>
+<div class="browser">
+<div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><div class="url">ardigitallock.com/pedido/1042/emissao/</div></div>
+<div class="nav"><b>Digital Lock</b><span>Compra segura</span><i>Ajuda</i></div>
+<div class="steps"><span class="ok">1. Carrinho</span><span class="ok">2. Dados e pagamento</span><span class="on">3. Dados de emissão</span></div><section class="blk"><div class="tag">Bloco 2 · formulário de emissão · variação PJ</div><h2>Dados de quem vai receber o certificado</h2>
+<div class="sec">Empresa</div>
+<div class="grid2">
+<div class="fld" style="grid-column:span 2"><span>Razão social</span><div class="inp"></div></div>
+<div class="fld"><span>CNPJ</span><div class="inp"></div></div>
+<div class="fld"><span>E-mail da empresa</span><div class="inp"></div></div>
+<div class="fld"><span>Telefone com DDD</span><div class="inp"></div></div>
+</div>
+<div class="sec">Responsável pelo uso do certificado</div>
+<p>É a pessoa física que fará a validação por videoconferência e será a detentora da chave privada.</p>
+<div class="grid2">
+<div class="fld" style="grid-column:span 2"><span>Nome completo</span><div class="inp"></div></div>
+<div class="fld"><span>CPF</span><div class="inp"></div></div>
+<div class="fld"><span>Data de nascimento</span><div class="inp"></div></div>
+<div class="fld"><span>E-mail</span><div class="inp"></div></div>
+<div class="fld"><span>Telefone com DDD</span><div class="inp"></div></div>
+</div>
+<p class="link">O e-mail do responsável recebe o agendamento, não o e-mail da empresa.</p>
+<div class="sec">Endereço da empresa</div>
+<div class="grid3">
+<div class="fld"><span>CEP</span><div class="inp"></div></div>
+<div class="fld" style="grid-column:span 2"><span>Logradouro</span><div class="inp"></div></div>
+<div class="fld"><span>Número</span><div class="inp"></div></div>
+<div class="fld"><span>Complemento</span><div class="inp"></div></div>
+<div class="fld"><span>Bairro</span><div class="inp"></div></div>
+<div class="fld" style="grid-column:span 2"><span>Município</span><div class="inp"></div></div>
+<div class="fld"><span>UF</span><div class="inp sel"> <i>▾</i></div></div>
+</div>
+<div class="row"><a class="btn p big">Concluir e enviar para emissão</a></div></section><section class="blk alt"><div class="tag">Bloco 3 · nota de implementação</div><p>Os blocos 1 e 3 são idênticos à versão de pessoa física. O que muda é apenas este bloco, dirigido pelo campo tipo_titular do produto. Os campos de responsável gravam em dados_emissao nas colunas com prefixo responsavel.</p></section></div>
+</article><article class="page" id="conta">
+<div class="phead"><div><h1>Minha conta · meus pedidos</h1><code>/minha-conta/pedidos/</code></div><div class="papel">Onde o cliente acompanha o certificado. Reduz contato com o suporte.</div></div>
+<div class="browser">
+<div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><div class="url">ardigitallock.com/minha-conta/pedidos/</div></div>
+<div class="nav"><b>Digital Lock</b><span>Compra segura</span><i>Ajuda</i></div>
+<section class="blk"><div class="tag">Bloco 1 · lista de pedidos</div><h2>Meus pedidos</h2>
+<div class="ped">
+<div class="pedh"><b>#1042 · Certificado Digital e-CNPJ A1</b><span class="bdg ok">Emitido</span></div>
+<div class="pedb">
+<div><span>Titular</span><b>Comércio Silva Ltda</b></div>
+<div><span>Validade até</span><b>04/08/2027</b></div>
+<div><span>Pago em</span><b>05/08/2026</b></div>
+</div>
+<div class="pedf"><a class="btn">Ver nota fiscal</a><a class="btn">Baixar certificado</a><a class="btn">Renovar</a></div>
+</div>
+<div class="ped">
+<div class="pedh"><b>#1039 · Certificado Digital e-CPF A1</b><span class="bdg go">Agendado</span></div>
+<div class="pedb">
+<div><span>Titular</span><b>Maria Souza</b></div>
+<div><span>Videoconferência</span><b>07/08/2026 às 14:30</b></div>
+<div><span>Pago em</span><b>03/08/2026</b></div>
+</div>
+<div class="pedf"><a class="btn">Ver o que levar</a><a class="btn">Reagendar</a></div>
+</div>
+<div class="ped alerta">
+<div class="pedh"><b>#1036 · Certificado Digital e-CPF A1</b><span class="bdg wr">Faltam seus dados</span></div>
+<div class="pedb"><div><span>Pago em</span><b>01/08/2026</b></div><div><span>Situação</span><b>Aguardando dados do titular</b></div></div>
+<div class="pedf"><a class="btn p">Preencher agora</a></div>
+</div>
+<p class="link">Agendamento e validade vêm de pedido_item_gfsis, alimentados pelo webhook e pela rotina diária.</p></section><section class="blk alt"><div class="tag">Bloco 2 · estados possíveis</div><table><colgroup><col style="width:34%"><col style="width:66%"></colgroup><tr><th>Situação exibida</th><th>Origem</th></tr><tr><td>Faltam seus dados</td><td>pedidos.status_emissao = aguardando_dados</td></tr><tr><td>Em processamento</td><td>status_emissao = dados_completos ou enviado_gfsis, sem status do GFSIS ainda</td></tr><tr><td>Agendado</td><td>agendamento_data preenchida em pedido_item_gfsis</td></tr><tr><td>Emitido</td><td>status_gfsis correspondente à emissão concluída</td></tr><tr><td>Vencendo</td><td>certificado_validade_fim nos próximos 60 dias</td></tr></table></section></div>
+</article><article class="page" id="visao">
+<div class="phead"><div><h1>Painel · visão geral</h1><code>/painel/</code></div><div class="papel">Primeira tela ao entrar. Mostra dinheiro, gargalo e o que exige ação hoje.</div></div>
+<div class="browser">
+<div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><div class="url">painel.ardigitallock.com</div></div>
+<div class="adm">
+<aside><b>Digital Lock</b><span class="on">Visão geral</span><span class="">Vendas</span><span class="">Fila de recuperação</span><span class="">Produtos</span><span class="">Clientes</span><span class="">Cupons</span><span class="">Formas de pagamento</span><span class="">Relatórios</span><span class="">Configurações</span><div class="user">Leandro · admin</div></aside>
+<main><div class="admtop"><h3>Visão geral</h3><span>Últimos 30 dias ▾</span></div><section class="blk"><div class="tag">Bloco 1 · indicadores</div><div class="kpis"><div class="kpi"><span>Faturamento</span><b>R$ 38.420</b><em>312 pedidos</em></div><div class="kpi"><span>Ticket médio</span><b>R$ 123,10</b></div><div class="kpi"><span>Taxa de conversão</span><b>3,4%</b></div><div class="kpi"><span>Aguardando dados</span><b>17</b><em>pedidos pagos</em></div><div class="kpi"><span>Falha de integração</span><b>2</b><em>exigem ação</em></div></div></section><section class="blk alt"><div class="tag">Bloco 2 · funil operacional</div><div class="funil">
+<div><b>412</b><span>Pedidos criados</span></div>
+<div><b>312</b><span>Pagos</span><em>75,7%</em></div>
+<div><b>295</b><span>Dados completos</span><em>94,6%</em></div>
+<div><b>293</b><span>Enviados ao GFSIS</span><em>99,3%</em></div>
+<div><b>268</b><span>Emitidos</span><em>91,5%</em></div>
+</div>
+<p class="link">A maior queda revela o gargalo. Se cair entre pagos e dados completos, o problema é a régua de recuperação.</p></section><section class="blk"><div class="tag">Bloco 3 · exige ação</div><table><colgroup><col style="width:46%"><col style="width:18%"><col style="width:20%"><col style="width:16%"></colgroup><tr><th>Fila</th><th>Quantidade</th><th>Mais antigo</th><th></th></tr><tr><td>Pagos sem dados de emissão</td><td>17</td><td>4 dias</td><td><a class="btn xs">Abrir</a></td></tr><tr><td>Falha de envio ao GFSIS</td><td>2</td><td>6 horas</td><td><a class="btn xs">Abrir</a></td></tr><tr><td>Conversões não enviadas</td><td>3</td><td>1 dia</td><td><a class="btn xs">Abrir</a></td></tr><tr><td>Reembolsos pendentes</td><td>1</td><td>2 dias</td><td><a class="btn xs">Abrir</a></td></tr><tr><td>Certificados vencendo em 30 dias</td><td>46</td><td></td><td><a class="btn xs">Abrir</a></td></tr></table></section><section class="blk alt"><div class="tag">Bloco 4 · vendas por dia</div><div class="chart"><span>Gráfico de barras · faturamento e quantidade por dia</span></div></section></main>
+</div></div>
+</article><article class="page" id="vendas">
+<div class="phead"><div><h1>Painel · gestão de vendas</h1><code>/painel/vendas/</code></div><div class="papel">Lista mestre. Duas colunas de status, porque os ciclos financeiro e operacional são independentes.</div></div>
+<div class="browser">
+<div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><div class="url">painel.ardigitallock.com</div></div>
+<div class="adm">
+<aside><b>Digital Lock</b><span class="">Visão geral</span><span class="on">Vendas</span><span class="">Fila de recuperação</span><span class="">Produtos</span><span class="">Clientes</span><span class="">Cupons</span><span class="">Formas de pagamento</span><span class="">Relatórios</span><span class="">Configurações</span><div class="user">Leandro · admin</div></aside>
+<main><div class="admtop"><h3>Vendas</h3><span>Últimos 30 dias ▾</span></div><section class="blk"><div class="tag">Bloco 1 · filtros</div><div class="filtros"><span class="pill">Período <i>▾</i></span><span class="pill">Status do pagamento <i>▾</i></span><span class="pill">Status da emissão <i>▾</i></span><span class="pill">Forma de pagamento <i>▾</i></span><span class="pill">Produto <i>▾</i></span><span class="pill">Origem <i>▾</i></span><span class="pill busca">Buscar por nome, documento ou número do pedido</span></div></section><section class="blk alt"><div class="tag">Bloco 2 · lista</div><table><colgroup><col style="width:9%"><col style="width:24%"><col style="width:17%"><col style="width:13%"><col style="width:14%"><col style="width:15%"><col style="width:8%"></colgroup><tr><th>Pedido</th><th>Cliente</th><th>Produto</th><th>Valor</th><th>Pagamento</th><th>Emissão</th><th>Data</th></tr><tr><td>#1042</td><td>Comércio Silva Ltda</td><td>e-CNPJ A1</td><td>R$ 237,40</td><td><span class="bdg ok">Pago</span></td><td><span class="bdg ok">Emitido</span></td><td>05/08</td></tr><tr><td>#1041</td><td>Maria Souza</td><td>e-CPF A1</td><td>R$ 132,90</td><td><span class="bdg ok">Pago</span></td><td><span class="bdg go">Agendado</span></td><td>05/08</td></tr><tr><td>#1040</td><td>Auto Peças Reis</td><td>e-CNPJ A3 24m</td><td>R$ 389,00</td><td><span class="bdg ok">Pago</span></td><td><span class="bdg wr">Aguardando dados</span></td><td>04/08</td></tr><tr><td>#1039</td><td>João Pereira</td><td>e-CPF A1</td><td>R$ 132,90</td><td><span class="bdg wt">Pendente</span></td><td><span class="bdg n">—</span></td><td>04/08</td></tr><tr><td>#1038</td><td>Padaria Central</td><td>e-CNPJ A1</td><td>R$ 237,40</td><td><span class="bdg ok">Pago</span></td><td><span class="bdg er">Falha de envio</span></td><td>04/08</td></tr><tr><td>#1037</td><td>Lucas Andrade</td><td>e-CPF A1</td><td>R$ 139,90</td><td><span class="bdg er">Estornado</span></td><td><span class="bdg n">Cancelado</span></td><td>03/08</td></tr></table><div class="pag"><span>Mostrando 1 a 25 de 312</span><span class="pgs"><i class="on">1</i><i>2</i><i>3</i><i>›</i></span></div><p class="link">As colunas Pagamento e Emissão nunca se fundem. Pago com Aguardando dados é receita com obrigação em aberto.</p></section><section class="blk"><div class="tag">Bloco 3 · ações em lote</div><div class="row2"><a class="btn">Exportar CSV</a><a class="btn">Reenviar ao GFSIS</a><a class="btn">Disparar recuperação</a></div></section></main>
+</div></div>
+</article><article class="page" id="venda">
+<div class="phead"><div><h1>Painel · detalhe da venda</h1><code>/painel/vendas/1042/</code></div><div class="papel">Ficha completa. Tudo que o atendimento precisa para responder sem abrir outro sistema.</div></div>
+<div class="browser">
+<div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><div class="url">painel.ardigitallock.com</div></div>
+<div class="adm">
+<aside><b>Digital Lock</b><span class="">Visão geral</span><span class="on">Vendas</span><span class="">Fila de recuperação</span><span class="">Produtos</span><span class="">Clientes</span><span class="">Cupons</span><span class="">Formas de pagamento</span><span class="">Relatórios</span><span class="">Configurações</span><div class="user">Leandro · admin</div></aside>
+<main><div class="admtop"><h3>Pedido #1042</h3><span>Últimos 30 dias ▾</span></div><section class="blk"><div class="tag">Bloco 1 · cabeçalho</div><div class="row"><div><h2>Pedido #1042</h2><p>Criado em 05/08/2026 às 09:14 · Comércio Silva Ltda</p></div><div class="row2"><span class="bdg ok">Pago</span><span class="bdg ok">Emitido</span></div></div></section><section class="blk alt"><div class="tag">Bloco 2 · itens</div><table><colgroup><col style="width:18%"><col style="width:30%"><col style="width:24%"><col style="width:14%"><col style="width:14%"></colgroup><tr><th>SKU</th><th>Produto</th><th>Titular</th><th>Preço tabela</th><th>Preço praticado</th></tr><tr><td>ECNPJ-A1-12</td><td>Certificado Digital e-CNPJ A1</td><td>Comércio Silva Ltda</td><td>R$ 249,90</td><td>R$ 249,90</td></tr></table></section><section class="blk"><div class="tag">Bloco 3 · financeiro</div><div class="grid2">
+<div class="card"><div class="tag">Valores</div><table><colgroup><col style="width:60%"><col style="width:40%"></colgroup><tr><th>Item</th><th>Valor</th></tr><tr><td>Subtotal</td><td>R$ 249,90</td></tr><tr><td>Desconto cupom</td><td>− R$ 0,00</td></tr><tr><td>Desconto Pix 5%</td><td>− R$ 12,50</td></tr><tr><td>Total</td><td>R$ 237,40</td></tr><tr><td>Taxa do gateway</td><td>− R$ 2,37</td></tr><tr><td>Líquido previsto</td><td>R$ 235,03</td></tr></table></div>
+<div class="card"><div class="tag">Pagamento</div><table><colgroup><col style="width:45%"><col style="width:55%"></colgroup><tr><th>Campo</th><th>Valor</th></tr><tr><td>Método</td><td>Pix</td></tr><tr><td>Status</td><td>Autorizado</td></tr><tr><td>ID no gateway</td><td>8829174</td></tr><tr><td>TXID</td><td>a91f...c2</td></tr><tr><td>End to end</td><td>E1803...9K</td></tr><tr><td>Pago em</td><td>05/08 09:17</td></tr><tr><td>Previsão de repasse</td><td>06/08</td></tr></table></div>
+</div></section><section class="blk alt"><div class="tag">Bloco 4 · emissão e GFSIS</div><div class="grid2">
+<div class="card"><div class="tag">Dados do titular</div><table><colgroup><col style="width:40%"><col style="width:60%"></colgroup><tr><th>Campo</th><th>Valor</th></tr><tr><td>Razão social</td><td>Comércio Silva Ltda</td></tr><tr><td>CNPJ</td><td>11.222.333/0001-44</td></tr><tr><td>Responsável</td><td>Ana Silva</td></tr><tr><td>CPF do responsável</td><td>123.456.789-00</td></tr><tr><td>E-mail</td><td>ana@comerciosilva.com</td></tr><tr><td>Endereço</td><td>Rua A, 100 · Centro</td></tr><tr><td>Município e UF</td><td>Ji-Paraná · RO</td></tr></table></div>
+<div class="card"><div class="tag">Integração</div><table><colgroup><col style="width:45%"><col style="width:55%"></colgroup><tr><th>Campo</th><th>Valor</th></tr><tr><td>gfsis_pedido_id</td><td>1042001</td></tr><tr><td>Código GFSIS</td><td>102930</td></tr><tr><td>Status GFSIS</td><td>Emitido</td></tr><tr><td>Agendamento</td><td>06/08 às 10:00</td></tr><tr><td>Validade até</td><td>05/08/2027</td></tr><tr><td>Sincronizado em</td><td>06/08 11:32</td></tr><tr><td>Tentativas</td><td>1</td></tr></table><a class="btn">Reenviar ao GFSIS</a></div>
+</div></section><section class="blk"><div class="tag">Bloco 5 · origem da venda</div><table><colgroup><col style="width:32%"><col style="width:68%"></colgroup><tr><th>Campo</th><th>Valor</th></tr><tr><td>Campanha</td><td>DL | Search | Genérica | Base</td></tr><tr><td>Origem e meio</td><td>google / cpc</td></tr><tr><td>gclid</td><td>Cj0KCQ...</td></tr><tr><td>Página de entrada</td><td>/certificado-digital/e-cnpj/</td></tr><tr><td>Dispositivo</td><td>Desktop</td></tr><tr><td>Sessões até a compra</td><td>2</td></tr><tr><td>Conversão enviada</td><td>Sim · 05/08 09:18</td></tr></table></section><section class="blk alt"><div class="tag">Bloco 6 · linha do tempo</div><div class="tl">
+<div><b>05/08 09:14</b> Pedido criado <em>sistema</em></div>
+<div><b>05/08 09:17</b> Pagamento autorizado <em>webhook Safe2Pay</em></div>
+<div><b>05/08 09:26</b> Dados de emissão preenchidos <em>cliente</em></div>
+<div><b>05/08 09:26</b> Enviado ao GFSIS <em>fila</em></div>
+<div><b>06/08 10:00</b> Videoconferência realizada <em>webhook GFSIS</em></div>
+<div><b>06/08 11:32</b> Certificado emitido <em>webhook GFSIS</em></div>
+</div>
+<p class="link">Alimentada por pagamento_eventos, gfsis_eventos e log_auditoria. É o que sustenta defesa em contestação de pagamento.</p></section></main>
+</div></div>
+</article><article class="page" id="fila">
+<div class="phead"><div><h1>Painel · fila de recuperação</h1><code>/painel/recuperacao/</code></div><div class="papel">Fila criada pelo checkout em duas fases. Sem ela, o ganho de conversão vira passivo.</div></div>
+<div class="browser">
+<div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><div class="url">painel.ardigitallock.com</div></div>
+<div class="adm">
+<aside><b>Digital Lock</b><span class="">Visão geral</span><span class="">Vendas</span><span class="on">Fila de recuperação</span><span class="">Produtos</span><span class="">Clientes</span><span class="">Cupons</span><span class="">Formas de pagamento</span><span class="">Relatórios</span><span class="">Configurações</span><div class="user">Leandro · admin</div></aside>
+<main><div class="admtop"><h3>Fila de recuperação</h3><span>Últimos 30 dias ▾</span></div><section class="blk"><div class="tag">Bloco 1 · indicadores</div><div class="kpis"><div class="kpi"><span>Pagos sem dados</span><b>17</b><em>R$ 2.940 parados</em></div><div class="kpi"><span>Recuperados em 7 dias</span><b>82%</b></div><div class="kpi"><span>Mais antigo</span><b>4 dias</b></div><div class="kpi"><span>Falha de envio</span><b>2</b></div></div></section><section class="blk alt"><div class="tag">Bloco 2 · fila ordenada por tempo</div><table><colgroup><col style="width:11%"><col style="width:27%"><col style="width:15%"><col style="width:10%"><col style="width:22%"><col style="width:15%"></colgroup><tr><th>Pedido</th><th>Cliente</th><th>Valor</th><th>Dias</th><th>Contatos</th><th>Ação</th></tr><tr><td>#1021</td><td>Marcos Lima</td><td>R$ 132,90</td><td><b class="er">4</b></td><td>E-mail 3 · WhatsApp 2</td><td><a class="btn xs">Ligar</a></td></tr><tr><td>#1029</td><td>Transportes RO</td><td>R$ 389,00</td><td><b class="wr">3</b></td><td>E-mail 2 · WhatsApp 1</td><td><a class="btn xs">Reenviar link</a></td></tr><tr><td>#1034</td><td>Ana Beatriz</td><td>R$ 139,90</td><td>2</td><td>E-mail 2</td><td><a class="btn xs">Reenviar link</a></td></tr><tr><td>#1040</td><td>Auto Peças Reis</td><td>R$ 389,00</td><td>1</td><td>E-mail 1</td><td><a class="btn xs">Reenviar link</a></td></tr></table><p class="link">O botão de reenvio gera novo token_acesso e dispara o e-mail com link direto, sem exigir login.</p></section><section class="blk"><div class="tag">Bloco 3 · régua automática</div><table><colgroup><col style="width:16%"><col style="width:16%"><col style="width:68%"></colgroup><tr><th>Momento</th><th>Canal</th><th>Mensagem</th></tr><tr><td>Imediato</td><td>E-mail</td><td>Confirmação de pagamento com link do formulário</td></tr><tr><td>2 horas</td><td>WhatsApp</td><td>Lembrete curto com link</td></tr><tr><td>24 horas</td><td>E-mail</td><td>Reforço explicando que a emissão não começa sem os dados</td></tr><tr><td>3 dias</td><td>WhatsApp</td><td>Contato com oferta de preenchimento assistido</td></tr><tr><td>5 dias</td><td>Painel</td><td>Marca para contato humano</td></tr></table></section><section class="blk alt"><div class="tag">Bloco 4 · falhas de integração</div><table><colgroup><col style="width:12%"><col style="width:50%"><col style="width:14%"><col style="width:24%"></colgroup><tr><th>Pedido</th><th>Erro</th><th>Tentativas</th><th>Ação</th></tr><tr><td>#1038</td><td>Município não encontrado · UF e nome divergentes</td><td>3</td><td><a class="btn xs">Corrigir e reenviar</a></td></tr><tr><td>#1015</td><td>CPF/CNPJ inválido</td><td>2</td><td><a class="btn xs">Corrigir e reenviar</a></td></tr></table><p class="link">O erro vem de pedido_item_gfsis.ultimo_erro. Correção abre o formulário de emissão em modo administrativo.</p></section></main>
+</div></div>
+</article><article class="page" id="produtos">
+<div class="phead"><div><h1>Painel · produtos</h1><code>/painel/produtos/</code></div><div class="papel">Produto é o agrupador. Variante é o item vendável.</div></div>
+<div class="browser">
+<div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><div class="url">painel.ardigitallock.com</div></div>
+<div class="adm">
+<aside><b>Digital Lock</b><span class="">Visão geral</span><span class="">Vendas</span><span class="">Fila de recuperação</span><span class="on">Produtos</span><span class="">Clientes</span><span class="">Cupons</span><span class="">Formas de pagamento</span><span class="">Relatórios</span><span class="">Configurações</span><div class="user">Leandro · admin</div></aside>
+<main><div class="admtop"><h3>Produtos</h3><span>Últimos 30 dias ▾</span></div><section class="blk"><div class="tag">Bloco 1 · lista</div><div class="row"><div></div><a class="btn p">Novo produto</a></div><table><colgroup><col style="width:32%"><col style="width:10%"><col style="width:18%"><col style="width:12%"><col style="width:16%"><col style="width:12%"></colgroup><tr><th>Produto</th><th>Tipo</th><th>Slug</th><th>Variantes</th><th>A partir de</th><th>Ativo</th></tr><tr><td>Certificado Digital e-CPF</td><td>PF</td><td>/e-cpf/</td><td>4</td><td>R$ 139,90</td><td>Sim</td></tr><tr><td>Certificado Digital e-CNPJ</td><td>PJ</td><td>/e-cnpj/</td><td>4</td><td>R$ 249,90</td><td>Sim</td></tr><tr><td>Certificado Digital para MEI</td><td>PJ</td><td>/para-mei/</td><td>2</td><td>R$ 189,90</td><td>Sim</td></tr></table></section><section class="blk alt"><div class="tag">Bloco 2 · edição · dados do produto</div><div class="grid2">
+<div class="fld" style="grid-column:span 2"><span>Nome</span><div class="inp">Certificado Digital e-CNPJ</div></div>
+<div class="fld"><span>Slug</span><div class="inp">e-cnpj</div></div>
+<div class="fld"><span>Tipo de titular</span><div class="inp sel">PJ <i>▾</i></div></div>
+<div class="fld" style="grid-column:span 2"><span>Descrição curta</span><div class="inp">Para empresas. Emitir nota fiscal, acessar o e-CAC.</div></div>
+<div class="fld"><span>Ordem</span><div class="inp">2</div></div>
+<div class="fld"><span>Ativo</span><div class="inp sel">Sim <i>▾</i></div></div>
+</div>
+<p class="link">Tipo de titular define quais campos o formulário de emissão apresenta. Alterar aqui muda o checkout.</p></section><section class="blk"><div class="tag">Bloco 3 · variantes do produto</div><div class="row"><div></div><a class="btn">Nova variante</a></div><table><colgroup><col style="width:17%"><col style="width:8%"><col style="width:13%"><col style="width:14%"><col style="width:14%"><col style="width:13%"><col style="width:10%"><col style="width:11%"></colgroup><tr><th>SKU</th><th>Tipo</th><th>Validade</th><th>Preço</th><th>Promocional</th><th>Vigência</th><th>Padrão</th><th>Ativo</th></tr><tr><td>ECNPJ-A1-12</td><td>A1</td><td>12 meses</td><td>R$ 249,90</td><td>—</td><td>—</td><td>Sim</td><td>Sim</td></tr><tr><td>ECNPJ-A3-12</td><td>A3</td><td>12 meses</td><td>R$ 319,90</td><td>—</td><td>—</td><td>Não</td><td>Sim</td></tr><tr><td>ECNPJ-A3-24</td><td>A3</td><td>24 meses</td><td>R$ 429,90</td><td>R$ 389,00</td><td>até 31/08</td><td>Não</td><td>Sim</td></tr><tr><td>ECNPJ-A3-36</td><td>A3</td><td>36 meses</td><td>R$ 529,90</td><td>—</td><td>—</td><td>Não</td><td>Não</td></tr></table><p class="link">Preço vigente é o promocional quando preenchido e dentro da janela. Senão, o preço de tabela.</p></section><section class="blk alt"><div class="tag">Bloco 4 · edição de variante</div><div class="grid3">
+<div class="fld"><span>SKU</span><div class="inp">ECNPJ-A3-24</div></div>
+<div class="fld"><span>Tipo de certificado</span><div class="inp sel">A3 <i>▾</i></div></div>
+<div class="fld"><span>Validade em meses</span><div class="inp sel">24 <i>▾</i></div></div>
+<div class="fld"><span>Preço</span><div class="inp">429,90</div></div>
+<div class="fld"><span>Preço promocional</span><div class="inp">389,00</div></div>
+<div class="fld"><span>Vigência da promoção</span><div class="inp">01/08 a 31/08</div></div>
+<div class="fld"><span>Variante padrão</span><div class="inp sel">Não <i>▾</i></div></div>
+<div class="fld"><span>Ativo</span><div class="inp sel">Sim <i>▾</i></div></div>
+</div>
+<p class="link">O identificador do certificado no GFSIS entra aqui, caso o SKU não seja o número exigido pela API. Pendência 1 do documento de banco.</p></section></main>
+</div></div>
+</article><article class="page" id="pagamento">
+<div class="phead"><div><h1>Painel · formas de pagamento e cupons</h1><code>/painel/formas-pagamento/</code></div><div class="papel">Regra de desconto centralizada. Alterar aqui muda o catálogo inteiro.</div></div>
+<div class="browser">
+<div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><div class="url">painel.ardigitallock.com</div></div>
+<div class="adm">
+<aside><b>Digital Lock</b><span class="">Visão geral</span><span class="">Vendas</span><span class="">Fila de recuperação</span><span class="">Produtos</span><span class="">Clientes</span><span class="">Cupons</span><span class="on">Formas de pagamento</span><span class="">Relatórios</span><span class="">Configurações</span><div class="user">Leandro · admin</div></aside>
+<main><div class="admtop"><h3>Formas de pagamento</h3><span>Últimos 30 dias ▾</span></div><section class="blk"><div class="tag">Bloco 1 · formas de pagamento</div><table><colgroup><col style="width:14%"><col style="width:30%"><col style="width:14%"><col style="width:16%"><col style="width:12%"><col style="width:14%"></colgroup><tr><th>Código</th><th>Nome exibido</th><th>Desconto</th><th>Máx. parcelas</th><th>Ordem</th><th>Ativo</th></tr><tr><td>pix</td><td>Pix</td><td>5,00%</td><td>1</td><td>1</td><td>Sim</td></tr><tr><td>cartao</td><td>Cartão de crédito</td><td>0,00%</td><td>12</td><td>2</td><td>Sim</td></tr><tr><td>boleto</td><td>Boleto bancário</td><td>0,00%</td><td>1</td><td>3</td><td>Não</td></tr></table><p class="link">O percentual alimenta a exibição na página de produto e o recálculo no checkout.</p></section><section class="blk alt"><div class="tag">Bloco 2 · cupons</div><div class="row"><div></div><a class="btn p">Novo cupom</a></div><table><colgroup><col style="width:15%"><col style="width:13%"><col style="width:12%"><col style="width:9%"><col style="width:10%"><col style="width:17%"><col style="width:15%"><col style="width:9%"></colgroup><tr><th>Código</th><th>Tipo</th><th>Valor</th><th>Usos</th><th>Limite</th><th>Vigência</th><th>Restrição</th><th>Ativo</th></tr><tr><td>PRIMEIRA10</td><td>Percentual</td><td>10%</td><td>142</td><td>500</td><td>até 31/12</td><td>—</td><td>Sim</td></tr><tr><td>MEI20</td><td>Valor</td><td>R$ 20,00</td><td>38</td><td>100</td><td>até 30/09</td><td>ECNPJ-A1-12</td><td>Sim</td></tr><tr><td>BLACK25</td><td>Percentual</td><td>25%</td><td>0</td><td>1000</td><td>20/11 a 30/11</td><td>—</td><td>Não</td></tr></table></section><section class="blk"><div class="tag">Bloco 3 · edição de cupom</div><div class="grid3">
+<div class="fld"><span>Código</span><div class="inp">MEI20</div></div>
+<div class="fld"><span>Tipo</span><div class="inp sel">Valor <i>▾</i></div></div>
+<div class="fld"><span>Valor</span><div class="inp">20,00</div></div>
+<div class="fld"><span>Limite de usos</span><div class="inp">100</div></div>
+<div class="fld"><span>Limite por cliente</span><div class="inp">1</div></div>
+<div class="fld"><span>Restrito à variante</span><div class="inp sel">ECNPJ-A1-12 <i>▾</i></div></div>
+<div class="fld"><span>Válido de</span><div class="inp">01/08/2026</div></div>
+<div class="fld"><span>Válido até</span><div class="inp">30/09/2026</div></div>
+<div class="fld"><span>Ativo</span><div class="inp sel">Sim <i>▾</i></div></div>
+</div></section></main>
+</div></div>
+</article><article class="page" id="clientes">
+<div class="phead"><div><h1>Painel · clientes</h1><code>/painel/clientes/</code></div><div class="papel">Cliente é quem compra. Titular é quem recebe o certificado. Podem ser pessoas diferentes.</div></div>
+<div class="browser">
+<div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><div class="url">painel.ardigitallock.com</div></div>
+<div class="adm">
+<aside><b>Digital Lock</b><span class="">Visão geral</span><span class="">Vendas</span><span class="">Fila de recuperação</span><span class="">Produtos</span><span class="on">Clientes</span><span class="">Cupons</span><span class="">Formas de pagamento</span><span class="">Relatórios</span><span class="">Configurações</span><div class="user">Leandro · admin</div></aside>
+<main><div class="admtop"><h3>Clientes</h3><span>Últimos 30 dias ▾</span></div><section class="blk"><div class="tag">Bloco 1 · filtros e lista</div><div class="filtros"><span class="pill">Tipo de pessoa <i>▾</i></span><span class="pill">UF <i>▾</i></span><span class="pill">Período de cadastro <i>▾</i></span><span class="pill">Com certificado vencendo <i>▾</i></span><span class="pill busca">Buscar por nome, documento ou número do pedido</span></div><table><colgroup><col style="width:28%"><col style="width:20%"><col style="width:8%"><col style="width:24%"><col style="width:10%"><col style="width:14%"></colgroup><tr><th>Nome ou razão social</th><th>Documento</th><th>Tipo</th><th>E-mail</th><th>Pedidos</th><th>Última compra</th></tr><tr><td>Comércio Silva Ltda</td><td>11.222.333/0001-44</td><td>PJ</td><td>ana@comerciosilva.com</td><td>3</td><td>05/08/2026</td></tr><tr><td>Maria Souza</td><td>123.456.789-00</td><td>PF</td><td>maria@email.com</td><td>1</td><td>05/08/2026</td></tr><tr><td>Auto Peças Reis</td><td>44.555.666/0001-77</td><td>PJ</td><td>financeiro@reis.com</td><td>2</td><td>04/08/2026</td></tr></table><div class="pag"><span>Mostrando 1 a 25 de 312</span><span class="pgs"><i class="on">1</i><i>2</i><i>3</i><i>›</i></span></div></section><section class="blk alt"><div class="tag">Bloco 2 · ficha do cliente · dados</div><div class="grid3">
+<div class="fld" style="grid-column:span 2"><span>Razão social</span><div class="inp">Comércio Silva Ltda</div></div>
+<div class="fld"><span>Tipo de pessoa</span><div class="inp sel">PJ <i>▾</i></div></div>
+<div class="fld"><span>CNPJ</span><div class="inp">11.222.333/0001-44</div></div>
+<div class="fld"><span>E-mail</span><div class="inp">ana@comerciosilva.com</div></div>
+<div class="fld"><span>Telefone</span><div class="inp">(69) 99999-0000</div></div>
+</div>
+<div class="sec">Endereço</div>
+<div class="grid3">
+<div class="fld"><span>CEP</span><div class="inp">76900-000</div></div>
+<div class="fld" style="grid-column:span 2"><span>Logradouro</span><div class="inp">Rua Presbítero Honorato Pereira</div></div>
+<div class="fld"><span>Número</span><div class="inp">1625</div></div>
+<div class="fld"><span>Complemento</span><div class="inp"></div></div>
+<div class="fld"><span>Bairro</span><div class="inp">Nova Brasília</div></div>
+<div class="fld" style="grid-column:span 2"><span>Município</span><div class="inp">Ji-Paraná</div></div>
+<div class="fld"><span>UF</span><div class="inp sel">RO <i>▾</i></div></div>
+</div>
+<p class="link">Cada componente do endereço é campo próprio. Nunca um campo único de texto.</p></section><section class="blk"><div class="tag">Bloco 3 · histórico de pedidos</div><table><colgroup><col style="width:11%"><col style="width:20%"><col style="width:15%"><col style="width:15%"><col style="width:16%"><col style="width:23%"></colgroup><tr><th>Pedido</th><th>Produto</th><th>Valor</th><th>Pagamento</th><th>Emissão</th><th>Validade até</th></tr><tr><td>#1042</td><td>e-CNPJ A1</td><td>R$ 237,40</td><td>Pago</td><td>Emitido</td><td>05/08/2027</td></tr><tr><td>#0891</td><td>e-CNPJ A1</td><td>R$ 229,90</td><td>Pago</td><td>Emitido</td><td>12/08/2026</td></tr><tr><td>#0512</td><td>e-CPF A1</td><td>R$ 129,90</td><td>Pago</td><td>Emitido</td><td>Vencido</td></tr></table></section><section class="blk alt"><div class="tag">Bloco 4 · titulares vinculados</div><table><colgroup><col style="width:28%"><col style="width:22%"><col style="width:10%"><col style="width:20%"><col style="width:20%"></colgroup><tr><th>Titular</th><th>Documento</th><th>Tipo</th><th>Responsável</th><th>Certificado até</th></tr><tr><td>Comércio Silva Ltda</td><td>11.222.333/0001-44</td><td>PJ</td><td>Ana Silva</td><td>05/08/2027</td></tr><tr><td>Ana Silva</td><td>123.456.789-00</td><td>PF</td><td>—</td><td>Vencido</td></tr></table><p class="link">Vem de dados_emissao. É o que permite pré-preencher o formulário em compra recorrente.</p></section></main>
+</div></div>
+</article><article class="page" id="relatorios">
+<div class="phead"><div><h1>Painel · relatórios</h1><code>/painel/relatorios/</code></div><div class="papel">Nove relatórios. O de base de renovação é o de maior valor financeiro.</div></div>
+<div class="browser">
+<div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><div class="url">painel.ardigitallock.com</div></div>
+<div class="adm">
+<aside><b>Digital Lock</b><span class="">Visão geral</span><span class="">Vendas</span><span class="">Fila de recuperação</span><span class="">Produtos</span><span class="">Clientes</span><span class="">Cupons</span><span class="">Formas de pagamento</span><span class="on">Relatórios</span><span class="">Configurações</span><div class="user">Leandro · admin</div></aside>
+<main><div class="admtop"><h3>Relatórios</h3><span>Últimos 30 dias ▾</span></div><section class="blk"><div class="tag">Bloco 1 · seleção</div><div class="rels">
+<div class="rel on"><b>Vendas por período</b><span>Faturamento, quantidade e ticket médio</span></div>
+<div class="rel"><b>Vendas por produto</b><span>Por produto e por variante</span></div>
+<div class="rel"><b>Funil operacional</b><span>Do pedido criado ao certificado emitido</span></div>
+<div class="rel"><b>Pagos sem dados</b><span>Aging da fila de recuperação</span></div>
+<div class="rel"><b>Base de renovação</b><span>Vencimentos em 30, 60 e 90 dias</span></div>
+<div class="rel"><b>Atribuição</b><span>Vendas por campanha, origem e gclid</span></div>
+<div class="rel"><b>Conciliação do gateway</b><span>Bruto, taxa, líquido e previsão de repasse</span></div>
+<div class="rel"><b>Estornos</b><span>Volume, motivo e taxa sobre faturamento</span></div>
+<div class="rel"><b>Cupons</b><span>Uso, desconto concedido e receita associada</span></div>
+</div></section><section class="blk alt"><div class="tag">Bloco 2 · exemplo · vendas por período</div><div class="filtros"><span class="pill">Período <i>▾</i></span><span class="pill">Produto <i>▾</i></span><span class="pill">Forma de pagamento <i>▾</i></span><span class="pill">Origem <i>▾</i></span><span class="pill busca">Buscar por nome, documento ou número do pedido</span></div><div class="kpis"><div class="kpi"><span>Faturamento</span><b>R$ 38.420</b></div><div class="kpi"><span>Pedidos</span><b>312</b></div><div class="kpi"><span>Ticket médio</span><b>R$ 123,10</b></div><div class="kpi"><span>Descontos</span><b>R$ 2.180</b></div></div><div class="chart"><span>Gráfico de linha · faturamento diário</span></div><table><colgroup><col style="width:16%"><col style="width:16%"><col style="width:24%"><col style="width:22%"><col style="width:22%"></colgroup><tr><th>Dia</th><th>Pedidos</th><th>Faturamento</th><th>Ticket médio</th><th>Desconto</th></tr><tr><td>05/08</td><td>14</td><td>R$ 1.842,60</td><td>R$ 131,61</td><td>R$ 96,40</td></tr><tr><td>04/08</td><td>11</td><td>R$ 1.396,30</td><td>R$ 126,94</td><td>R$ 74,20</td></tr><tr><td>03/08</td><td>9</td><td>R$ 1.024,10</td><td>R$ 113,79</td><td>R$ 58,90</td></tr></table><div class="row2"><a class="btn">Exportar CSV</a><a class="btn">Exportar PDF</a></div></section><section class="blk"><div class="tag">Bloco 3 · exemplo · base de renovação</div><table><colgroup><col style="width:24%"><col style="width:22%"><col style="width:15%"><col style="width:15%"><col style="width:9%"><col style="width:15%"></colgroup><tr><th>Titular</th><th>Documento</th><th>Produto</th><th>Vence em</th><th>Dias</th><th>Contato</th></tr><tr><td>Padaria Central</td><td>22.333.444/0001-55</td><td>e-CNPJ A1</td><td>18/08/2026</td><td><b class="er">13</b></td><td><a class="btn xs">WhatsApp</a></td></tr><tr><td>João Pereira</td><td>987.654.321-00</td><td>e-CPF A1</td><td>29/08/2026</td><td><b class="wr">24</b></td><td><a class="btn xs">WhatsApp</a></td></tr><tr><td>Transportes RO</td><td>55.666.777/0001-88</td><td>e-CNPJ A3</td><td>15/09/2026</td><td>41</td><td><a class="btn xs">WhatsApp</a></td></tr></table><p class="link">Alimentado por certificado_validade_fim e pelo endpoint de certificados a vencer do GFSIS. Receita recorrente sem custo de mídia.</p></section></main>
+</div></div>
+</article>
+</div>
+<a class="top" href="#">↑ Topo</a>
+</body>
+</html>

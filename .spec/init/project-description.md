@@ -46,7 +46,8 @@ fechada).
   (e-CPF vs. e-CNPJ vs. MEI).
 - **SKU de certificado:** unidade de venda do catálogo. Existem 4: e-CPF A1, e-CPF A3, e-CNPJ A1, e-CNPJ A3.
 - **Emissão por videoconferência:** validação de identidade ao vivo, feita em plataforma própria da
-  certificadora (fora do escopo de construção deste site), que substitui o deslocamento físico do cliente.
+  certificadora (sistema GFSIS, fora do escopo de construção deste site), que substitui o deslocamento físico
+  do cliente.
 - **Banco de FAQ:** banco mestre único e categorizado de perguntas frequentes, com 9 categorias (1. Antes de
   comprar, 2. Compra e pagamento, 3. Videoconferência e validação, 4. Emissão e instalação, 5. Uso do
   certificado, 6. Renovação e vencimento, 7. MEI, 8. Revogação/garantia/devolução, 9. Suporte e atendimento).
@@ -95,7 +96,8 @@ fechada).
 | Hospedagem | cPanel (deploy via SSH) |
 | Execução de fila em produção | `Schedule::command('queue:work --stop-when-empty')` a cada minuto via cron (cPanel compartilhado não sustenta worker persistente) |
 | Painel administrativo | Livewire próprio (inclinação da equipe — consistente com o restante do site, que já usa Livewire + Flux; decisão final ainda pendente de confirmação) |
-| Gateway de pagamento | Em aberto — não decidido |
+| Gateway de pagamento | Safe2Pay |
+| Sistema de emissão | GFSIS — sistema da Autoridade Certificadora que recebe os dados do titular, orquestra a validação por videoconferência e emite o certificado; integração feita pelo e-commerce via API/webhook |
 | Provedor de e-mail | Em aberto — decisão adiada pela equipe |
 
 **Identidade visual** (extraída do site real da Digital Lock, não inventada): cor primária de marca `#E40044`,
@@ -121,7 +123,11 @@ venda; estrutura de redirecionamento planejada como parte do desenvolvimento, n�
 `docs/oficial-docs/`): `Digital Lock | Estrutura e Conteúdo do E-commerce, v1.0` (34 páginas — sitemap completo,
 regras de URL, copy bloco a bloco de cada página, banco de FAQ com 9 categorias, regras transversais de
 conteúdo e nomenclatura, pendências) e `Digital Lock | Wireframes das Páginas, v1.0` (estrutura visual bloco a
-bloco das 9 páginas, hierarquia de componentes confirmada).
+bloco das 9 páginas, hierarquia de componentes confirmada). Um terceiro documento, `Digital Lock | Estrutura de
+Banco de Dados, v1.0` (05/08/2026, em `.spec/init/`), é a fonte de verdade do modelo de dados — tabelas, campos,
+relacionamentos e as convenções de banco (CPF/CNPJ só dígitos, valores monetários em `decimal(10,2)`, sem
+exclusão de registro histórico) — e é quem decide o gateway de pagamento (Safe2Pay) e nomeia o sistema de
+emissão (GFSIS) acima.
 
 **Regras de nomenclatura (uso obrigatório em todo texto voltado ao cliente):** "Certificado Digital" (nunca
 "Certificado" isolado), "e-CNPJ"/"e-CPF" (nunca "PJ"/"PF" isolados), "AC Digital Múltipla" (nunca "AC Digital"),
@@ -138,7 +144,7 @@ bloco das 9 páginas, hierarquia de componentes confirmada).
    contexto de venda.
 2. Cliente inicia o checkout. Cadastro é obrigatório para prosseguir, mas quem se cadastra **não precisa ser o
    titular do certificado** (ex.: contador comprando para o cliente).
-3. Pagamento é realizado, com **Pix como forma prioritária** (gateway ainda não decidido).
+3. Pagamento é realizado, com **Pix como forma prioritária**, via gateway **Safe2Pay**.
 4. Pagamento confirmado → nota fiscal da compra é emitida → cliente recebe e-mail com link de agendamento de
    videoconferência.
 5. Validação de identidade ao vivo acontece na plataforma própria da certificadora (fora do escopo deste
@@ -198,8 +204,6 @@ rotas desta fase estão definidos na feature spec correspondente, a ser produzid
 
 ## Open Questions
 
-- **Gateway de pagamento:** ainda não decidido pela equipe (Pix é a forma prioritária, mas o provedor está em
-  aberto).
 - **Provedor de e-mail:** decisão adiada pela equipe (necessário para o e-mail de agendamento de
   videoconferência no fluxo de emissão).
 - **Ferramenta do painel administrativo:** inclinação da equipe é por Livewire próprio (consistência com o

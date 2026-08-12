@@ -15,7 +15,21 @@
       "Bash(unzip -q pypdf.whl -d .)",
       "Bash(vendor/bin/sail artisan)",
       "Bash(curl -s http://localhost/)",
-      "Bash(vendor/bin/sail bin *)"
+      "Bash(vendor/bin/sail bin *)",
+      "Skill(bc-harness:init:user-stories)",
+      "Skill(bc-harness:init:project-phases)",
+      "Bash(grep -c '```mermaid' \".spec/features/telas-mockup-checkout-conta-painel/SPEC.md\")",
+      "Bash(grep -c '^```$' \".spec/features/telas-mockup-checkout-conta-painel/SPEC.md\")",
+      "Bash(grep -n -i \"customers\\\\b\\\\|^### \\\\`users\\\\`\\\\|^### \\\\`customers\\\\`\\\\|table.*users\\\\|table.*customers\" .spec/init/database-schema.md)",
+      "Bash(python3)",
+      "Bash(vendor/bin/sail ps *)",
+      "Bash(grep -c '```mermaid' SPEC.md)",
+      "Bash(grep -c '^```$' SPEC.md)",
+      "Bash(perl -pi -e 's/\\\\$table->unsignedDecimal\\\\\\('\\\\''\\([a-z_]+\\)'\\\\'',\\\\s*\\(\\\\d+\\),\\\\s*\\(\\\\d+\\)\\\\\\)/\\\\$table->decimal\\('\\\\''$1'\\\\'', $2, $3\\)->unsigned\\(\\)/g' database/migrations/*.php)",
+      "Bash(cd *)",
+      "Bash(awk '/^- \\\\[ \\\\]/{c++} /Acceptance criteria:/{a++} END{print \"checkboxes=\"c, \"ac_lines=\"a}' PHASES.md)",
+      "Bash(perl -pi -e 's/fake\\\\\\(\\\\\\)->unique\\\\\\(\\\\\\)->randomElement/fake\\(\\)->randomElement/g; s/fake\\\\\\(\\\\\\)->unique\\\\\\(\\\\\\)->word\\\\\\(\\\\\\)/fake\\(\\)->word\\(\\)/g' database/factories/RoleFactory.php database/factories/RefundReasonFactory.php database/factories/OrderStatusFactory.php database/factories/GfsisStatusFactory.php database/factories/HolderTypeFactory.php database/factories/PaymentMethodFactory.php database/factories/QueueJobStatusFactory.php database/factories/CouponTypeFactory.php database/factories/PaymentStatusFactory.php database/factories/CertificateFormatFactory.php database/factories/OrderFulfillmentStatusFactory.php database/factories/AdsConversionStatusFactory.php database/factories/DeviceTypeFactory.php)",
+      "Bash(vendor/bin/sail artisan *)"
     ]
   },
   "enabledMcpjsonServers": [

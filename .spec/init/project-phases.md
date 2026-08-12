@@ -1,6 +1,6 @@
 # Digital Lock E-commerce — Project Phases
 
-<!-- inputs: project-description.md@sha256:cb6009f4181e user-stories.md@sha256:5fb32d8adb92 database-schema.md@sha256:87d4ac98566e -->
+<!-- inputs: project-description.md@sha256:049af1f19974 user-stories.md@sha256:86bca8f6f097 database-schema.md@sha256:d408a546634e -->
 
 ## Overview
 
@@ -581,8 +581,8 @@ a página mais usada pelo atendimento. · **Depends on:** Phase 1 · **Covers:**
 - [ ] **Task:** Bloco 10 — banco integral de perguntas (9 categorias)
   - **Acceptance criteria:**
     - `x-eyebrow` "Banco integral de perguntas · nove categorias"
-    - Chips visuais das 9 categorias (1 a 9, nomes conforme `database-schema.md` → Lookup Table Seeds →
-      `faq_categories`)
+    - Chips visuais das 9 categorias (1 a 9, nomes conforme `project-description.md` → Key Concepts → Banco de
+      FAQ)
     - `x-faq-accordion` com o banco completo de perguntas (todas as 9 categorias), cada pergunta com âncora
       própria
   - **Design ref:** `.spec/init/design/Digital Lock Mockups.dc.html#emitir`
@@ -700,4 +700,24 @@ a página mais usada pelo atendimento. · **Depends on:** Phase 1 · **Covers:**
   - **Traces:** US-5.3
 
 ---
+
+## Open Questions
+
+- **Phases 11–20 (banco, models, checkout, pagamento, GFSIS, painel administrativo) permanecem adiadas para um
+  próximo re-run deste comando** — decisão confirmada nesta sessão (2026-08-11). Nenhuma das 34 tabelas de
+  `database-schema.md` (14 de lookup + 20 de domínio) está coberta por task nesta versão do documento; a
+  cobertura mecânica de tabela→task só se aplica a partir do dia em que essas phases forem escritas. Pelo mesmo
+  motivo, as stories funcionais/backend ainda não têm task própria — **excluídas por decisão do desenvolvedor,
+  não por esquecimento**: US-2.3 (cadastro no checkout), US-2.4 (pagamento Pix/Safe2Pay), US-2.5 (nota fiscal),
+  US-3.2 (e-mail de agendamento), US-3.3 (agendar/realizar videoconferência via GFSIS), US-3.4 (baixar/instalar
+  certificado), US-5.5 (arrependimento/reembolso), US-5.6 (revogação), US-7.1/US-7.2/US-7.3 (painel
+  administrativo).
+- **`database-schema.md` não tem mais tabela para o banco de FAQ, casos de uso do Hub e tabela de problemas do
+  Suporte** (`faq_categories`, `faq_questions`, `use_cases`, `support_issues` foram removidas do schema nesta
+  sessão, para mantê-lo 1:1 com `Digital Lock | Estrutura de Banco de Dados, v1.0`, que não cobre esse escopo).
+  Isso não bloqueia as Phases 1–10 (conteúdo estático, sem banco), mas **bloqueia a implementação futura de
+  US-7.1, US-7.2 e US-7.3** (Feature Area 7 — edição sem deploy pelo painel administrativo) e da parte editável
+  de US-5.4 (tabela de problemas de uso), já que hoje não existe tabela para persistir esse conteúdo. Antes de
+  detalhar a Phase do painel administrativo, `database-schema.md` precisa de um adendo com essas tabelas (fora
+  do escopo do documento de referência, teria que ser modelado à parte, como na versão anterior deste schema).
 

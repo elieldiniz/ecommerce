@@ -1,6 +1,6 @@
 # Digital Lock E-commerce — User Stories
 
-<!-- inputs: project-description.md@sha256:cb6009f4181e -->
+<!-- inputs: project-description.md@sha256:049af1f19974 -->
 
 ## Overview
 
@@ -164,7 +164,7 @@ quem pagou.
 - [ ] Pix aparece como primeira opção no checkout, sinalizado como o mais rápido, com confirmação imediata
 - [ ] Se boleto for adicionado futuramente, toda menção a confirmação imediata é ressalvada, informando
       compensação de 1 a 3 dias úteis e que o agendamento só libera depois disso
-- [ ] Gateway de pagamento definitivo é uma decisão em aberto (ver Open Questions da descrição do projeto)
+- [ ] Gateway de pagamento é o Safe2Pay, conforme `Digital Lock | Estrutura de Banco de Dados, v1.0`
 
 **Expected Result:** o pagamento via Pix confirma na hora e libera o próximo passo do fluxo (agendamento).
 
@@ -227,7 +227,8 @@ escolher
 - [ ] Elegibilidade exige pelo menos uma das condições: certificado digital emitido a partir de 2018 com
       biometria facial e digital em qualquer AR, ou CNH emitida/renovada a partir de 2017
 - [ ] Cliente tem 180 dias, contados da compra, para concluir a validação e a emissão
-- [ ] A validação em si ocorre em plataforma própria da certificadora, fora do escopo de construção deste site
+- [ ] A validação em si ocorre em plataforma própria da certificadora (sistema GFSIS), fora do escopo de
+      construção deste site
 - [ ] Se a validação for reprovada, o cliente corrige o apontado e reagenda sem custo adicional
 
 **Expected Result:** o cliente elegível conclui a validação remotamente, dentro do prazo de 180 dias.
@@ -580,9 +581,9 @@ linha de código, sem necessidade de correção posterior.
 
 ## Open Questions
 
-- **Gateway de pagamento e provedor de e-mail:** ainda em aberto (ver Open Questions da descrição do projeto).
-  Bloqueiam a implementação funcional de US-2.4, US-2.5 e US-3.2, mas não bloqueiam as stories de conteúdo
-  estático desta fase.
+- **Provedor de e-mail:** ainda em aberto (ver Open Questions da descrição do projeto). Bloqueia a implementação
+  funcional de US-3.2, mas não bloqueia as stories de conteúdo estático desta fase. Gateway de pagamento já
+  decidido (Safe2Pay, `Digital Lock | Estrutura de Banco de Dados, v1.0`) — não bloqueia mais US-2.4/US-2.5.
 - **Ferramenta do painel administrativo:** inclinação por Livewire próprio, decisão final pendente. Bloqueia a
   implementação funcional das stories da Feature Area 7.
 - **Página de parceria com contadores/ERP:** decisão de negócio ainda não fechada; nenhuma story foi criada
