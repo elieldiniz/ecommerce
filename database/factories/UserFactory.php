@@ -26,7 +26,7 @@ class UserFactory extends Factory
     public function definition(): array
     {
         return [
-            'role_id' => fn () => Role::inRandomOrder()->first()?->id ?? Role::factory()->create()->id,
+            'role_id' => fn () => Role::inRandomOrder()->value('id') ?? Role::factory()->create()->id,
             'name' => fake()->name(),
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),

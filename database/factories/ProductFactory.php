@@ -25,7 +25,7 @@ class ProductFactory extends Factory
         return [
             'slug' => $slug,
             'name' => $name,
-            'holder_type_id' => fn () => HolderType::inRandomOrder()->first()?->id ?? HolderType::factory()->create()->id,
+            'holder_type_id' => fn () => HolderType::inRandomOrder()->value('id') ?? HolderType::factory()->create()->id,
             'short_description' => fake()->sentence(),
             'is_active' => true,
             'position' => fake()->numberBetween(0, 10),

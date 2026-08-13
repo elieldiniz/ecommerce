@@ -22,7 +22,7 @@ class RefundFactory extends Factory
     {
         return [
             'payment_id' => Payment::factory(),
-            'reason_id' => fn () => RefundReason::inRandomOrder()->first()?->id ?? RefundReason::factory()->create()->id,
+            'reason_id' => fn () => RefundReason::inRandomOrder()->value('id') ?? RefundReason::factory()->create()->id,
             'user_id' => User::factory(),
             'amount' => fake()->randomFloat(2, 100, 400),
             'requires_revocation' => false,

@@ -29,7 +29,11 @@
       "Bash(cd *)",
       "Bash(awk '/^- \\\\[ \\\\]/{c++} /Acceptance criteria:/{a++} END{print \"checkboxes=\"c, \"ac_lines=\"a}' PHASES.md)",
       "Bash(perl -pi -e 's/fake\\\\\\(\\\\\\)->unique\\\\\\(\\\\\\)->randomElement/fake\\(\\)->randomElement/g; s/fake\\\\\\(\\\\\\)->unique\\\\\\(\\\\\\)->word\\\\\\(\\\\\\)/fake\\(\\)->word\\(\\)/g' database/factories/RoleFactory.php database/factories/RefundReasonFactory.php database/factories/OrderStatusFactory.php database/factories/GfsisStatusFactory.php database/factories/HolderTypeFactory.php database/factories/PaymentMethodFactory.php database/factories/QueueJobStatusFactory.php database/factories/CouponTypeFactory.php database/factories/PaymentStatusFactory.php database/factories/CertificateFormatFactory.php database/factories/OrderFulfillmentStatusFactory.php database/factories/AdsConversionStatusFactory.php database/factories/DeviceTypeFactory.php)",
-      "Bash(vendor/bin/sail artisan *)"
+      "Bash(vendor/bin/sail artisan *)",
+      "Bash(perl -pi -e \"s/inRandomOrder\\\\\\(\\\\\\)->first\\\\\\(\\\\\\)\\\\?->id/inRandomOrder\\(\\)->value\\('id'\\)/g\" database/factories/*.php)",
+      "Bash(git status *)",
+      "Bash(vendor/bin/sail up *)",
+      "Bash(vendor/bin/sail exec *)"
     ]
   },
   "enabledMcpjsonServers": [

@@ -21,7 +21,7 @@ class AdsConversionFactory extends Factory
     {
         return [
             'order_id' => Order::factory(),
-            'status_id' => fn () => AdsConversionStatus::inRandomOrder()->first()?->id ?? AdsConversionStatus::factory()->create()->id,
+            'status_id' => fn () => AdsConversionStatus::inRandomOrder()->value('id') ?? AdsConversionStatus::factory()->create()->id,
             'transaction_id' => fake()->unique()->uuid(),
             'gclid' => null,
             'amount' => fake()->randomFloat(2, 100, 400),

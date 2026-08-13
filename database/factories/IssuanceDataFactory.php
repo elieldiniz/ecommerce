@@ -22,7 +22,7 @@ class IssuanceDataFactory extends Factory
     {
         return [
             'order_item_id' => OrderItem::factory(),
-            'holder_type_id' => fn () => HolderType::inRandomOrder()->first()?->id ?? HolderType::factory()->create()->id,
+            'holder_type_id' => fn () => HolderType::inRandomOrder()->value('id') ?? HolderType::factory()->create()->id,
             'holder_name' => fake()->name(),
             'document' => fake()->numerify('###########'),
             'birth_date' => fake()->date(),

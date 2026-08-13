@@ -9,7 +9,7 @@ Antes de implementar, leia:
 1. `.spec/features/telas-mockup-checkout-conta-painel/SPEC.md` — requisitos RIGID que esta fase cobre
 2. `.spec/features/telas-mockup-checkout-conta-painel/PLAN.md` — decomposição completa, dependências e riscos
 
-- [ ] T01 — Componente `x-checkout-steps`
+- [x] T01 — Componente `x-checkout-steps`
       Arquivos: `resources/views/components/checkout-steps.blade.php`
       Mudança: Indicador de 3 passos ("1. Carrinho", "2. Dados e pagamento", "3. Dados de emissão") como
       componente único. Prop `:passo-ativo` (1|2|3) destaca o passo atual (fundo `--color-highlight`, texto
@@ -22,7 +22,7 @@ Antes de implementar, leia:
       Testes: `tests/Feature/Components/CheckoutStepsTest.php` — asserta os 3 rótulos e a marcação de
       ativo/concluído por valor de `:passo-ativo`.
 
-- [ ] T02 — Componente `x-checkout-header`
+- [x] T02 — Componente `x-checkout-header`
       Arquivos: `resources/views/components/checkout-header.blade.php`
       Mudança: Cabeçalho reduzido de fluxo (logo "digital**lock**" + texto de contexto via prop `:contexto`
       — "Compra segura" nas 3 telas de compra, "Minha conta" na tela de pedidos — + link fixo "Ajuda" em
@@ -37,7 +37,7 @@ Antes de implementar, leia:
       Testes: `tests/Feature/Components/CheckoutHeaderTest.php` — testa os 2 valores de `:contexto` e a ausência
       das marcações de `x-layout`/`x-breadcrumb`.
 
-- [ ] T03 — Componente `x-admin-layout`
+- [x] T03 — Componente `x-admin-layout`
       Arquivos: `resources/views/components/admin-layout.blade.php`
       Mudança: Layout comum do painel: sidebar fundo `--color-ink`, wordmark "digital**lock**", os 7 itens de
       navegação em escopo (Visão geral, Vendas, Fila de recuperação, Produtos, Formas de pagamento, Clientes,
@@ -51,7 +51,7 @@ Antes de implementar, leia:
       Testes: `tests/Feature/Components/AdminLayoutTest.php` — testa os 7 valores de `:item-ativo` e a ausência
       das marcações dos outros layouts.
 
-- [ ] T04 — Componente `x-badge-status`
+- [x] T04 — Componente `x-badge-status`
       Arquivos: `resources/views/components/badge-status.blade.php`
       Mudança: Badge único com prop `:variante` (`emitido`/`agendado`/`aguardando`/`erro`/`neutro`), cada
       variante com combinação fixa de cor de fundo/texto dentro da paleta de tokens (`emitido` fundo
@@ -64,7 +64,7 @@ Antes de implementar, leia:
       Testes: `tests/Feature/Components/BadgeStatusTest.php` — testa as 5 variantes e a ausência de cor hex fora
       da lista permitida.
 
-- [ ] T05 — Componentes de apoio ao painel: `x-kpi-card`, `x-funil-operacional`, `x-timeline`
+- [x] T05 — Componentes de apoio ao painel: `x-kpi-card`, `x-funil-operacional`, `x-timeline`
       Arquivos: `resources/views/components/kpi-card.blade.php`,
       `resources/views/components/funil-operacional.blade.php`, `resources/views/components/timeline.blade.php`
       Mudança: `x-kpi-card` (props rótulo, valor, texto de apoio opcional); `x-funil-operacional` (prop com
@@ -77,7 +77,7 @@ Antes de implementar, leia:
       recebida).
       Testes: `tests/Feature/Components/PainelSupportComponentsTest.php` — 1 método por componente.
 
-- [ ] T06 — Controller de emissão (`Pedido\ShowEmissaoController`)
+- [x] T06 — Controller de emissão (`Pedido\ShowEmissaoController`)
       Arquivos: `app/Http/Controllers/Pedido/ShowEmissaoController.php`
       Mudança: Single Action Controller (`__invoke(Request $request, int|string $id)`). Lê `?tipo=pj` da query
       string (default PF quando ausente) e retorna `view('pages.pedido.emissao', [...])` com o `$id` e o tipo de
@@ -90,7 +90,7 @@ Antes de implementar, leia:
       Testes: cobertura funcional incluída em `tests/Feature/Pages/Pedido/EmissaoTest.php` (T11-T14); checklist
       RNF-04 verificado em T36.
 
-- [ ] T07 — Registrar as 13 rotas em `routes/web.php`
+- [x] T07 — Registrar as 13 rotas em `routes/web.php`
       Arquivos: `routes/web.php`
       Mudança: Adicionar as 4 rotas públicas de loja fora de qualquer middleware (`checkout/`,
       `pedido/{id}/pagamento/` via `Route::view()`, `pedido/{id}/emissao/` via
@@ -112,7 +112,7 @@ Antes de implementar, leia:
 1. `.spec/features/telas-mockup-checkout-conta-painel/SPEC.md` — requisitos RIGID que esta fase cobre
 2. `.spec/features/telas-mockup-checkout-conta-painel/PLAN.md` — decomposição completa, dependências e riscos
 
-- [ ] T08 — Checkout: rota, esqueleto, `x-checkout-header`, `x-checkout-steps`, blocos "Seus dados" e "Como você prefere pagar"
+- [x] T08 — Checkout: rota, esqueleto, `x-checkout-header`, `x-checkout-steps`, blocos "Seus dados" e "Como você prefere pagar"
       Arquivos: `resources/views/pages/checkout.blade.php`
       Mudança: `<x-checkout-header contexto="Compra segura" />`, `<x-checkout-steps :passo-ativo="2" />`, bloco
       "Seus dados" com os 6 campos + checkbox de opt-in, bloco "Como você prefere pagar" com as 3 opções e Pix
@@ -125,7 +125,7 @@ Antes de implementar, leia:
       `::test_block_seus_dados_renders_six_fields_and_opt_in`,
       `::test_block_forma_pagamento_renders_three_options_pix_selected`.
 
-- [ ] T09 — Checkout: bloco "Seu pedido" (resumo lateral)
+- [x] T09 — Checkout: bloco "Seu pedido" (resumo lateral)
       Arquivos: `resources/views/pages/checkout.blade.php`
       Mudança: Resumo lateral fixo com item comprado, campo de cupom + botão "Aplicar", subtotal, desconto de
       cupom, desconto do Pix, total e botão "Finalizar compra" sem `action`/`method` funcional.
@@ -134,7 +134,7 @@ Antes de implementar, leia:
       "Finalizar compra" não tem `method="POST"` real associado.
       Testes: `tests/Feature/Pages/CheckoutTest.php::test_block_resumo_renders_summary_and_finalizar_button_without_real_submission`.
 
-- [ ] T10 — Pagamento Pix: rota, esqueleto, `x-checkout-header`, `x-checkout-steps`, blocos "Escaneie para pagar" e "Variação boleto"
+- [x] T10 — Pagamento Pix: rota, esqueleto, `x-checkout-header`, `x-checkout-steps`, blocos "Escaneie para pagar" e "Variação boleto"
       Arquivos: `resources/views/pages/pedido/pagamento.blade.php`
       Mudança: `<x-checkout-header contexto="Compra segura" />` + `<x-checkout-steps :passo-ativo="2" />`. Bloco
       "Escaneie para pagar": placeholder de QR Code, "Pedido #{{ $id }} · R$ [VALOR]", copia-e-cola truncado +
@@ -147,7 +147,7 @@ Antes de implementar, leia:
       Testes: `tests/Feature/Pages/Pedido/PagamentoTest.php` — asserta os 5 elementos, o texto da variação
       boleto e a ausência de polling real.
 
-- [ ] T11 — Emissão: rota (controller), esqueleto, `x-checkout-header`, `x-checkout-steps`, blocos "Confirmação" e "O que acontece agora"
+- [x] T11 — Emissão: rota (controller), esqueleto, `x-checkout-header`, `x-checkout-steps`, blocos "Confirmação" e "O que acontece agora"
       Arquivos: `resources/views/pages/pedido/emissao.blade.php`
       Mudança: `<x-checkout-header contexto="Compra segura" />` + `<x-checkout-steps :passo-ativo="3" />`. Bloco
       "Confirmação": ícone de check, "Pagamento confirmado", "Pedido #{{ $id }} · R$ [VALOR] no Pix" — idêntico
@@ -162,7 +162,7 @@ Antes de implementar, leia:
       Testes: `tests/Feature/Pages/Pedido/EmissaoTest.php::test_block_confirmacao_renders_success_icon_order_and_value`,
       `::test_block_o_que_acontece_agora_reuses_passo_a_passo_component`.
 
-- [ ] T12 — Emissão PF: seções "Titular" e "Endereço"
+- [x] T12 — Emissão PF: seções "Titular" e "Endereço"
       Arquivos: `resources/views/pages/pedido/partials/emissao-pf.blade.php`
       Mudança: Seção "Titular" com os 5 campos (nome completo, CPF, data de nascimento, e-mail, telefone com
       DDD). Seção "Endereço" com os 7 campos independentes (CEP, logradouro, número, complemento, bairro,
@@ -172,7 +172,7 @@ Antes de implementar, leia:
       seção "Empresa".
       Testes: `tests/Feature/Pages/Pedido/EmissaoTest.php::test_pf_variation_renders_titular_and_endereco_sections`.
 
-- [ ] T13 — Emissão PJ: seções "Empresa", "Responsável" e "Endereço da empresa"
+- [x] T13 — Emissão PJ: seções "Empresa", "Responsável" e "Endereço da empresa"
       Arquivos: `resources/views/pages/pedido/partials/emissao-pj.blade.php`
       Mudança: Seção "Empresa" com os 4 campos (razão social, CNPJ, e-mail da empresa, telefone com DDD) no
       lugar de "Titular". Seção "Responsável pelo uso do certificado" com os 5 campos + texto explicativo. Seção
@@ -182,7 +182,7 @@ Antes de implementar, leia:
       Endereço da empresa) e não mostra a seção "Titular".
       Testes: `tests/Feature/Pages/Pedido/EmissaoTest.php::test_pj_variation_renders_empresa_responsavel_and_endereco_da_empresa_sections`.
 
-- [ ] T14 — Emissão: teste de paridade PF×PJ (RF-13)
+- [x] T14 — Emissão: teste de paridade PF×PJ (RF-13)
       Arquivos: `tests/Feature/Pages/Pedido/EmissaoTest.php`
       Mudança: Nenhuma mudança de view. Requisita a mesma rota sem query string e com `?tipo=pj`, extrai o HTML
       dos blocos "Confirmação" e "O que acontece agora" e assere que texto/estrutura é idêntico entre as duas
@@ -198,7 +198,7 @@ Antes de implementar, leia:
 1. `.spec/features/telas-mockup-checkout-conta-painel/SPEC.md` — requisitos RIGID que esta fase cobre
 2. `.spec/features/telas-mockup-checkout-conta-painel/PLAN.md` — decomposição completa, dependências e riscos
 
-- [ ] T15 — Minha conta: rota, esqueleto, `x-checkout-header`, 3 cartões de pedido por estado
+- [x] T15 — Minha conta: rota, esqueleto, `x-checkout-header`, 3 cartões de pedido por estado
       Arquivos: `resources/views/pages/minha-conta/pedidos.blade.php`
       Mudança: `<x-checkout-header contexto="Minha conta" />` — sem `x-checkout-steps` (esta tela não faz parte
       do funil de 3 passos). 3 cartões de pedido de exemplo usando `<x-badge-status>`: "Emitido" (titular,
@@ -212,7 +212,7 @@ Antes de implementar, leia:
       Testes: `tests/Feature/Pages/MinhaConta/PedidosTest.php::test_route_renders_the_pedidos_view`,
       `::test_renders_three_order_cards_one_per_state_with_state_specific_fields_and_buttons`.
 
-- [ ] T16 — Minha conta: tabela "Estados possíveis"
+- [x] T16 — Minha conta: tabela "Estados possíveis"
       Arquivos: `resources/views/pages/minha-conta/pedidos.blade.php`
       Mudança: Tabela com as 5 linhas exatas do mockup (Faltam seus dados, Em processamento, Agendado, Emitido,
       Vencendo) e coluna "Origem" com o nome do campo do banco (uso apenas como texto mock).
@@ -226,7 +226,7 @@ Antes de implementar, leia:
 1. `.spec/features/telas-mockup-checkout-conta-painel/SPEC.md` — requisitos RIGID que esta fase cobre
 2. `.spec/features/telas-mockup-checkout-conta-painel/PLAN.md` — decomposição completa, dependências e riscos
 
-- [ ] T17 — Painel visão geral: rota, `x-admin-layout`, blocos "Indicadores" e "Funil operacional"
+- [x] T17 — Painel visão geral: rota, `x-admin-layout`, blocos "Indicadores" e "Funil operacional"
       Arquivos: `resources/views/pages/painel/visao-geral.blade.php`
       Mudança: `<x-admin-layout item-ativo="visao-geral" titulo="Visão geral">`. Bloco "Indicadores": 5×
       `<x-kpi-card>` (Faturamento, Ticket médio, Taxa de conversão, Aguardando dados, Falha de integração) com
@@ -241,7 +241,7 @@ Antes de implementar, leia:
       `::test_block_indicadores_renders_five_kpi_cards`,
       `::test_block_funil_renders_five_stages_with_conversion`.
 
-- [ ] T18 — Painel visão geral: blocos "Exige ação" e "Vendas por dia"
+- [x] T18 — Painel visão geral: blocos "Exige ação" e "Vendas por dia"
       Arquivos: `resources/views/pages/painel/visao-geral.blade.php`
       Mudança: Tabela "Exige ação" com as 5 filas exatas (Pagos sem dados de emissão, Falha de envio ao GFSIS,
       Conversões não enviadas, Reembolsos pendentes, Certificados vencendo em 30 dias), quantidade, "mais
@@ -253,7 +253,7 @@ Antes de implementar, leia:
       Testes: `tests/Feature/Pages/Painel/VisaoGeralTest.php::test_block_exige_acao_renders_five_queues`,
       `::test_block_vendas_por_dia_renders_chart_placeholder`.
 
-- [ ] T19 — Painel vendas: rota, `x-admin-layout`, blocos "Filtros" e tabela de pedidos
+- [x] T19 — Painel vendas: rota, `x-admin-layout`, blocos "Filtros" e tabela de pedidos
       Arquivos: `resources/views/pages/painel/vendas/index.blade.php`
       Mudança: `<x-admin-layout item-ativo="vendas" titulo="Vendas">`. Bloco "Filtros" com os 7 controles
       (Período, Status do pagamento, Status da emissão, Forma de pagamento, Produto, Origem, busca), todos
@@ -268,7 +268,7 @@ Antes de implementar, leia:
       `::test_block_filtros_renders_seven_controls`,
       `::test_table_renders_seven_columns_pagamento_and_emissao_separated_with_mock_pagination`.
 
-- [ ] T20 — Painel vendas: bloco "Ações em lote"
+- [x] T20 — Painel vendas: bloco "Ações em lote"
       Arquivos: `resources/views/pages/painel/vendas/index.blade.php`
       Mudança: 3 botões ("Exportar CSV", "Reenviar ao GFSIS", "Disparar recuperação"), nenhum com `action`
       funcional.
@@ -276,7 +276,7 @@ Antes de implementar, leia:
       Acceptance criteria: os 3 botões estão presentes, sem `action` funcional associado.
       Testes: `tests/Feature/Pages/Painel/VendasIndexTest.php::test_block_acoes_em_lote_renders_three_buttons_without_real_action`.
 
-- [ ] T21 — Detalhe da venda: rota, `x-admin-layout`, blocos "Cabeçalho" e "Itens"
+- [x] T21 — Detalhe da venda: rota, `x-admin-layout`, blocos "Cabeçalho" e "Itens"
       Arquivos: `resources/views/pages/painel/vendas/show.blade.php`
       Mudança: `<x-admin-layout item-ativo="vendas" titulo="Pedido #{{ $id }}">`. Bloco "Cabeçalho": número do
       pedido, data/hora de criação, nome do cliente, 2× `<x-badge-status>` lado a lado (pagamento e emissão).
@@ -289,7 +289,7 @@ Antes de implementar, leia:
       `::test_block_cabecalho_renders_order_number_date_client_and_two_status_badges`,
       `::test_table_itens_renders_five_columns`.
 
-- [ ] T22 — Detalhe da venda: blocos "Financeiro" e "Emissão e GFSIS"
+- [x] T22 — Detalhe da venda: blocos "Financeiro" e "Emissão e GFSIS"
       Arquivos: `resources/views/pages/painel/vendas/show.blade.php`
       Mudança: Cartão "Valores" (subtotal, desconto cupom, desconto Pix, total, taxa do gateway, líquido
       previsto) + cartão "Pagamento" (método, status, ID no gateway, TXID, end-to-end, pago em, previsão de
@@ -301,7 +301,7 @@ Antes de implementar, leia:
       Testes: `tests/Feature/Pages/Painel/VendasShowTest.php::test_block_financeiro_renders_valores_and_pagamento_cards`,
       `::test_block_emissao_gfsis_renders_titular_and_integracao_cards_and_resend_button`.
 
-- [ ] T23 — Detalhe da venda: blocos "Origem da venda" e "Linha do tempo"
+- [x] T23 — Detalhe da venda: blocos "Origem da venda" e "Linha do tempo"
       Arquivos: `resources/views/pages/painel/vendas/show.blade.php`
       Mudança: Tabela "Origem da venda" com as 7 linhas (campanha, origem e meio, gclid, página de entrada,
       dispositivo, sessões até a compra, status de conversão enviada). `<x-timeline>` com ≥ 6 eventos
@@ -313,7 +313,7 @@ Antes de implementar, leia:
       Testes: `tests/Feature/Pages/Painel/VendasShowTest.php::test_table_origem_da_venda_renders_seven_rows`,
       `::test_block_linha_do_tempo_renders_six_events_in_chronological_order_with_origin`.
 
-- [ ] T24 — Painel recuperação: rota, `x-admin-layout`, blocos "Indicadores" e "Fila ordenada por tempo"
+- [x] T24 — Painel recuperação: rota, `x-admin-layout`, blocos "Indicadores" e "Fila ordenada por tempo"
       Arquivos: `resources/views/pages/painel/recuperacao.blade.php`
       Mudança: `<x-admin-layout item-ativo="recuperacao" titulo="Fila de recuperação">`. Bloco "Indicadores": 4×
       `<x-kpi-card>` (Pagos sem dados, Recuperados em 7 dias, Mais antigo, Falha de envio). Tabela "Fila
@@ -327,7 +327,7 @@ Antes de implementar, leia:
       `::test_block_indicadores_renders_four_kpi_cards`,
       `::test_table_fila_renders_rows_ordered_by_dias_descending`.
 
-- [ ] T25 — Painel recuperação: blocos "Régua automática" e "Falhas de integração"
+- [x] T25 — Painel recuperação: blocos "Régua automática" e "Falhas de integração"
       Arquivos: `resources/views/pages/painel/recuperacao.blade.php`
       Mudança: Tabela "Régua automática" com as 5 linhas exatas (Imediato/E-mail, 2 horas/WhatsApp, 24
       horas/E-mail, 3 dias/WhatsApp, 5 dias/Painel), momento, canal, mensagem. Tabela "Falhas de integração" com
@@ -344,7 +344,7 @@ Antes de implementar, leia:
 1. `.spec/features/telas-mockup-checkout-conta-painel/SPEC.md` — requisitos RIGID que esta fase cobre
 2. `.spec/features/telas-mockup-checkout-conta-painel/PLAN.md` — decomposição completa, dependências e riscos
 
-- [ ] T26 — Painel produtos: rota, `x-admin-layout`, blocos "Lista" e "Edição · dados do produto"
+- [x] T26 — Painel produtos: rota, `x-admin-layout`, blocos "Lista" e "Edição · dados do produto"
       Arquivos: `resources/views/pages/painel/produtos.blade.php`
       Mudança: `<x-admin-layout item-ativo="produtos" titulo="Produtos">`. Tabela "Lista" com colunas Produto,
       Tipo, Slug, Variantes, "A partir de", Ativo, ≥ 3 linhas, botão "Novo produto" sem ação real. Bloco
@@ -358,7 +358,7 @@ Antes de implementar, leia:
       `::test_table_lista_renders_three_products_and_new_product_button`,
       `::test_block_edicao_produto_renders_six_prefilled_fields`.
 
-- [ ] T27 — Painel produtos: blocos "Variantes do produto" e "Edição de variante"
+- [x] T27 — Painel produtos: blocos "Variantes do produto" e "Edição de variante"
       Arquivos: `resources/views/pages/painel/produtos.blade.php`
       Mudança: Tabela "Variantes do produto" com as 8 colunas (SKU, Tipo, Validade, Preço, Promocional,
       Vigência, Padrão, Ativo), ≥ 3 linhas, botão "Nova variante" sem ação real. Bloco "Edição de variante" com
@@ -370,7 +370,7 @@ Antes de implementar, leia:
       Testes: `tests/Feature/Pages/Painel/ProdutosTest.php::test_table_variantes_renders_three_variants_with_eight_columns_and_new_variant_button`,
       `::test_block_edicao_variante_renders_eight_prefilled_fields`.
 
-- [ ] T28 — Painel formas de pagamento: rota, `x-admin-layout`, tabelas "Formas de pagamento" e "Cupons"
+- [x] T28 — Painel formas de pagamento: rota, `x-admin-layout`, tabelas "Formas de pagamento" e "Cupons"
       Arquivos: `resources/views/pages/painel/formas-pagamento.blade.php`
       Mudança: `<x-admin-layout item-ativo="formas-pagamento" titulo="Formas de pagamento">`. Tabela "Formas de
       pagamento" com exatamente 3 linhas (pix, cartão, boleto), colunas Código, Nome exibido, Desconto, Máx.
@@ -383,7 +383,7 @@ Antes de implementar, leia:
       `::test_table_formas_pagamento_renders_exactly_three_rows`,
       `::test_table_cupons_renders_at_least_three_rows_and_new_coupon_button`.
 
-- [ ] T29 — Painel formas de pagamento: bloco "Edição de cupom"
+- [x] T29 — Painel formas de pagamento: bloco "Edição de cupom"
       Arquivos: `resources/views/pages/painel/formas-pagamento.blade.php`
       Mudança: Bloco com os 9 campos (código, tipo, valor, limite de usos, limite por cliente, restrito à
       variante, válido de, válido até, ativo) pré-preenchidos com valores de exemplo.
@@ -391,7 +391,7 @@ Antes de implementar, leia:
       Acceptance criteria: os 9 campos de edição de cupom estão presentes, pré-preenchidos.
       Testes: `tests/Feature/Pages/Painel/FormasPagamentoTest.php::test_block_edicao_cupom_renders_nine_prefilled_fields`.
 
-- [ ] T30 — Painel clientes: rota, `x-admin-layout`, blocos "Filtros e lista" e "Ficha do cliente · dados"
+- [x] T30 — Painel clientes: rota, `x-admin-layout`, blocos "Filtros e lista" e "Ficha do cliente · dados"
       Arquivos: `resources/views/pages/painel/clientes.blade.php`
       Mudança: `<x-admin-layout item-ativo="clientes" titulo="Clientes">`. Bloco "Filtros e lista" com os 4
       filtros (Tipo de pessoa, UF, Período de cadastro, Com certificado vencendo) + busca, tabela com colunas
@@ -406,7 +406,7 @@ Antes de implementar, leia:
       `::test_block_filtros_e_lista_renders_four_filters_search_and_three_customer_rows`,
       `::test_block_ficha_renders_identification_fields_and_seven_independent_address_fields`.
 
-- [ ] T31 — Painel clientes: blocos "Histórico de pedidos" e "Titulares vinculados"
+- [x] T31 — Painel clientes: blocos "Histórico de pedidos" e "Titulares vinculados"
       Arquivos: `resources/views/pages/painel/clientes.blade.php`
       Mudança: Tabela "Histórico de pedidos" com colunas Pedido, Produto, Valor, Pagamento, Emissão, Validade
       até, ≥ 2 linhas, usando `<x-badge-status>`. Tabela "Titulares vinculados" com colunas Titular, Documento,
@@ -417,7 +417,7 @@ Antes de implementar, leia:
       Testes: `tests/Feature/Pages/Painel/ClientesTest.php::test_table_historico_de_pedidos_renders_at_least_two_rows`,
       `::test_table_titulares_vinculados_renders_at_least_two_rows`.
 
-- [ ] T32 — Painel relatórios: rota, `x-admin-layout`, bloco "Seleção"
+- [x] T32 — Painel relatórios: rota, `x-admin-layout`, bloco "Seleção"
       Arquivos: `resources/views/pages/painel/relatorios.blade.php`
       Mudança: `<x-admin-layout item-ativo="relatorios" titulo="Relatórios">`. 9 cartões de relatório (Vendas
       por período, Vendas por produto, Funil operacional, Pagos sem dados, Base de renovação, Atribuição,
@@ -429,7 +429,7 @@ Antes de implementar, leia:
       Testes: `tests/Feature/Pages/Painel/RelatoriosTest.php::test_route_requires_authentication`,
       `::test_block_selecao_renders_nine_report_cards_with_vendas_por_periodo_selected_by_default`.
 
-- [ ] T33 — Painel relatórios: exemplo "Vendas por período"
+- [x] T33 — Painel relatórios: exemplo "Vendas por período"
       Arquivos: `resources/views/pages/painel/relatorios.blade.php`
       Mudança: Filtros (Período, Produto, Forma de pagamento, Origem, busca), 4× `<x-kpi-card>` (Faturamento,
       Pedidos, Ticket médio, Descontos), placeholder de gráfico de linha, tabela diária (Dia, Pedidos,
@@ -440,7 +440,7 @@ Antes de implementar, leia:
       os 2 botões de exportação estão presentes, sem exportação real.
       Testes: `tests/Feature/Pages/Painel/RelatoriosTest.php::test_example_vendas_por_periodo_renders_filters_four_kpis_chart_placeholder_daily_table_and_export_buttons`.
 
-- [ ] T34 — Painel relatórios: exemplo "Base de renovação"
+- [x] T34 — Painel relatórios: exemplo "Base de renovação"
       Arquivos: `resources/views/pages/painel/relatorios.blade.php`
       Mudança: Tabela com colunas Titular, Documento, Produto, Vence em, Dias e Contato (botão "WhatsApp"), ≥ 3
       linhas.
@@ -454,7 +454,7 @@ Antes de implementar, leia:
 1. `.spec/features/telas-mockup-checkout-conta-painel/SPEC.md` — requisitos RIGID que esta fase cobre
 2. `.spec/features/telas-mockup-checkout-conta-painel/PLAN.md` — decomposição completa, dependências e riscos
 
-- [ ] T35 — Teste transversal do guard de autenticação (RF-47)
+- [x] T35 — Teste transversal do guard de autenticação (RF-47)
       Arquivos: `tests/Feature/RouteGuardTest.php`
       Mudança: Nenhuma mudança de aplicação. Requisição sem sessão autenticada às 8 rotas do painel deve
       retornar 302 (redirect para login), nunca 200. Requisição sem sessão às 4 rotas de loja deve retornar 200,
@@ -466,7 +466,7 @@ Antes de implementar, leia:
       Testes: `tests/Feature/RouteGuardTest.php::test_guest_is_redirected_from_all_eight_painel_routes`,
       `::test_guest_gets_200_from_all_four_public_customer_routes`.
 
-- [ ] T36 — Regressão transversal de NFRs (RNF-01, RNF-02, RNF-04, RNF-05, RNF-06)
+- [x] T36 — Regressão transversal de NFRs (RNF-01, RNF-02, RNF-04, RNF-05, RNF-06)
       Arquivos: `tests/Feature/StaticSliceRegressionTest.php`
       Mudança: Nenhuma mudança de aplicação. Varre a resposta HTTP das 13 rotas (autenticando como usuário de
       teste para as 8 do painel) e assere ausência de `fetch(`/`XMLHttpRequest`/`wire:`/`$wire`, ausência de

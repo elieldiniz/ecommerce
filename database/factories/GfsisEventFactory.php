@@ -19,8 +19,10 @@ class GfsisEventFactory extends Factory
      */
     public function definition(): array
     {
+        $orderItemGfsis = OrderItemGfsis::factory()->create();
+
         return [
-            'gfsis_order_id' => OrderItemGfsis::factory()->create()->gfsis_order_id,
+            'gfsis_order_id' => $orderItemGfsis->gfsis_order_id,
             'event_hash' => hash('sha256', Str::uuid()->toString()),
             'received_status' => fake()->word(),
             'payload' => ['status' => fake()->word()],

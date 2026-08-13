@@ -19,7 +19,7 @@ class IntegrationQueueJobFactory extends Factory
     public function definition(): array
     {
         return [
-            'status_id' => fn () => QueueJobStatus::inRandomOrder()->first()?->id ?? QueueJobStatus::factory()->create()->id,
+            'status_id' => fn () => QueueJobStatus::inRandomOrder()->value('id') ?? QueueJobStatus::factory()->create()->id,
             'job' => fake()->randomElement(['send_to_gfsis', 'send_conversion', 'send_email', 'resync_status']),
             'reference_type' => 'order_item',
             'reference_id' => fake()->numberBetween(1, 1000),

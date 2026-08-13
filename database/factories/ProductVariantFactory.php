@@ -21,7 +21,7 @@ class ProductVariantFactory extends Factory
     {
         return [
             'product_id' => Product::factory(),
-            'certificate_format_id' => fn () => CertificateFormat::inRandomOrder()->first()?->id ?? CertificateFormat::factory()->create()->id,
+            'certificate_format_id' => fn () => CertificateFormat::inRandomOrder()->value('id') ?? CertificateFormat::factory()->create()->id,
             'sku' => strtoupper(fake()->unique()->bothify('SKU-####??')),
             'validity_months' => fake()->randomElement([12, 24, 36]),
             'price' => fake()->randomFloat(2, 100, 400),

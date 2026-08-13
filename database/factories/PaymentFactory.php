@@ -23,9 +23,9 @@ class PaymentFactory extends Factory
     {
         return [
             'order_id' => Order::factory(),
-            'payment_gateway_id' => fn () => PaymentGateway::inRandomOrder()->first()?->id ?? PaymentGateway::factory()->create()->id,
-            'payment_method_id' => fn () => PaymentMethod::inRandomOrder()->first()?->id ?? PaymentMethod::factory()->create()->id,
-            'status_id' => fn () => PaymentStatus::inRandomOrder()->first()?->id ?? PaymentStatus::factory()->create()->id,
+            'payment_gateway_id' => fn () => PaymentGateway::inRandomOrder()->value('id') ?? PaymentGateway::factory()->create()->id,
+            'payment_method_id' => fn () => PaymentMethod::inRandomOrder()->value('id') ?? PaymentMethod::factory()->create()->id,
+            'status_id' => fn () => PaymentStatus::inRandomOrder()->value('id') ?? PaymentStatus::factory()->create()->id,
             'gateway_transaction_id' => fake()->unique()->uuid(),
             'gateway_status_code' => null,
             'gross_amount' => fake()->randomFloat(2, 100, 400),

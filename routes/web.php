@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Pedido\ShowEmissaoController;
 use Illuminate\Support\Facades\Route;
 
 Route::view('/', 'pages.home')->name('home');
@@ -13,8 +14,22 @@ Route::view('como-emitir-certificado-digital/', 'pages.como-emitir-certificado-d
 Route::view('quem-somos/', 'pages.quem-somos')->name('quem-somos');
 Route::view('suporte/', 'pages.suporte')->name('suporte');
 
+Route::view('checkout/', 'pages.checkout')->name('checkout');
+Route::view('pedido/{id}/pagamento/', 'pages.pedido.pagamento')->name('pedido.pagamento');
+Route::get('pedido/{id}/emissao/', ShowEmissaoController::class)->name('pedido.emissao');
+Route::view('minha-conta/pedidos/', 'pages.minha-conta.pedidos')->name('minha-conta.pedidos');
+
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::view('dashboard', 'dashboard')->name('dashboard');
+
+    Route::view('painel/', 'pages.painel.visao-geral')->name('painel.visao-geral');
+    Route::view('painel/vendas/', 'pages.painel.vendas.index')->name('painel.vendas.index');
+    Route::view('painel/vendas/{id}/', 'pages.painel.vendas.show')->name('painel.vendas.show');
+    Route::view('painel/recuperacao/', 'pages.painel.recuperacao')->name('painel.recuperacao');
+    Route::view('painel/produtos/', 'pages.painel.produtos')->name('painel.produtos');
+    Route::view('painel/formas-pagamento/', 'pages.painel.formas-pagamento')->name('painel.formas-pagamento');
+    Route::view('painel/clientes/', 'pages.painel.clientes')->name('painel.clientes');
+    Route::view('painel/relatorios/', 'pages.painel.relatorios')->name('painel.relatorios');
 });
 
 require __DIR__.'/settings.php';

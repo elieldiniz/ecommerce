@@ -26,9 +26,9 @@ class OrderFactory extends Factory
         return [
             'number' => strtoupper(fake()->unique()->bothify('PED-######')),
             'customer_id' => Customer::factory(),
-            'status_id' => fn () => OrderStatus::inRandomOrder()->first()?->id ?? OrderStatus::factory()->create()->id,
-            'fulfillment_status_id' => fn () => OrderFulfillmentStatus::inRandomOrder()->first()?->id ?? OrderFulfillmentStatus::factory()->create()->id,
-            'payment_method_id' => fn () => PaymentMethod::inRandomOrder()->first()?->id ?? PaymentMethod::factory()->create()->id,
+            'status_id' => fn () => OrderStatus::inRandomOrder()->value('id') ?? OrderStatus::factory()->create()->id,
+            'fulfillment_status_id' => fn () => OrderFulfillmentStatus::inRandomOrder()->value('id') ?? OrderFulfillmentStatus::factory()->create()->id,
+            'payment_method_id' => fn () => PaymentMethod::inRandomOrder()->value('id') ?? PaymentMethod::factory()->create()->id,
             'coupon_id' => null,
             'subtotal' => $subtotal,
             'coupon_discount' => 0,

@@ -1,0 +1,71 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\DataProvider;
+use Tests\TestCase;
+
+class RouteGuardTest extends TestCase
+{
+    use RefreshDatabase;
+
+    /**
+     * @return array<int, array{0: string}>
+     */
+    public static function rotasDoPainel(): array
+    {
+        return [
+            ['/painel/'],
+            ['/painel/vendas/'],
+            ['/painel/vendas/1042/'],
+            ['/painel/recuperacao/'],
+            ['/painel/produtos/'],
+            ['/painel/formas-pagamento/'],
+            ['/painel/clientes/'],
+            ['/painel/relatorios/'],
+        ];
+    }
+
+    /**
+     * @return array<int, array{0: string}>
+     */
+    public static function rotasPublicasDeLoja(): array
+    {
+        return [
+            ['/checkout/'],
+            ['/pedido/1042/pagamento/'],
+            ['/pedido/1042/emissao/'],
+            ['/minha-conta/pedidos/'],
+        ];
+    }
+
+    #[DataProvider('rotasDoPainel')]
+    public function test_guest_is_redirected_from_all_eight_painel_routes(string $rota): void
+    {
+        $response = $this->get($rota);
+
+        $response->assertRedirect(route('login'));
+        $response->assertStatus(302);
+    }
+
+    #[DataProvider('rotasPublicasDeLoja')]
+    public function test_guest_gets_200_from_all_four_public_customer_routes(string $rota): void
+    {
+        $response = $this->get($rota);
+
+        $response->assertOk();
+        $response->assertStatus(200);
+    }
+
+    #[DataProvider('rotasDoPainel')]
+    public function test_authenticated_staff_gets_200_from_all_eight_painel_routes(string $rota): void
+    {
+        $this->actingAs(User::factory()->create());
+
+        $response = $this->get($rota);
+
+        $response->assertOk();
+    }
+}

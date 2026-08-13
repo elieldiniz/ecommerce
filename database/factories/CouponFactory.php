@@ -20,7 +20,7 @@ class CouponFactory extends Factory
     {
         return [
             'code' => strtoupper(fake()->unique()->bothify('CUPOM##??')),
-            'type_id' => fn () => CouponType::inRandomOrder()->first()?->id ?? CouponType::factory()->create()->id,
+            'type_id' => fn () => CouponType::inRandomOrder()->value('id') ?? CouponType::factory()->create()->id,
             'restricted_variant_id' => null,
             'value' => fake()->randomFloat(2, 5, 50),
             'usage_limit' => null,

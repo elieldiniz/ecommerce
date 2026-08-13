@@ -20,7 +20,7 @@ class CustomerFactory extends Factory
     public function definition(): array
     {
         return [
-            'holder_type_id' => fn () => HolderType::inRandomOrder()->first()?->id ?? HolderType::factory()->create()->id,
+            'holder_type_id' => fn () => HolderType::inRandomOrder()->value('id') ?? HolderType::factory()->create()->id,
             'legal_name' => fake()->name(),
             'document' => fake()->unique()->numerify('###########'),
             'email' => fake()->unique()->safeEmail(),

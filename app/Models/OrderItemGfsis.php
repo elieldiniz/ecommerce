@@ -10,6 +10,9 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * @property int $gfsis_order_id
+ */
 #[Table(name: 'order_item_gfsis')]
 #[Fillable([
     'order_item_id', 'status_id', 'gfsis_order_id', 'gfsis_code', 'status_synced_at', 'appointment_id',

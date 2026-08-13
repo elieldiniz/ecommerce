@@ -21,7 +21,7 @@ class OrderAttributionFactory extends Factory
     {
         return [
             'order_id' => Order::factory(),
-            'device_type_id' => fn () => DeviceType::inRandomOrder()->first()?->id ?? DeviceType::factory()->create()->id,
+            'device_type_id' => fn () => DeviceType::inRandomOrder()->value('id') ?? DeviceType::factory()->create()->id,
             'gclid' => null,
             'utm_source' => fake()->randomElement(['google', 'meta', null]),
             'utm_medium' => fake()->randomElement(['cpc', 'organic', null]),
