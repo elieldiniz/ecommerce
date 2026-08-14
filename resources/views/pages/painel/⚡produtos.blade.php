@@ -126,6 +126,22 @@ new #[Layout('components.admin-layout', ['activeItem' => 'produtos', 'title' => 
         });
     }
 
+    public function selectProduct(int $productId): void
+    {
+        $this->selectedProductId = $productId;
+    }
+
+    /**
+     * @return Collection<int, ProductVariant>
+     */
+    #[Computed]
+    public function variants(): Collection
+    {
+        fwrite(STDERR, "DEBUG variants() selectedProductId=" . var_export($this->selectedProductId, true) . "\n");
+
+        return ProductVariant::where('product_id', $this->selectedProductId)->with('certificateFormat')->get();
+    }
+
     /**
      * @return array<string, array<int, ValidationRule|array<mixed>|string>>
      */
@@ -160,14 +176,6 @@ new #[Layout('components.admin-layout', ['activeItem' => 'produtos', 'title' => 
     }
 }; ?>
 
-@php
-    $variants = [
-        ['sku' => 'ECPF-A1-12M', 'type' => 'A1', 'validity' => '12 meses', 'price' => 'R$ 250,00', 'promotionalPrice' => 'R$ 213,75', 'validUntil' => 'até 31/08/2026', 'default' => 'Sim', 'active' => 'Sim'],
-        ['sku' => 'ECPF-A3-36M', 'type' => 'A3', 'validity' => '36 meses', 'price' => 'R$ 350,00', 'promotionalPrice' => '—', 'validUntil' => '—', 'default' => 'Não', 'active' => 'Sim'],
-        ['sku' => 'ECPF-A1-24M', 'type' => 'A1', 'validity' => '24 meses', 'price' => 'R$ 300,00', 'promotionalPrice' => '—', 'validUntil' => '—', 'default' => 'Não', 'active' => 'Sim'],
-    ];
-@endphp
-
 <div>
     {{-- Bloco: Lista --}}
     <section class="rounded-xl border border-border bg-white p-5">
@@ -190,7 +198,7 @@ new #[Layout('components.admin-layout', ['activeItem' => 'produtos', 'title' => 
                 </thead>
                 <tbody>
                     @foreach ($this->products as $product)
-                        <tr>
+                        <tr wire:click="selectProduct({{ $product->id }})" class="cursor-pointer {{ $selectedProductId === $product->id ? 'bg-surface-alt' : '' }}">
                             <td class="border border-border px-3 py-2.5 text-ink">{{ $product->name }}</td>
                             <td class="border border-border px-3 py-2.5 text-ink">{{ $product->holderType->name }}</td>
                             <td class="border border-border px-3 py-2.5 text-ink">{{ $product->slug }}</td>
@@ -198,8 +206,8 @@ new #[Layout('components.admin-layout', ['activeItem' => 'produtos', 'title' => 
                             <td class="border border-border px-3 py-2.5 text-ink">{{ $this->startingPriceFor($product) }}</td>
                             <td class="border border-border px-3 py-2.5 text-ink">{{ $product->is_active ? 'Sim' : 'Não' }}</td>
                             <td class="border border-border px-3 py-2.5 text-ink">
-                                <button type="button" wire:click="editProduct({{ $product->id }})" class="rounded-lg border border-border-light px-3 py-1.5 font-sans text-xs font-semibold text-ink">Editar</button>
-                                <button type="button" wire:click="toggleProductStatus({{ $product->id }})" class="ml-2 rounded-lg border border-border-light px-3 py-1.5 font-sans text-xs font-semibold text-ink">{{ $product->is_active ? 'Desativar' : 'Ativar' }}</button>
+                                <button type="button" wire:click.stop="editProduct({{ $product->id }})" class="rounded-lg border border-border-light px-3 py-1.5 font-sans text-xs font-semibold text-ink">Editar</button>
+                                <button type="button" wire:click.stop="toggleProductStatus({{ $product->id }})" class="ml-2 rounded-lg border border-border-light px-3 py-1.5 font-sans text-xs font-semibold text-ink">{{ $product->is_active ? 'Desativar' : 'Ativar' }}</button>
                             </td>
                         </tr>
                     @endforeach
@@ -279,16 +287,22 @@ new #[Layout('components.admin-layout', ['activeItem' => 'produtos', 'title' => 
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach ($variants as $variant)
+                    @foreach ($this->variants as $variant)
                         <tr>
-                            <td class="border border-border px-3 py-2.5 text-ink">{{ $variant['sku'] }}</td>
-                            <td class="border border-border px-3 py-2.5 text-ink">{{ $variant['type'] }}</td>
-                            <td class="border border-border px-3 py-2.5 text-ink">{{ $variant['validity'] }}</td>
-                            <td class="border border-border px-3 py-2.5 text-ink">{{ $variant['price'] }}</td>
-                            <td class="border border-border px-3 py-2.5 text-ink">{{ $variant['promotionalPrice'] }}</td>
-                            <td class="border border-border px-3 py-2.5 text-ink">{{ $variant['validUntil'] }}</td>
-                            <td class="border border-border px-3 py-2.5 text-ink">{{ $variant['default'] }}</td>
-                            <td class="border border-border px-3 py-2.5 text-ink">{{ $variant['active'] }}</td>
+                            <td class="border border-border px-3 py-2.5 text-ink">{{ $variant->sku }}</td>
+                            <td class="border border-border px-3 py-2.5 text-ink">{{ $variant->certificateFormat->name }}</td>
+                            <td class="border border-border px-3 py-2.5 text-ink">{{ $variant->validity_months }} meses</td>
+                            <td class="border border-border px-3 py-2.5 text-ink">{{ Number::currency($variant->price, in: 'BRL', locale: 'pt_BR') }}</td>
+                            <td class="border border-border px-3 py-2.5 text-ink">{{ $variant->promotional_price !== null ? Number::currency($variant->promotional_price, in: 'BRL', locale: 'pt_BR') : '—' }}</td>
+                            <td class="border border-border px-3 py-2.5 text-ink">
+                                @if ($variant->promotion_starts_at && $variant->promotion_ends_at)
+                                    {{ $variant->promotion_starts_at->format('d/m/Y') }} a {{ $variant->promotion_ends_at->format('d/m/Y') }}
+                                @else
+                                    —
+                                @endif
+                            </td>
+                            <td class="border border-border px-3 py-2.5 text-ink">{{ $variant->is_default ? 'Sim' : 'Não' }}</td>
+                            <td class="border border-border px-3 py-2.5 text-ink">{{ $variant->is_active ? 'Sim' : 'Não' }}</td>
                         </tr>
                     @endforeach
                 </tbody>

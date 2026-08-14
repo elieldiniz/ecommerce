@@ -216,13 +216,48 @@ class ProdutosTest extends TestCase
     {
         $this->actingAs(User::factory()->create());
 
-        $response = $this->get('/painel/produtos/');
+        $product = Product::factory()->create();
+        $otherProduct = Product::factory()->create();
 
-        $response->assertSeeInOrder(['SKU', 'Tipo', 'Validade', 'Preço', 'Promocional', 'Vigência', 'Padrão', 'Ativo']);
-        $response->assertSee('ECPF-A1-12M');
-        $response->assertSee('ECPF-A3-36M');
-        $response->assertSee('ECPF-A1-24M');
-        $response->assertSee('Nova variante');
+        $a1 = CertificateFormat::query()->firstOrCreate(['slug' => 'a1'], ['name' => 'A1', 'requires_hardware' => false]);
+        $a3 = CertificateFormat::query()->firstOrCreate(['slug' => 'a3'], ['name' => 'A3', 'requires_hardware' => true]);
+
+        ProductVariant::factory()->for($product)->create([
+            'certificate_format_id' => $a1->id,
+            'sku' => 'ECPF-A1-12M',
+            'validity_months' => 12,
+            'price' => 250,
+            'is_active' => true,
+        ]);
+        ProductVariant::factory()->for($product)->create([
+            'certificate_format_id' => $a3->id,
+            'sku' => 'ECPF-A3-36M',
+            'validity_months' => 36,
+            'price' => 350,
+            'is_active' => false,
+        ]);
+        ProductVariant::factory()->for($otherProduct)->create([
+            'certificate_format_id' => $a1->id,
+            'sku' => 'OUTRO-SKU',
+        ]);
+
+        fwrite(STDERR, "DEBUG product id: {$product->id}, otherProduct id: {$otherProduct->id}\n");
+
+        $component = Livewire::test('pages::painel.produtos')
+            ->call('selectProduct', $product->id);
+
+        fwrite(STDERR, "DEBUG selectedProductId after call: " . var_export($component->get('selectedProductId'), true) . "\n");
+
+        $component->assertSeeHtmlInOrder(['SKU', 'Tipo', 'Validade', 'Preço', 'Promocional', 'Vigência', 'Padrão', 'Ativo']);
+        $component->assertSee('Nova variante');
+        $component->assertSee('ECPF-A1-12M');
+        $component->assertSee('ECPF-A3-36M');
+        $component->assertDontSee('OUTRO-SKU');
+
+        $component->call('selectProduct', $otherProduct->id)
+            ->assertSee('OUTRO-SKU')
+            ->assertDontSee('ECPF-A1-12M')
+            ->assertDontSee('ECPF-A3-36M');
     }
 
     public function test_block_edicao_variante_renders_eight_prefilled_fields(): void
