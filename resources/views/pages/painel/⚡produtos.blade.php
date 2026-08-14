@@ -47,6 +47,8 @@ new #[Layout('components.admin-layout', ['activeItem' => 'produtos', 'title' => 
 
     public ?string $promotion_ends_at = null;
 
+    public bool $is_default = false;
+
     public function mount(): void
     {
         $this->selectedProductId = null;
@@ -179,11 +181,15 @@ new #[Layout('components.admin-layout', ['activeItem' => 'produtos', 'title' => 
 
         try {
             DB::transaction(function () use ($validated): void {
-                ProductVariant::create([
+                $variant = ProductVariant::create([
                     ...$validated,
                     'product_id' => $this->selectedProductId,
                     'is_active' => true,
                 ]);
+
+                if ($this->is_default) {
+                    $this->markVariantAsDefault($variant);
+                }
             });
         } catch (QueryException) {
             $this->addError('certificate_format_id', 'Este produto já possui uma variante com este formato.');
@@ -208,6 +214,7 @@ new #[Layout('components.admin-layout', ['activeItem' => 'produtos', 'title' => 
         $this->promotional_price = $variant->promotional_price !== null ? (string) $variant->promotional_price : null;
         $this->promotion_starts_at = $variant->promotion_starts_at?->format('Y-m-d');
         $this->promotion_ends_at = $variant->promotion_ends_at?->format('Y-m-d');
+        $this->is_default = $variant->is_default;
     }
 
     public function updateVariant(): void
@@ -216,7 +223,12 @@ new #[Layout('components.admin-layout', ['activeItem' => 'produtos', 'title' => 
 
         try {
             DB::transaction(function () use ($validated): void {
-                ProductVariant::findOrFail($this->variantId)->update($validated);
+                $variant = ProductVariant::findOrFail($this->variantId);
+                $variant->update($validated);
+
+                if ($this->is_default) {
+                    $this->markVariantAsDefault($variant);
+                }
             });
         } catch (QueryException) {
             $this->addError('certificate_format_id', 'Este produto já possui uma variante com este formato.');
@@ -231,7 +243,23 @@ new #[Layout('components.admin-layout', ['activeItem' => 'produtos', 'title' => 
 
     public function resetVariantForm(): void
     {
-        $this->reset('variantId', 'sku', 'certificate_format_id', 'validity_months', 'price', 'promotional_price', 'promotion_starts_at', 'promotion_ends_at');
+        $this->reset('variantId', 'sku', 'certificate_format_id', 'validity_months', 'price', 'promotional_price', 'promotion_starts_at', 'promotion_ends_at', 'is_default');
+    }
+
+    public function setDefaultVariant(int $variantId): void
+    {
+        DB::transaction(function () use ($variantId): void {
+            $variant = ProductVariant::findOrFail($variantId);
+            $this->markVariantAsDefault($variant);
+        });
+
+        Flux::toast(variant: 'success', text: __('Variante definida como padrão.'));
+    }
+
+    private function markVariantAsDefault(ProductVariant $variant): void
+    {
+        ProductVariant::where('product_id', $variant->product_id)->update(['is_default' => false]);
+        $variant->update(['is_default' => true]);
     }
 
     /**
@@ -443,6 +471,9 @@ new #[Layout('components.admin-layout', ['activeItem' => 'produtos', 'title' => 
                             <td class="border border-border px-3 py-2.5 text-ink">{{ $variant->is_active ? 'Sim' : 'Não' }}</td>
                             <td class="border border-border px-3 py-2.5 text-ink">
                                 <button type="button" wire:click="editVariant({{ $variant->id }})" class="rounded-lg border border-border-light px-3 py-1.5 font-sans text-xs font-semibold text-ink">Editar</button>
+                                @unless ($variant->is_default)
+                                    <button type="button" wire:click="setDefaultVariant({{ $variant->id }})" class="ml-2 rounded-lg border border-border-light px-3 py-1.5 font-sans text-xs font-semibold text-ink">Marcar como padrão</button>
+                                @endunless
                             </td>
                         </tr>
                     @endforeach
@@ -508,6 +539,10 @@ new #[Layout('components.admin-layout', ['activeItem' => 'produtos', 'title' => 
                 @error('promotion_ends_at')
                     <span class="mt-1 block font-sans text-xs text-[#8f2020]">{{ $message }}</span>
                 @enderror
+            </div>
+            <div class="flex items-center gap-2 md:col-span-2">
+                <input type="checkbox" wire:model="is_default" id="is_default" class="rounded border-border-light">
+                <label for="is_default" class="font-sans text-xs font-semibold text-muted">Variante padrão</label>
             </div>
             <div class="md:col-span-2">
                 <button type="submit" class="rounded-lg bg-brand px-4 py-2.5 font-heading text-xs font-semibold text-white">{{ $variantId ? 'Salvar alterações' : 'Salvar variante' }}</button>

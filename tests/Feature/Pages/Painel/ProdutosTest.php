@@ -419,4 +419,29 @@ class ProdutosTest extends TestCase
         $this->assertDatabaseHas('product_variants', ['id' => $variant->id, 'sku' => 'SKU-ORIGINAL']);
         $this->assertDatabaseHas('product_variants', ['id' => $other->id, 'sku' => 'SKU-EM-USO']);
     }
+
+    public function test_setting_default_variant_unsets_others_from_same_product_and_ignores_other_products(): void
+    {
+        $this->actingAs(User::factory()->create());
+
+        $product = Product::factory()->create();
+        $otherProduct = Product::factory()->create();
+
+        $a1 = CertificateFormat::query()->firstOrCreate(['slug' => 'a1'], ['name' => 'A1', 'requires_hardware' => false]);
+        $a3 = CertificateFormat::query()->firstOrCreate(['slug' => 'a3'], ['name' => 'A3', 'requires_hardware' => true]);
+
+        $variantA = ProductVariant::factory()->for($product)->create(['certificate_format_id' => $a1->id, 'is_default' => true]);
+        $variantB = ProductVariant::factory()->for($product)->create(['certificate_format_id' => $a3->id, 'is_default' => false]);
+        $variantC = ProductVariant::factory()->for($product)->create(['certificate_format_id' => CertificateFormat::query()->firstOrCreate(['slug' => 'a1-extra'], ['name' => 'A1 Extra', 'requires_hardware' => false])->id, 'is_default' => false]);
+        $otherProductVariant = ProductVariant::factory()->for($otherProduct)->create(['certificate_format_id' => $a1->id, 'is_default' => true]);
+
+        Livewire::test('pages::painel.produtos')
+            ->call('setDefaultVariant', $variantB->id)
+            ->assertHasNoErrors();
+
+        $this->assertDatabaseHas('product_variants', ['id' => $variantA->id, 'is_default' => false]);
+        $this->assertDatabaseHas('product_variants', ['id' => $variantB->id, 'is_default' => true]);
+        $this->assertDatabaseHas('product_variants', ['id' => $variantC->id, 'is_default' => false]);
+        $this->assertDatabaseHas('product_variants', ['id' => $otherProductVariant->id, 'is_default' => true]);
+    }
 }
