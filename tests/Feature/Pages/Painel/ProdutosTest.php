@@ -256,19 +256,167 @@ class ProdutosTest extends TestCase
             ->assertDontSee('PRODUTO-A3-VARIANTE');
     }
 
-    public function test_block_edicao_variante_renders_eight_prefilled_fields(): void
+    public function test_block_edicao_variante_renders_the_form(): void
     {
         $this->actingAs(User::factory()->create());
 
         $response = $this->get('/painel/produtos/');
 
         $response->assertSee('Edição de variante');
-        $response->assertSee('value="ECPF-A1-12M"', false);
         $response->assertSee('Tipo de certificado');
         $response->assertSee('Validade em meses');
-        $response->assertSee('value="R$ 250,00"', false);
-        $response->assertSee('value="R$ 213,75"', false);
-        $response->assertSee('value="até 31/08/2026"', false);
-        $response->assertSee('Variante padrão');
+        $response->assertSee('Preço promocional');
+        $response->assertSee('Início da vigência da promoção');
+        $response->assertSee('Fim da vigência da promoção');
+    }
+
+    public function test_creating_variant_with_valid_data_creates_exactly_one_row_for_selected_product(): void
+    {
+        $this->actingAs(User::factory()->create());
+
+        $product = Product::factory()->create();
+        $a1 = CertificateFormat::query()->firstOrCreate(['slug' => 'a1'], ['name' => 'A1', 'requires_hardware' => false]);
+
+        Livewire::test('pages::painel.produtos')
+            ->call('selectProduct', $product->id)
+            ->set('sku', 'ECPF-A1-12M')
+            ->set('certificate_format_id', $a1->id)
+            ->set('validity_months', 12)
+            ->set('price', '250.00')
+            ->call('createVariant')
+            ->assertHasNoErrors();
+
+        $this->assertDatabaseCount('product_variants', 1);
+        $this->assertDatabaseHas('product_variants', [
+            'product_id' => $product->id,
+            'sku' => 'ECPF-A1-12M',
+            'certificate_format_id' => $a1->id,
+            'validity_months' => 12,
+        ]);
+    }
+
+    public function test_creating_variant_with_duplicate_sku_is_rejected_without_creating_row(): void
+    {
+        $this->actingAs(User::factory()->create());
+
+        $product = Product::factory()->create();
+        $otherProduct = Product::factory()->create();
+        $a1 = CertificateFormat::query()->firstOrCreate(['slug' => 'a1'], ['name' => 'A1', 'requires_hardware' => false]);
+        $a3 = CertificateFormat::query()->firstOrCreate(['slug' => 'a3'], ['name' => 'A3', 'requires_hardware' => true]);
+
+        $existing = ProductVariant::factory()->for($otherProduct)->create(['sku' => 'DUPLICADO-SKU', 'certificate_format_id' => $a1->id]);
+
+        Livewire::test('pages::painel.produtos')
+            ->call('selectProduct', $product->id)
+            ->set('sku', 'DUPLICADO-SKU')
+            ->set('certificate_format_id', $a3->id)
+            ->set('validity_months', 12)
+            ->set('price', '250.00')
+            ->call('createVariant')
+            ->assertHasErrors(['sku' => 'unique']);
+
+        $this->assertDatabaseCount('product_variants', 1);
+        $this->assertDatabaseHas('product_variants', ['id' => $existing->id, 'sku' => 'DUPLICADO-SKU']);
+    }
+
+    public function test_creating_variant_without_required_fields_is_rejected_per_field(): void
+    {
+        $this->actingAs(User::factory()->create());
+
+        $product = Product::factory()->create();
+
+        Livewire::test('pages::painel.produtos')
+            ->call('selectProduct', $product->id)
+            ->set('sku', '')
+            ->set('certificate_format_id', null)
+            ->set('price', null)
+            ->call('createVariant')
+            ->assertHasErrors(['sku' => 'required', 'certificate_format_id' => 'required', 'price' => 'required']);
+
+        $this->assertDatabaseCount('product_variants', 0);
+    }
+
+    public function test_creating_variant_with_promotional_price_without_promotion_window_is_rejected(): void
+    {
+        $this->actingAs(User::factory()->create());
+
+        $product = Product::factory()->create();
+        $a1 = CertificateFormat::query()->firstOrCreate(['slug' => 'a1'], ['name' => 'A1', 'requires_hardware' => false]);
+
+        Livewire::test('pages::painel.produtos')
+            ->call('selectProduct', $product->id)
+            ->set('sku', 'ECPF-A1-12M')
+            ->set('certificate_format_id', $a1->id)
+            ->set('validity_months', 12)
+            ->set('price', '250.00')
+            ->set('promotional_price', '213.75')
+            ->call('createVariant')
+            ->assertHasErrors(['promotion_starts_at' => 'required_with', 'promotion_ends_at' => 'required_with']);
+
+        $this->assertDatabaseCount('product_variants', 0);
+    }
+
+    public function test_creating_second_variant_of_same_format_for_same_product_is_rejected_as_form_error(): void
+    {
+        $this->actingAs(User::factory()->create());
+
+        $product = Product::factory()->create();
+        $a1 = CertificateFormat::query()->firstOrCreate(['slug' => 'a1'], ['name' => 'A1', 'requires_hardware' => false]);
+        ProductVariant::factory()->for($product)->create(['certificate_format_id' => $a1->id]);
+
+        Livewire::test('pages::painel.produtos')
+            ->call('selectProduct', $product->id)
+            ->set('sku', 'SEGUNDA-VARIANTE-A1')
+            ->set('certificate_format_id', $a1->id)
+            ->set('validity_months', 12)
+            ->set('price', '250.00')
+            ->call('createVariant')
+            ->assertHasErrors(['certificate_format_id' => 'unique']);
+
+        $this->assertDatabaseCount('product_variants', 1);
+    }
+
+    public function test_editing_variant_reflects_in_variant_listing(): void
+    {
+        $this->actingAs(User::factory()->create());
+
+        $product = Product::factory()->create();
+        $a1 = CertificateFormat::query()->firstOrCreate(['slug' => 'a1'], ['name' => 'A1', 'requires_hardware' => false]);
+        $variant = ProductVariant::factory()->for($product)->create(['sku' => 'SKU-ANTIGO', 'certificate_format_id' => $a1->id]);
+
+        Livewire::test('pages::painel.produtos')
+            ->call('selectProduct', $product->id)
+            ->call('editVariant', $variant->id)
+            ->set('sku', 'SKU-NOVO')
+            ->call('updateVariant')
+            ->assertHasNoErrors();
+
+        $this->assertDatabaseHas('product_variants', ['id' => $variant->id, 'sku' => 'SKU-NOVO']);
+
+        $component = Livewire::test('pages::painel.produtos')->call('selectProduct', $product->id);
+        $component->assertSee('SKU-NOVO');
+        $component->assertDontSee('SKU-ANTIGO');
+    }
+
+    public function test_editing_variant_sku_conflict_is_rejected_and_original_unchanged(): void
+    {
+        $this->actingAs(User::factory()->create());
+
+        $product = Product::factory()->create();
+        $a1 = CertificateFormat::query()->firstOrCreate(['slug' => 'a1'], ['name' => 'A1', 'requires_hardware' => false]);
+        $a3 = CertificateFormat::query()->firstOrCreate(['slug' => 'a3'], ['name' => 'A3', 'requires_hardware' => true]);
+
+        $other = ProductVariant::factory()->for($product)->create(['sku' => 'SKU-EM-USO', 'certificate_format_id' => $a1->id]);
+        $variant = ProductVariant::factory()->for($product)->create(['sku' => 'SKU-ORIGINAL', 'certificate_format_id' => $a3->id]);
+
+        Livewire::test('pages::painel.produtos')
+            ->call('selectProduct', $product->id)
+            ->call('editVariant', $variant->id)
+            ->set('sku', 'SKU-EM-USO')
+            ->call('updateVariant')
+            ->assertHasErrors(['sku' => 'unique']);
+
+        $this->assertDatabaseHas('product_variants', ['id' => $variant->id, 'sku' => 'SKU-ORIGINAL']);
+        $this->assertDatabaseHas('product_variants', ['id' => $other->id, 'sku' => 'SKU-EM-USO']);
     }
 }

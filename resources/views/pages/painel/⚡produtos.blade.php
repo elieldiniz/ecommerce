@@ -1,11 +1,13 @@
 <?php
 
+use App\Models\CertificateFormat;
 use App\Models\HolderType;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use Flux\Flux;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Number;
 use Illuminate\Validation\Rule;
@@ -28,6 +30,22 @@ new #[Layout('components.admin-layout', ['activeItem' => 'produtos', 'title' => 
     public ?string $short_description = null;
 
     public ?int $position = null;
+
+    public ?int $variantId = null;
+
+    public string $sku = '';
+
+    public ?int $certificate_format_id = null;
+
+    public ?int $validity_months = null;
+
+    public ?string $price = null;
+
+    public ?string $promotional_price = null;
+
+    public ?string $promotion_starts_at = null;
+
+    public ?string $promotion_ends_at = null;
 
     public function mount(): void
     {
@@ -138,6 +156,127 @@ new #[Layout('components.admin-layout', ['activeItem' => 'produtos', 'title' => 
     public function variants(): Collection
     {
         return ProductVariant::where('product_id', $this->selectedProductId)->with('certificateFormat')->get();
+    }
+
+    /**
+     * @return Collection<int, CertificateFormat>
+     */
+    #[Computed]
+    public function certificateFormats(): Collection
+    {
+        return CertificateFormat::orderBy('name')->get();
+    }
+
+    public function createVariant(): void
+    {
+        if ($this->selectedProductId === null) {
+            $this->addError('sku', 'Selecione um produto antes de criar uma variante.');
+
+            return;
+        }
+
+        $validated = $this->validate($this->variantRules(), $this->variantMessages());
+
+        try {
+            DB::transaction(function () use ($validated): void {
+                ProductVariant::create([
+                    ...$validated,
+                    'product_id' => $this->selectedProductId,
+                    'is_active' => true,
+                ]);
+            });
+        } catch (QueryException) {
+            $this->addError('certificate_format_id', 'Este produto já possui uma variante com este formato.');
+
+            return;
+        }
+
+        $this->resetVariantForm();
+
+        Flux::toast(variant: 'success', text: __('Variante criada.'));
+    }
+
+    public function editVariant(int $variantId): void
+    {
+        $variant = ProductVariant::findOrFail($variantId);
+
+        $this->variantId = $variant->id;
+        $this->sku = $variant->sku;
+        $this->certificate_format_id = $variant->certificate_format_id;
+        $this->validity_months = $variant->validity_months;
+        $this->price = (string) $variant->price;
+        $this->promotional_price = $variant->promotional_price !== null ? (string) $variant->promotional_price : null;
+        $this->promotion_starts_at = $variant->promotion_starts_at?->format('Y-m-d');
+        $this->promotion_ends_at = $variant->promotion_ends_at?->format('Y-m-d');
+    }
+
+    public function updateVariant(): void
+    {
+        $validated = $this->validate($this->variantRules(), $this->variantMessages());
+
+        try {
+            DB::transaction(function () use ($validated): void {
+                ProductVariant::findOrFail($this->variantId)->update($validated);
+            });
+        } catch (QueryException) {
+            $this->addError('certificate_format_id', 'Este produto já possui uma variante com este formato.');
+
+            return;
+        }
+
+        $this->resetVariantForm();
+
+        Flux::toast(variant: 'success', text: __('Variante atualizada.'));
+    }
+
+    public function resetVariantForm(): void
+    {
+        $this->reset('variantId', 'sku', 'certificate_format_id', 'validity_months', 'price', 'promotional_price', 'promotion_starts_at', 'promotion_ends_at');
+    }
+
+    /**
+     * @return array<string, array<int, ValidationRule|array<mixed>|string>>
+     */
+    private function variantRules(): array
+    {
+        return [
+            'sku' => ['required', 'string', 'max:40', Rule::unique('product_variants', 'sku')->ignore($this->variantId)],
+            'certificate_format_id' => [
+                'required',
+                'integer',
+                Rule::unique('product_variants')->where('product_id', $this->selectedProductId)->ignore($this->variantId),
+            ],
+            'validity_months' => ['required', 'integer', 'min:1'],
+            'price' => ['required', 'numeric', 'min:0'],
+            'promotional_price' => ['nullable', 'numeric', 'min:0'],
+            'promotion_starts_at' => ['nullable', 'date', 'required_with:promotional_price'],
+            'promotion_ends_at' => ['nullable', 'date', 'required_with:promotional_price'],
+        ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function variantMessages(): array
+    {
+        return [
+            'sku.required' => 'Informe o SKU da variante.',
+            'sku.max' => 'O SKU deve ter no máximo 40 caracteres.',
+            'sku.unique' => 'Este SKU já está em uso por outra variante.',
+            'certificate_format_id.required' => 'Selecione o formato do certificado.',
+            'certificate_format_id.integer' => 'Selecione um formato de certificado válido.',
+            'certificate_format_id.unique' => 'Este produto já possui uma variante com este formato.',
+            'validity_months.required' => 'Informe a validade em meses.',
+            'validity_months.integer' => 'A validade deve ser um número inteiro.',
+            'validity_months.min' => 'A validade deve ser de pelo menos 1 mês.',
+            'price.required' => 'Informe o preço.',
+            'price.numeric' => 'O preço deve ser um valor numérico.',
+            'promotional_price.numeric' => 'O preço promocional deve ser um valor numérico.',
+            'promotion_starts_at.required_with' => 'Informe o início da vigência da promoção.',
+            'promotion_starts_at.date' => 'Informe uma data válida para o início da promoção.',
+            'promotion_ends_at.required_with' => 'Informe o fim da vigência da promoção.',
+            'promotion_ends_at.date' => 'Informe uma data válida para o fim da promoção.',
+        ];
     }
 
     /**
@@ -268,7 +407,7 @@ new #[Layout('components.admin-layout', ['activeItem' => 'produtos', 'title' => 
     <section class="mt-6 rounded-xl border border-border bg-white p-5">
         <div class="mb-4 flex items-center justify-between">
             <h2 class="font-heading text-lg font-bold text-ink">Variantes do produto</h2>
-            <button type="button" class="rounded-lg border border-border-light px-4 py-2.5 font-sans text-xs font-semibold text-ink">Nova variante</button>
+            <button type="button" wire:click="resetVariantForm" class="rounded-lg border border-border-light px-4 py-2.5 font-sans text-xs font-semibold text-ink">Nova variante</button>
         </div>
         <div class="overflow-x-auto">
             <table class="w-full min-w-[720px] border-collapse font-sans text-[13px]">
@@ -282,6 +421,7 @@ new #[Layout('components.admin-layout', ['activeItem' => 'produtos', 'title' => 
                         <th class="border border-border bg-surface-alt px-3 py-2.5 text-left text-xs font-semibold text-ink">Vigência</th>
                         <th class="border border-border bg-surface-alt px-3 py-2.5 text-left text-xs font-semibold text-ink">Padrão</th>
                         <th class="border border-border bg-surface-alt px-3 py-2.5 text-left text-xs font-semibold text-ink">Ativo</th>
+                        <th class="border border-border bg-surface-alt px-3 py-2.5 text-left text-xs font-semibold text-ink">Ações</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -301,6 +441,9 @@ new #[Layout('components.admin-layout', ['activeItem' => 'produtos', 'title' => 
                             </td>
                             <td class="border border-border px-3 py-2.5 text-ink">{{ $variant->is_default ? 'Sim' : 'Não' }}</td>
                             <td class="border border-border px-3 py-2.5 text-ink">{{ $variant->is_active ? 'Sim' : 'Não' }}</td>
+                            <td class="border border-border px-3 py-2.5 text-ink">
+                                <button type="button" wire:click="editVariant({{ $variant->id }})" class="rounded-lg border border-border-light px-3 py-1.5 font-sans text-xs font-semibold text-ink">Editar</button>
+                            </td>
                         </tr>
                     @endforeach
                 </tbody>
@@ -311,42 +454,64 @@ new #[Layout('components.admin-layout', ['activeItem' => 'produtos', 'title' => 
     {{-- Bloco: Edição de variante --}}
     <section class="mt-6 rounded-xl border border-border bg-white p-5">
         <h2 class="mb-4 font-heading text-lg font-bold text-ink">Edição de variante</h2>
-        <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <form wire:submit="{{ $variantId ? 'updateVariant' : 'createVariant' }}" class="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
                 <label class="mb-1 block font-sans text-xs font-semibold text-muted">SKU</label>
-                <input type="text" value="ECPF-A1-12M" class="w-full rounded-lg border border-border-light px-3 py-2.5 font-sans text-sm text-ink">
+                <input type="text" wire:model="sku" class="w-full rounded-lg border border-border-light px-3 py-2.5 font-sans text-sm text-ink">
+                @error('sku')
+                    <span class="mt-1 block font-sans text-xs text-[#8f2020]">{{ $message }}</span>
+                @enderror
             </div>
             <div>
                 <label class="mb-1 block font-sans text-xs font-semibold text-muted">Tipo de certificado</label>
-                <select class="w-full rounded-lg border border-border-light px-3 py-2.5 font-sans text-sm text-ink">
-                    <option selected>A1</option>
-                    <option>A3</option>
+                <select wire:model="certificate_format_id" class="w-full rounded-lg border border-border-light px-3 py-2.5 font-sans text-sm text-ink">
+                    <option value="">Selecione</option>
+                    @foreach ($this->certificateFormats as $certificateFormat)
+                        <option value="{{ $certificateFormat->id }}">{{ $certificateFormat->name }}</option>
+                    @endforeach
                 </select>
+                @error('certificate_format_id')
+                    <span class="mt-1 block font-sans text-xs text-[#8f2020]">{{ $message }}</span>
+                @enderror
             </div>
             <div>
                 <label class="mb-1 block font-sans text-xs font-semibold text-muted">Validade em meses</label>
-                <input type="text" value="12" class="w-full rounded-lg border border-border-light px-3 py-2.5 font-sans text-sm text-ink">
+                <input type="number" wire:model="validity_months" class="w-full rounded-lg border border-border-light px-3 py-2.5 font-sans text-sm text-ink">
+                @error('validity_months')
+                    <span class="mt-1 block font-sans text-xs text-[#8f2020]">{{ $message }}</span>
+                @enderror
             </div>
             <div>
                 <label class="mb-1 block font-sans text-xs font-semibold text-muted">Preço</label>
-                <input type="text" value="R$ 250,00" class="w-full rounded-lg border border-border-light px-3 py-2.5 font-sans text-sm text-ink">
+                <input type="text" wire:model="price" class="w-full rounded-lg border border-border-light px-3 py-2.5 font-sans text-sm text-ink">
+                @error('price')
+                    <span class="mt-1 block font-sans text-xs text-[#8f2020]">{{ $message }}</span>
+                @enderror
             </div>
             <div>
                 <label class="mb-1 block font-sans text-xs font-semibold text-muted">Preço promocional</label>
-                <input type="text" value="R$ 213,75" class="w-full rounded-lg border border-border-light px-3 py-2.5 font-sans text-sm text-ink">
+                <input type="text" wire:model="promotional_price" class="w-full rounded-lg border border-border-light px-3 py-2.5 font-sans text-sm text-ink">
+                @error('promotional_price')
+                    <span class="mt-1 block font-sans text-xs text-[#8f2020]">{{ $message }}</span>
+                @enderror
             </div>
             <div>
-                <label class="mb-1 block font-sans text-xs font-semibold text-muted">Vigência da promoção</label>
-                <input type="text" value="até 31/08/2026" class="w-full rounded-lg border border-border-light px-3 py-2.5 font-sans text-sm text-ink">
+                <label class="mb-1 block font-sans text-xs font-semibold text-muted">Início da vigência da promoção</label>
+                <input type="date" wire:model="promotion_starts_at" class="w-full rounded-lg border border-border-light px-3 py-2.5 font-sans text-sm text-ink">
+                @error('promotion_starts_at')
+                    <span class="mt-1 block font-sans text-xs text-[#8f2020]">{{ $message }}</span>
+                @enderror
             </div>
-            <label class="flex items-center gap-2 font-sans text-xs text-muted">
-                <input type="checkbox" checked>
-                Variante padrão
-            </label>
-            <label class="flex items-center gap-2 font-sans text-xs text-muted">
-                <input type="checkbox" checked>
-                Ativo
-            </label>
-        </div>
+            <div>
+                <label class="mb-1 block font-sans text-xs font-semibold text-muted">Fim da vigência da promoção</label>
+                <input type="date" wire:model="promotion_ends_at" class="w-full rounded-lg border border-border-light px-3 py-2.5 font-sans text-sm text-ink">
+                @error('promotion_ends_at')
+                    <span class="mt-1 block font-sans text-xs text-[#8f2020]">{{ $message }}</span>
+                @enderror
+            </div>
+            <div class="md:col-span-2">
+                <button type="submit" class="rounded-lg bg-brand px-4 py-2.5 font-heading text-xs font-semibold text-white">{{ $variantId ? 'Salvar alterações' : 'Salvar variante' }}</button>
+            </div>
+        </form>
     </section>
 </div>
