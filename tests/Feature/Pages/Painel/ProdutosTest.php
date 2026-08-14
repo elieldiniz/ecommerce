@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Pages\Painel;
 
+use App\Models\CertificateFormat;
 use App\Models\HolderType;
 use App\Models\Product;
 use App\Models\ProductVariant;
@@ -184,6 +185,31 @@ class ProdutosTest extends TestCase
             'slug' => 'slug-original',
         ]);
         $this->assertDatabaseHas('products', ['id' => $other->id, 'slug' => 'slug-em-uso']);
+    }
+
+    public function test_toggling_product_status_persists_product_and_variants_and_flips_status(): void
+    {
+        $this->actingAs(User::factory()->create());
+
+        $product = Product::factory()->create(['is_active' => true]);
+        $a1 = CertificateFormat::query()->firstOrCreate(['slug' => 'a1'], ['name' => 'A1', 'requires_hardware' => false]);
+        $a3 = CertificateFormat::query()->firstOrCreate(['slug' => 'a3'], ['name' => 'A3', 'requires_hardware' => true]);
+        $variants = collect([
+            ProductVariant::factory()->for($product)->create(['certificate_format_id' => $a1->id]),
+            ProductVariant::factory()->for($product)->create(['certificate_format_id' => $a3->id]),
+        ]);
+
+        Livewire::test('pages::painel.produtos')
+            ->call('toggleProductStatus', $product->id)
+            ->assertHasNoErrors();
+
+        $this->assertDatabaseHas('products', ['id' => $product->id, 'is_active' => false]);
+        foreach ($variants as $variant) {
+            $this->assertDatabaseHas('product_variants', ['id' => $variant->id, 'product_id' => $product->id]);
+        }
+
+        $response = $this->get('/painel/produtos/');
+        $response->assertSee('Ativar');
     }
 
     public function test_table_variantes_renders_three_variants_with_eight_columns_and_new_variant_button(): void

@@ -118,6 +118,14 @@ new #[Layout('components.admin-layout', ['activeItem' => 'produtos', 'title' => 
         $this->reset('productId', 'name', 'slug', 'holder_type_id', 'short_description', 'position');
     }
 
+    public function toggleProductStatus(int $productId): void
+    {
+        DB::transaction(function () use ($productId): void {
+            $product = Product::findOrFail($productId);
+            $product->update(['is_active' => ! $product->is_active]);
+        });
+    }
+
     /**
      * @return array<string, array<int, ValidationRule|array<mixed>|string>>
      */
@@ -191,6 +199,7 @@ new #[Layout('components.admin-layout', ['activeItem' => 'produtos', 'title' => 
                             <td class="border border-border px-3 py-2.5 text-ink">{{ $product->is_active ? 'Sim' : 'Não' }}</td>
                             <td class="border border-border px-3 py-2.5 text-ink">
                                 <button type="button" wire:click="editProduct({{ $product->id }})" class="rounded-lg border border-border-light px-3 py-1.5 font-sans text-xs font-semibold text-ink">Editar</button>
+                                <button type="button" wire:click="toggleProductStatus({{ $product->id }})" class="ml-2 rounded-lg border border-border-light px-3 py-1.5 font-sans text-xs font-semibold text-ink">{{ $product->is_active ? 'Desativar' : 'Ativar' }}</button>
                             </td>
                         </tr>
                     @endforeach
