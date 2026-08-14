@@ -1,9 +1,14 @@
 <?php
 
+use App\Models\HolderType;
 use App\Models\Product;
 use App\Models\ProductVariant;
+use Flux\Flux;
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Number;
+use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -11,6 +16,18 @@ use Livewire\Component;
 
 new #[Layout('components.admin-layout', ['activeItem' => 'produtos', 'title' => 'Produtos'])] #[Title('Produtos')] class extends Component {
     public ?int $selectedProductId = null;
+
+    public ?int $productId = null;
+
+    public string $name = '';
+
+    public string $slug = '';
+
+    public ?int $holder_type_id = null;
+
+    public ?string $short_description = null;
+
+    public ?int $position = null;
 
     public function mount(): void
     {
@@ -24,6 +41,15 @@ new #[Layout('components.admin-layout', ['activeItem' => 'produtos', 'title' => 
     public function products(): Collection
     {
         return Product::with(['holderType', 'variants'])->orderBy('position')->get();
+    }
+
+    /**
+     * @return Collection<int, HolderType>
+     */
+    #[Computed]
+    public function holderTypes(): Collection
+    {
+        return HolderType::orderBy('name')->get();
     }
 
     public function startingPriceFor(Product $product): string
@@ -48,6 +74,82 @@ new #[Layout('components.admin-layout', ['activeItem' => 'produtos', 'title' => 
 
         return (float) ($hasActivePromotion ? $variant->promotional_price : $variant->price);
     }
+
+    public function createProduct(): void
+    {
+        $validated = $this->validate($this->productRules(), $this->productMessages());
+
+        DB::transaction(function () use ($validated): void {
+            Product::create([...$validated, 'is_active' => true]);
+        });
+
+        $this->resetProductForm();
+
+        Flux::toast(variant: 'success', text: __('Produto criado.'));
+    }
+
+    public function editProduct(int $productId): void
+    {
+        $product = Product::findOrFail($productId);
+
+        $this->productId = $product->id;
+        $this->name = $product->name;
+        $this->slug = $product->slug;
+        $this->holder_type_id = $product->holder_type_id;
+        $this->short_description = $product->short_description;
+        $this->position = $product->position;
+    }
+
+    public function updateProduct(): void
+    {
+        $validated = $this->validate($this->productRules(), $this->productMessages());
+
+        DB::transaction(function () use ($validated): void {
+            Product::findOrFail($this->productId)->update($validated);
+        });
+
+        $this->resetProductForm();
+
+        Flux::toast(variant: 'success', text: __('Produto atualizado.'));
+    }
+
+    public function resetProductForm(): void
+    {
+        $this->reset('productId', 'name', 'slug', 'holder_type_id', 'short_description', 'position');
+    }
+
+    /**
+     * @return array<string, array<int, ValidationRule|array<mixed>|string>>
+     */
+    private function productRules(): array
+    {
+        return [
+            'name' => ['required', 'string', 'max:120'],
+            'slug' => ['required', 'string', 'max:120', Rule::unique('products', 'slug')->ignore($this->productId)],
+            'holder_type_id' => ['required', 'integer'],
+            'short_description' => ['nullable', 'string', 'max:255'],
+            'position' => ['required', 'integer'],
+        ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function productMessages(): array
+    {
+        return [
+            'name.required' => 'Informe o nome do produto.',
+            'name.max' => 'O nome deve ter no máximo 120 caracteres.',
+            'slug.required' => 'Informe o slug do produto.',
+            'slug.max' => 'O slug deve ter no máximo 120 caracteres.',
+            'slug.unique' => 'Este slug já está em uso por outro produto.',
+            'holder_type_id.required' => 'Selecione o tipo de titular.',
+            'holder_type_id.integer' => 'Selecione um tipo de titular válido.',
+            'short_description.max' => 'A descrição curta deve ter no máximo 255 caracteres.',
+            'position.required' => 'Informe a ordem de exibição.',
+            'position.integer' => 'A ordem de exibição deve ser um número inteiro.',
+        ];
+    }
 }; ?>
 
 @php
@@ -63,7 +165,7 @@ new #[Layout('components.admin-layout', ['activeItem' => 'produtos', 'title' => 
     <section class="rounded-xl border border-border bg-white p-5">
         <div class="mb-4 flex items-center justify-between">
             <h2 class="font-heading text-lg font-bold text-ink">Lista</h2>
-            <button type="button" class="rounded-lg bg-brand px-4 py-2.5 font-heading text-xs font-semibold text-white">Novo produto</button>
+            <button type="button" wire:click="resetProductForm" class="rounded-lg bg-brand px-4 py-2.5 font-heading text-xs font-semibold text-white">Novo produto</button>
         </div>
         <div class="overflow-x-auto">
             <table class="w-full min-w-[560px] border-collapse font-sans text-[13px]">
@@ -75,6 +177,7 @@ new #[Layout('components.admin-layout', ['activeItem' => 'produtos', 'title' => 
                         <th class="border border-border bg-surface-alt px-3 py-2.5 text-left text-xs font-semibold text-ink">Variantes</th>
                         <th class="border border-border bg-surface-alt px-3 py-2.5 text-left text-xs font-semibold text-ink">A partir de</th>
                         <th class="border border-border bg-surface-alt px-3 py-2.5 text-left text-xs font-semibold text-ink">Ativo</th>
+                        <th class="border border-border bg-surface-alt px-3 py-2.5 text-left text-xs font-semibold text-ink">Ações</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -86,6 +189,9 @@ new #[Layout('components.admin-layout', ['activeItem' => 'produtos', 'title' => 
                             <td class="border border-border px-3 py-2.5 text-ink">{{ $product->variants->count() }}</td>
                             <td class="border border-border px-3 py-2.5 text-ink">{{ $this->startingPriceFor($product) }}</td>
                             <td class="border border-border px-3 py-2.5 text-ink">{{ $product->is_active ? 'Sim' : 'Não' }}</td>
+                            <td class="border border-border px-3 py-2.5 text-ink">
+                                <button type="button" wire:click="editProduct({{ $product->id }})" class="rounded-lg border border-border-light px-3 py-1.5 font-sans text-xs font-semibold text-ink">Editar</button>
+                            </td>
                         </tr>
                     @endforeach
                 </tbody>
@@ -96,35 +202,51 @@ new #[Layout('components.admin-layout', ['activeItem' => 'produtos', 'title' => 
     {{-- Bloco: Edição · dados do produto --}}
     <section class="mt-6 rounded-xl border border-border bg-white p-5">
         <h2 class="mb-4 font-heading text-lg font-bold text-ink">Edição · dados do produto</h2>
-        <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <form wire:submit="{{ $productId ? 'updateProduct' : 'createProduct' }}" class="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
                 <label class="mb-1 block font-sans text-xs font-semibold text-muted">Nome</label>
-                <input type="text" value="e-CPF" class="w-full rounded-lg border border-border-light px-3 py-2.5 font-sans text-sm text-ink">
+                <input type="text" wire:model="name" class="w-full rounded-lg border border-border-light px-3 py-2.5 font-sans text-sm text-ink">
+                @error('name')
+                    <span class="mt-1 block font-sans text-xs text-[#8f2020]">{{ $message }}</span>
+                @enderror
             </div>
             <div>
                 <label class="mb-1 block font-sans text-xs font-semibold text-muted">Slug</label>
-                <input type="text" value="certificado-digital/e-cpf" class="w-full rounded-lg border border-border-light px-3 py-2.5 font-sans text-sm text-ink">
+                <input type="text" wire:model="slug" class="w-full rounded-lg border border-border-light px-3 py-2.5 font-sans text-sm text-ink">
+                @error('slug')
+                    <span class="mt-1 block font-sans text-xs text-[#8f2020]">{{ $message }}</span>
+                @enderror
             </div>
             <div>
                 <label class="mb-1 block font-sans text-xs font-semibold text-muted">Tipo de titular</label>
-                <select class="w-full rounded-lg border border-border-light px-3 py-2.5 font-sans text-sm text-ink">
-                    <option selected>Pessoa física</option>
-                    <option>Pessoa jurídica</option>
+                <select wire:model="holder_type_id" class="w-full rounded-lg border border-border-light px-3 py-2.5 font-sans text-sm text-ink">
+                    <option value="">Selecione</option>
+                    @foreach ($this->holderTypes as $holderType)
+                        <option value="{{ $holderType->id }}">{{ $holderType->name }}</option>
+                    @endforeach
                 </select>
+                @error('holder_type_id')
+                    <span class="mt-1 block font-sans text-xs text-[#8f2020]">{{ $message }}</span>
+                @enderror
             </div>
             <div>
                 <label class="mb-1 block font-sans text-xs font-semibold text-muted">Ordem</label>
-                <input type="text" value="1" class="w-full rounded-lg border border-border-light px-3 py-2.5 font-sans text-sm text-ink">
+                <input type="number" wire:model="position" class="w-full rounded-lg border border-border-light px-3 py-2.5 font-sans text-sm text-ink">
+                @error('position')
+                    <span class="mt-1 block font-sans text-xs text-[#8f2020]">{{ $message }}</span>
+                @enderror
             </div>
             <div class="md:col-span-2">
                 <label class="mb-1 block font-sans text-xs font-semibold text-muted">Descrição curta</label>
-                <input type="text" value="Certificado Digital e-CPF para pessoa física" class="w-full rounded-lg border border-border-light px-3 py-2.5 font-sans text-sm text-ink">
+                <input type="text" wire:model="short_description" class="w-full rounded-lg border border-border-light px-3 py-2.5 font-sans text-sm text-ink">
+                @error('short_description')
+                    <span class="mt-1 block font-sans text-xs text-[#8f2020]">{{ $message }}</span>
+                @enderror
             </div>
-            <label class="flex items-center gap-2 font-sans text-xs text-muted">
-                <input type="checkbox" checked>
-                Ativo
-            </label>
-        </div>
+            <div class="md:col-span-2">
+                <button type="submit" class="rounded-lg bg-brand px-4 py-2.5 font-heading text-xs font-semibold text-white">{{ $productId ? 'Salvar alterações' : 'Salvar produto' }}</button>
+            </div>
+        </form>
     </section>
 
     {{-- Bloco: Variantes do produto --}}

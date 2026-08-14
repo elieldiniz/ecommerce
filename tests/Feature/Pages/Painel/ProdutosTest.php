@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Pages\Painel;
 
+use App\Models\HolderType;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\User;
@@ -67,19 +68,122 @@ class ProdutosTest extends TestCase
         $response->assertSee('Não');
     }
 
-    public function test_block_edicao_produto_renders_six_prefilled_fields(): void
+    public function test_block_edicao_produto_renders_the_form(): void
     {
         $this->actingAs(User::factory()->create());
 
         $response = $this->get('/painel/produtos/');
 
         $response->assertSee('Edição · dados do produto');
-        $response->assertSee('value="e-CPF"', false);
-        $response->assertSee('value="certificado-digital/e-cpf"', false);
         $response->assertSee('Tipo de titular');
-        $response->assertSee('value="1"', false);
-        $response->assertSee('value="Certificado Digital e-CPF para pessoa física"', false);
-        $response->assertSee('checked', false);
+    }
+
+    public function test_creating_product_with_valid_data_creates_exactly_one_active_row(): void
+    {
+        $this->actingAs(User::factory()->create());
+
+        $holderType = HolderType::factory()->create();
+
+        Livewire::test('pages::painel.produtos')
+            ->set('name', 'Certificado Digital e-CPF')
+            ->set('slug', 'certificado-digital-e-cpf')
+            ->set('holder_type_id', $holderType->id)
+            ->set('position', 1)
+            ->call('createProduct')
+            ->assertHasNoErrors();
+
+        $this->assertDatabaseCount('products', 1);
+        $this->assertDatabaseHas('products', [
+            'name' => 'Certificado Digital e-CPF',
+            'slug' => 'certificado-digital-e-cpf',
+            'holder_type_id' => $holderType->id,
+            'position' => 1,
+            'is_active' => true,
+        ]);
+    }
+
+    public function test_creating_product_with_duplicate_slug_is_rejected_without_creating_row(): void
+    {
+        $this->actingAs(User::factory()->create());
+
+        $holderType = HolderType::factory()->create();
+        $existing = Product::factory()->create(['slug' => 'certificado-digital-e-cpf', 'holder_type_id' => $holderType->id]);
+
+        Livewire::test('pages::painel.produtos')
+            ->set('name', 'Outro produto')
+            ->set('slug', 'certificado-digital-e-cpf')
+            ->set('holder_type_id', $holderType->id)
+            ->set('position', 1)
+            ->call('createProduct')
+            ->assertHasErrors(['slug' => 'unique']);
+
+        $this->assertDatabaseCount('products', 1);
+        $this->assertDatabaseHas('products', ['id' => $existing->id, 'slug' => 'certificado-digital-e-cpf']);
+    }
+
+    public function test_creating_product_without_required_fields_is_rejected_per_field(): void
+    {
+        $this->actingAs(User::factory()->create());
+
+        Livewire::test('pages::painel.produtos')
+            ->set('name', '')
+            ->set('slug', '')
+            ->set('holder_type_id', null)
+            ->set('position', null)
+            ->call('createProduct')
+            ->assertHasErrors(['name' => 'required', 'slug' => 'required', 'holder_type_id' => 'required', 'position' => 'required']);
+
+        $this->assertDatabaseCount('products', 0);
+    }
+
+    public function test_editing_product_reflects_in_listing(): void
+    {
+        $this->actingAs(User::factory()->create());
+
+        $holderType = HolderType::factory()->create();
+        $product = Product::factory()->create(['name' => 'Nome antigo', 'holder_type_id' => $holderType->id]);
+
+        Livewire::test('pages::painel.produtos')
+            ->call('editProduct', $product->id)
+            ->set('name', 'Nome novo')
+            ->set('slug', 'novo-slug')
+            ->set('holder_type_id', $holderType->id)
+            ->set('position', 5)
+            ->call('updateProduct')
+            ->assertHasNoErrors();
+
+        $response = $this->get('/painel/produtos/');
+        $response->assertSee('Nome novo');
+        $response->assertDontSee('Nome antigo');
+
+        $this->assertDatabaseHas('products', [
+            'id' => $product->id,
+            'name' => 'Nome novo',
+            'slug' => 'novo-slug',
+            'holder_type_id' => $holderType->id,
+            'position' => 5,
+        ]);
+    }
+
+    public function test_editing_product_slug_conflict_is_rejected_and_original_unchanged(): void
+    {
+        $this->actingAs(User::factory()->create());
+
+        $other = Product::factory()->create(['slug' => 'slug-em-uso']);
+        $product = Product::factory()->create(['name' => 'Produto original', 'slug' => 'slug-original']);
+
+        Livewire::test('pages::painel.produtos')
+            ->call('editProduct', $product->id)
+            ->set('slug', 'slug-em-uso')
+            ->call('updateProduct')
+            ->assertHasErrors(['slug' => 'unique']);
+
+        $this->assertDatabaseHas('products', [
+            'id' => $product->id,
+            'name' => 'Produto original',
+            'slug' => 'slug-original',
+        ]);
+        $this->assertDatabaseHas('products', ['id' => $other->id, 'slug' => 'slug-em-uso']);
     }
 
     public function test_table_variantes_renders_three_variants_with_eight_columns_and_new_variant_button(): void
