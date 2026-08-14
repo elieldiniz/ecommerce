@@ -224,40 +224,36 @@ class ProdutosTest extends TestCase
 
         ProductVariant::factory()->for($product)->create([
             'certificate_format_id' => $a1->id,
-            'sku' => 'ECPF-A1-12M',
+            'sku' => 'PRODUTO-A1-VARIANTE',
             'validity_months' => 12,
             'price' => 250,
             'is_active' => true,
         ]);
         ProductVariant::factory()->for($product)->create([
             'certificate_format_id' => $a3->id,
-            'sku' => 'ECPF-A3-36M',
+            'sku' => 'PRODUTO-A3-VARIANTE',
             'validity_months' => 36,
             'price' => 350,
             'is_active' => false,
         ]);
         ProductVariant::factory()->for($otherProduct)->create([
             'certificate_format_id' => $a1->id,
-            'sku' => 'OUTRO-SKU',
+            'sku' => 'OUTRO-PRODUTO-SKU',
         ]);
-
-        fwrite(STDERR, "DEBUG product id: {$product->id}, otherProduct id: {$otherProduct->id}\n");
 
         $component = Livewire::test('pages::painel.produtos')
             ->call('selectProduct', $product->id);
 
-        fwrite(STDERR, "DEBUG selectedProductId after call: " . var_export($component->get('selectedProductId'), true) . "\n");
-
         $component->assertSeeHtmlInOrder(['SKU', 'Tipo', 'Validade', 'Preço', 'Promocional', 'Vigência', 'Padrão', 'Ativo']);
         $component->assertSee('Nova variante');
-        $component->assertSee('ECPF-A1-12M');
-        $component->assertSee('ECPF-A3-36M');
-        $component->assertDontSee('OUTRO-SKU');
+        $component->assertSee('PRODUTO-A1-VARIANTE');
+        $component->assertSee('PRODUTO-A3-VARIANTE');
+        $component->assertDontSee('OUTRO-PRODUTO-SKU');
 
         $component->call('selectProduct', $otherProduct->id)
-            ->assertSee('OUTRO-SKU')
-            ->assertDontSee('ECPF-A1-12M')
-            ->assertDontSee('ECPF-A3-36M');
+            ->assertSee('OUTRO-PRODUTO-SKU')
+            ->assertDontSee('PRODUTO-A1-VARIANTE')
+            ->assertDontSee('PRODUTO-A3-VARIANTE');
     }
 
     public function test_block_edicao_variante_renders_eight_prefilled_fields(): void

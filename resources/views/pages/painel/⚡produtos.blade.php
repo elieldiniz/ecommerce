@@ -137,8 +137,6 @@ new #[Layout('components.admin-layout', ['activeItem' => 'produtos', 'title' => 
     #[Computed]
     public function variants(): Collection
     {
-        fwrite(STDERR, "DEBUG variants() selectedProductId=" . var_export($this->selectedProductId, true) . "\n");
-
         return ProductVariant::where('product_id', $this->selectedProductId)->with('certificateFormat')->get();
     }
 
