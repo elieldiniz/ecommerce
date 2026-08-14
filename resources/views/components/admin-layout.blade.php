@@ -63,9 +63,8 @@
                         @endforeach
                     </nav>
                 </div>
-                <div class="border-t border-white/10 pt-4 font-sans text-xs text-white/60">
-                    {{ auth()->user()->name }}
-                    <span class="block text-white/40">admin</span>
+                <div class="dark border-t border-white/10 pt-4">
+                    <x-desktop-user-menu :mock="$activeItem !== 'configuracoes'" />
                 </div>
             </aside>
 
@@ -112,9 +111,8 @@
                         @endforeach
                     </nav>
                 </div>
-                <div class="border-t border-white/10 pt-4 font-sans text-xs text-white/60">
-                    {{ auth()->user()->name }}
-                    <span class="block text-white/40">admin</span>
+                <div class="dark border-t border-white/10 pt-4">
+                    <x-desktop-user-menu :mock="$activeItem !== 'configuracoes'" />
                 </div>
             </aside>
 

@@ -20,8 +20,6 @@ Route::get('pedido/{id}/emissao/', ShowEmissaoController::class)->name('pedido.e
 Route::view('minha-conta/pedidos/', 'pages.minha-conta.pedidos')->name('minha-conta.pedidos');
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::view('dashboard', 'dashboard')->name('dashboard');
-
     Route::view('painel/', 'pages.painel.visao-geral')->name('painel.visao-geral');
     Route::view('painel/vendas/', 'pages.painel.vendas.index')->name('painel.vendas.index');
     Route::view('painel/vendas/{id}/', 'pages.painel.vendas.show')->name('painel.vendas.show');
@@ -30,6 +28,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::view('painel/formas-pagamento/', 'pages.painel.formas-pagamento')->name('painel.formas-pagamento');
     Route::view('painel/clientes/', 'pages.painel.clientes')->name('painel.clientes');
     Route::view('painel/relatorios/', 'pages.painel.relatorios')->name('painel.relatorios');
-});
 
-require __DIR__.'/settings.php';
+    Route::livewire('painel/configuracoes/', 'pages::painel.configuracoes')->name('painel.configuracoes');
+});

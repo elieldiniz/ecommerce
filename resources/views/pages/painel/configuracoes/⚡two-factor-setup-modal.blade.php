@@ -57,7 +57,7 @@ new class extends Component {
             $this->qrCodeSvg = $user->twoFactorQrCodeSvg();
             $this->manualSetupKey = decrypt($user->two_factor_secret);
         } catch (Exception) {
-            $this->addError('setupData', 'Failed to fetch setup data.');
+            $this->addError('setupData', 'Não foi possível carregar os dados de configuração.');
 
             $this->reset('qrCodeSvg', 'manualSetupKey');
         }
@@ -130,24 +130,24 @@ new class extends Component {
     {
         if ($this->setupComplete) {
             return [
-                'title' => __('Two-factor authentication enabled'),
-                'description' => __('Two-factor authentication is now enabled. Scan the QR code or enter the setup key in your authenticator app.'),
-                'buttonText' => __('Close'),
+                'title' => 'Autenticação de dois fatores ativada',
+                'description' => 'A autenticação de dois fatores está ativada. Escaneie o QR code ou informe a chave de configuração no seu aplicativo autenticador.',
+                'buttonText' => 'Fechar',
             ];
         }
 
         if ($this->showVerificationStep) {
             return [
-                'title' => __('Verify authentication code'),
-                'description' => __('Enter the 6-digit code from your authenticator app.'),
-                'buttonText' => __('Continue'),
+                'title' => 'Verificar código de autenticação',
+                'description' => 'Informe o código de 6 dígitos do seu aplicativo autenticador.',
+                'buttonText' => 'Continuar',
             ];
         }
 
         return [
-            'title' => __('Enable two-factor authentication'),
-            'description' => __('To finish enabling two-factor authentication, scan the QR code or enter the setup key in your authenticator app.'),
-            'buttonText' => __('Continue'),
+            'title' => 'Ativar autenticação de dois fatores',
+            'description' => 'Para concluir a ativação, escaneie o QR code ou informe a chave de configuração no seu aplicativo autenticador.',
+            'buttonText' => 'Continuar',
         ];
     }
 }; ?>
@@ -159,27 +159,15 @@ new class extends Component {
 >
         <div class="space-y-6">
             <div class="flex flex-col items-center space-y-4">
-                <div class="p-0.5 w-auto rounded-full border border-stone-100 dark:border-stone-600 bg-white dark:bg-stone-800 shadow-sm">
-                    <div class="p-2.5 rounded-full border border-stone-200 dark:border-stone-600 overflow-hidden bg-stone-100 dark:bg-stone-200 relative">
-                        <div class="flex items-stretch absolute inset-0 w-full h-full divide-x [&>div]:flex-1 divide-stone-200 dark:divide-stone-300 justify-around opacity-50">
-                            @for ($i = 1; $i <= 5; $i++)
-                                <div></div>
-                            @endfor
-                        </div>
-
-                        <div class="flex flex-col items-stretch absolute w-full h-full divide-y [&>div]:flex-1 inset-0 divide-stone-200 dark:divide-stone-300 justify-around opacity-50">
-                            @for ($i = 1; $i <= 5; $i++)
-                                <div></div>
-                            @endfor
-                        </div>
-
-                        <flux:icon.qr-code class="relative z-20 dark:text-accent-foreground"/>
+                <div class="w-auto rounded-full border border-border bg-white p-0.5 shadow-sm">
+                    <div class="relative overflow-hidden rounded-full border border-border bg-surface-alt p-2.5">
+                        <flux:icon.qr-code class="relative z-20 text-ink"/>
                     </div>
                 </div>
 
                 <div class="space-y-2 text-center">
                     <flux:heading size="lg">{{ $this->modalConfig['title'] }}</flux:heading>
-                    <flux:text>{{ $this->modalConfig['description'] }}</flux:text>
+                    <p class="font-sans text-sm text-muted">{{ $this->modalConfig['description'] }}</p>
                 </div>
             </div>
 
@@ -194,48 +182,41 @@ new class extends Component {
                             name="code"
                             wire:model="code"
                             length="6"
-                            label="OTP Code"
+                            label="Código OTP"
                             label:sr-only
                             class="mx-auto"
                         />
                     </div>
 
                     <div class="flex items-center space-x-3">
-                        <flux:button
-                            variant="outline"
-                            class="flex-1"
-                            wire:click="resetVerification"
-                        >
-                            {{ __('Back') }}
-                        </flux:button>
+                        <button type="button" wire:click="resetVerification" class="flex-1 rounded-lg border border-border-light px-4 py-2.5 font-sans text-xs font-semibold text-ink">
+                            Voltar
+                        </button>
 
-                        <flux:button
-                            variant="primary"
-                            class="flex-1"
+                        <button
+                            type="button"
                             wire:click="confirmTwoFactor"
                             x-bind:disabled="$wire.code.length < 6"
+                            class="flex-1 rounded-lg bg-brand px-4 py-2.5 font-heading text-xs font-semibold text-white disabled:opacity-50"
                         >
-                            {{ __('Confirm') }}
-                        </flux:button>
+                            Confirmar
+                        </button>
                     </div>
                 </div>
             @else
                 @error('setupData')
-                    <flux:callout variant="danger" icon="x-circle" heading="{{ $message }}"/>
+                    <p class="font-sans text-xs text-[#8f2020]">{{ $message }}</p>
                 @enderror
 
                 <div class="flex justify-center">
-                    <div class="relative w-64 overflow-hidden border rounded-lg border-stone-200 dark:border-stone-700 aspect-square">
+                    <div class="relative aspect-square w-64 overflow-hidden rounded-lg border border-border">
                         @empty($qrCodeSvg)
-                            <div class="absolute inset-0 flex items-center justify-center bg-white dark:bg-stone-700 animate-pulse">
+                            <div class="absolute inset-0 flex animate-pulse items-center justify-center bg-surface-alt">
                                 <flux:icon.loading/>
                             </div>
                         @else
                             <div x-data class="flex items-center justify-center h-full p-4">
-                                <div
-                                    class="bg-white p-3 rounded"
-                                    :style="($flux.appearance === 'dark' || ($flux.appearance === 'system' && $flux.dark)) ? 'filter: invert(1) brightness(1.5)' : ''"
-                                >
+                                <div class="rounded bg-white p-3">
                                     {!! $qrCodeSvg !!}
                                 </div>
                             </div>
@@ -244,21 +225,21 @@ new class extends Component {
                 </div>
 
                 <div>
-                    <flux:button
+                    <button
+                        type="button"
                         :disabled="$errors->has('setupData')"
-                        variant="primary"
-                        class="w-full"
                         wire:click="showVerificationIfNecessary"
+                        class="w-full rounded-lg bg-brand px-4 py-2.5 font-heading text-xs font-semibold text-white disabled:opacity-50"
                     >
                         {{ $this->modalConfig['buttonText'] }}
-                    </flux:button>
+                    </button>
                 </div>
 
                 <div class="space-y-4">
                     <div class="relative flex items-center justify-center w-full">
-                        <div class="absolute inset-0 w-full h-px top-1/2 bg-stone-200 dark:bg-stone-600"></div>
-                        <span class="relative px-2 text-sm bg-white dark:bg-stone-800 text-stone-600 dark:text-stone-400">
-                            {{ __('or, enter the code manually') }}
+                        <div class="absolute inset-0 top-1/2 h-px w-full bg-border"></div>
+                        <span class="relative bg-white px-2 font-sans text-sm text-muted">
+                            ou informe o código manualmente
                         </span>
                     </div>
 
@@ -277,9 +258,9 @@ new class extends Component {
                             }
                         }"
                     >
-                        <div class="flex items-stretch w-full border rounded-xl dark:border-stone-700">
+                        <div class="flex items-stretch w-full rounded-xl border border-border">
                             @empty($manualSetupKey)
-                                <div class="flex items-center justify-center w-full p-3 bg-stone-100 dark:bg-stone-700">
+                                <div class="flex w-full items-center justify-center bg-surface-alt p-3">
                                     <flux:icon.loading variant="mini"/>
                                 </div>
                             @else
@@ -287,18 +268,18 @@ new class extends Component {
                                     type="text"
                                     readonly
                                     value="{{ $manualSetupKey }}"
-                                    class="w-full p-3 bg-transparent outline-none text-stone-900 dark:text-stone-100"
+                                    class="w-full bg-transparent p-3 text-ink outline-none"
                                 />
 
                                 <button
                                     @click="copy()"
-                                    class="px-3 transition-colors border-l cursor-pointer border-stone-200 dark:border-stone-600"
+                                    class="cursor-pointer border-l border-border px-3 transition-colors"
                                 >
                                     <flux:icon.document-duplicate x-show="!copied" variant="outline"></flux:icon>
                                     <flux:icon.check
                                         x-show="copied"
                                         variant="solid"
-                                        class="text-green-500"
+                                        class="text-[#1e5c34]"
                                     ></flux:icon>
                                 </button>
                             @endempty
