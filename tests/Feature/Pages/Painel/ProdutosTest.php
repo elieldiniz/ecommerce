@@ -444,4 +444,49 @@ class ProdutosTest extends TestCase
         $this->assertDatabaseHas('product_variants', ['id' => $variantC->id, 'is_default' => false]);
         $this->assertDatabaseHas('product_variants', ['id' => $otherProductVariant->id, 'is_default' => true]);
     }
+
+    public function test_rnf01_variant_creation_write_is_immediately_reflected_in_same_request_variant_count(): void
+    {
+        $this->actingAs(User::factory()->create());
+
+        $product = Product::factory()->create();
+        $a1 = CertificateFormat::query()->firstOrCreate(['slug' => 'a1'], ['name' => 'A1', 'requires_hardware' => false]);
+
+        $component = Livewire::test('pages::painel.produtos')
+            ->call('selectProduct', $product->id)
+            ->set('sku', 'RNF01-A1-VARIANTE')
+            ->set('certificate_format_id', $a1->id)
+            ->set('validity_months', 12)
+            ->set('price', '250.00')
+            ->call('createVariant')
+            ->assertHasNoErrors();
+
+        $reloadedProduct = $component->instance()->products()->firstWhere('id', $product->id);
+
+        $this->assertSame(1, $reloadedProduct->variants->count());
+    }
+
+    public function test_rnf02_duplicate_variant_format_shows_portuguese_form_error_without_leaking_database_exception(): void
+    {
+        $this->actingAs(User::factory()->create());
+
+        $product = Product::factory()->create();
+        $a1 = CertificateFormat::query()->firstOrCreate(['slug' => 'a1'], ['name' => 'A1', 'requires_hardware' => false]);
+        ProductVariant::factory()->for($product)->create(['certificate_format_id' => $a1->id]);
+
+        $component = Livewire::test('pages::painel.produtos')
+            ->call('selectProduct', $product->id)
+            ->set('sku', 'RNF02-SEGUNDA-A1')
+            ->set('certificate_format_id', $a1->id)
+            ->set('validity_months', 12)
+            ->set('price', '250.00')
+            ->call('createVariant');
+
+        $component->assertHasErrors(['certificate_format_id' => 'unique']);
+        $component->assertSee('Este produto já possui uma variante com este formato.');
+        $component->assertDontSee('SQLSTATE');
+        $component->assertDontSee('QueryException');
+
+        $this->assertDatabaseCount('product_variants', 1);
+    }
 }
