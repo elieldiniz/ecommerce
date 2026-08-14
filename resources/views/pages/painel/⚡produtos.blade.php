@@ -1,5 +1,10 @@
 <?php
 
+use App\Models\Product;
+use App\Models\ProductVariant;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Number;
+use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -11,15 +16,41 @@ new #[Layout('components.admin-layout', ['activeItem' => 'produtos', 'title' => 
     {
         $this->selectedProductId = null;
     }
+
+    /**
+     * @return Collection<int, Product>
+     */
+    #[Computed]
+    public function products(): Collection
+    {
+        return Product::with(['holderType', 'variants'])->orderBy('position')->get();
+    }
+
+    public function startingPriceFor(Product $product): string
+    {
+        $currentPrices = $product->variants->map(fn (ProductVariant $variant) => $this->currentPriceFor($variant));
+
+        if ($currentPrices->isEmpty()) {
+            return '—';
+        }
+
+        return Number::currency($currentPrices->min(), in: 'BRL', locale: 'pt_BR');
+    }
+
+    private function currentPriceFor(ProductVariant $variant): float
+    {
+        $now = now();
+
+        $hasActivePromotion = $variant->promotional_price !== null
+            && $variant->promotion_starts_at !== null
+            && $variant->promotion_ends_at !== null
+            && $now->betweenIncluded($variant->promotion_starts_at, $variant->promotion_ends_at);
+
+        return (float) ($hasActivePromotion ? $variant->promotional_price : $variant->price);
+    }
 }; ?>
 
 @php
-    $products = [
-        ['name' => 'e-CPF', 'type' => 'Pessoa física', 'slug' => 'certificado-digital/e-cpf', 'variants' => 2, 'startingAt' => 'R$ 213,75', 'active' => 'Sim'],
-        ['name' => 'e-CNPJ', 'type' => 'Pessoa jurídica', 'slug' => 'certificado-digital/e-cnpj', 'variants' => 2, 'startingAt' => 'R$ 250,00', 'active' => 'Sim'],
-        ['name' => 'Certificado Digital para MEI', 'type' => 'Pessoa jurídica', 'slug' => 'certificado-digital-para-mei', 'variants' => 1, 'startingAt' => 'R$ 190,00', 'active' => 'Sim'],
-    ];
-
     $variants = [
         ['sku' => 'ECPF-A1-12M', 'type' => 'A1', 'validity' => '12 meses', 'price' => 'R$ 250,00', 'promotionalPrice' => 'R$ 213,75', 'validUntil' => 'até 31/08/2026', 'default' => 'Sim', 'active' => 'Sim'],
         ['sku' => 'ECPF-A3-36M', 'type' => 'A3', 'validity' => '36 meses', 'price' => 'R$ 350,00', 'promotionalPrice' => '—', 'validUntil' => '—', 'default' => 'Não', 'active' => 'Sim'],
@@ -47,14 +78,14 @@ new #[Layout('components.admin-layout', ['activeItem' => 'produtos', 'title' => 
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach ($products as $product)
+                    @foreach ($this->products as $product)
                         <tr>
-                            <td class="border border-border px-3 py-2.5 text-ink">{{ $product['name'] }}</td>
-                            <td class="border border-border px-3 py-2.5 text-ink">{{ $product['type'] }}</td>
-                            <td class="border border-border px-3 py-2.5 text-ink">{{ $product['slug'] }}</td>
-                            <td class="border border-border px-3 py-2.5 text-ink">{{ $product['variants'] }}</td>
-                            <td class="border border-border px-3 py-2.5 text-ink">{{ $product['startingAt'] }}</td>
-                            <td class="border border-border px-3 py-2.5 text-ink">{{ $product['active'] }}</td>
+                            <td class="border border-border px-3 py-2.5 text-ink">{{ $product->name }}</td>
+                            <td class="border border-border px-3 py-2.5 text-ink">{{ $product->holderType->name }}</td>
+                            <td class="border border-border px-3 py-2.5 text-ink">{{ $product->slug }}</td>
+                            <td class="border border-border px-3 py-2.5 text-ink">{{ $product->variants->count() }}</td>
+                            <td class="border border-border px-3 py-2.5 text-ink">{{ $this->startingPriceFor($product) }}</td>
+                            <td class="border border-border px-3 py-2.5 text-ink">{{ $product->is_active ? 'Sim' : 'Não' }}</td>
                         </tr>
                     @endforeach
                 </tbody>
