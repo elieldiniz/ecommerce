@@ -24,7 +24,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::view('painel/vendas/', 'pages.painel.vendas.index')->name('painel.vendas.index');
     Route::view('painel/vendas/{id}/', 'pages.painel.vendas.show')->name('painel.vendas.show');
     Route::view('painel/recuperacao/', 'pages.painel.recuperacao')->name('painel.recuperacao');
-    Route::view('painel/produtos/', 'pages.painel.produtos')->name('painel.produtos');
+    Route::livewire('painel/produtos/', 'pages::painel.produtos')->name('painel.produtos');
     Route::view('painel/formas-pagamento/', 'pages.painel.formas-pagamento')->name('painel.formas-pagamento');
     Route::view('painel/clientes/', 'pages.painel.clientes')->name('painel.clientes');
     Route::view('painel/relatorios/', 'pages.painel.relatorios')->name('painel.relatorios');

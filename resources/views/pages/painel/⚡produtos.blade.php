@@ -1,3 +1,18 @@
+<?php
+
+use Livewire\Attributes\Layout;
+use Livewire\Attributes\Title;
+use Livewire\Component;
+
+new #[Layout('components.admin-layout', ['activeItem' => 'produtos', 'title' => 'Produtos'])] #[Title('Produtos')] class extends Component {
+    public ?int $selectedProductId = null;
+
+    public function mount(): void
+    {
+        $this->selectedProductId = null;
+    }
+}; ?>
+
 @php
     $products = [
         ['name' => 'e-CPF', 'type' => 'Pessoa física', 'slug' => 'certificado-digital/e-cpf', 'variants' => 2, 'startingAt' => 'R$ 213,75', 'active' => 'Sim'],
@@ -12,7 +27,7 @@
     ];
 @endphp
 
-<x-admin-layout active-item="produtos" title="Produtos">
+<div>
     {{-- Bloco: Lista --}}
     <section class="rounded-xl border border-border bg-white p-5">
         <div class="mb-4 flex items-center justify-between">
@@ -160,4 +175,4 @@
             </label>
         </div>
     </section>
-</x-admin-layout>
+</div>

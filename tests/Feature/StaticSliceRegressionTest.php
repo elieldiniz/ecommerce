@@ -37,7 +37,6 @@ class StaticSliceRegressionTest extends TestCase
             ['/painel/vendas/', true],
             ['/painel/vendas/1042/', true],
             ['/painel/recuperacao/', true],
-            ['/painel/produtos/', true],
             ['/painel/formas-pagamento/', true],
             ['/painel/clientes/', true],
             ['/painel/relatorios/', true],

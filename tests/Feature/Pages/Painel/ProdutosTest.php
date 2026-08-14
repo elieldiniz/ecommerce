@@ -4,6 +4,7 @@ namespace Tests\Feature\Pages\Painel;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 class ProdutosTest extends TestCase
@@ -21,10 +22,8 @@ class ProdutosTest extends TestCase
     {
         $this->actingAs(User::factory()->create());
 
-        $response = $this->get('/painel/produtos/');
-
-        $response->assertOk();
-        $response->assertViewIs('pages.painel.produtos');
+        Livewire::test('pages::painel.produtos')
+            ->assertOk();
     }
 
     public function test_table_lista_renders_three_products_and_new_product_button(): void
