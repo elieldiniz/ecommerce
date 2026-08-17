@@ -68,4 +68,18 @@ class RouteGuardTest extends TestCase
 
         $response->assertOk();
     }
+
+    public function test_guest_post_to_safe2pay_webhook_is_not_redirected_to_login(): void
+    {
+        $response = $this->post('/webhooks/safe2pay', []);
+
+        $this->assertNotSame(302, $response->getStatusCode());
+    }
+
+    public function test_post_to_safe2pay_webhook_without_csrf_token_does_not_return_419(): void
+    {
+        $response = $this->post('/webhooks/safe2pay', []);
+
+        $this->assertNotSame(419, $response->getStatusCode());
+    }
 }

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Pedido\ShowEmissaoController;
+use App\Http\Controllers\Webhooks\Safe2PayWebhookController;
 use Illuminate\Support\Facades\Route;
 
 Route::view('/', 'pages.home')->name('home');
@@ -18,6 +19,8 @@ Route::livewire('checkout/', 'pages::checkout')->name('checkout');
 Route::livewire('pedido/{id}/pagamento/', 'pages::pedido.pagamento')->name('pedido.pagamento');
 Route::get('pedido/{id}/emissao/', ShowEmissaoController::class)->name('pedido.emissao');
 Route::view('minha-conta/pedidos/', 'pages.minha-conta.pedidos')->name('minha-conta.pedidos');
+
+Route::post('webhooks/safe2pay', Safe2PayWebhookController::class)->name('webhooks.safe2pay');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::view('painel/', 'pages.painel.visao-geral')->name('painel.visao-geral');
