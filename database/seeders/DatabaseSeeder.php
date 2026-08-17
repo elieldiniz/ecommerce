@@ -25,6 +25,7 @@ class DatabaseSeeder extends Seeder
             OrderFulfillmentStatusSeeder::class,
             PaymentStatusSeeder::class,
             RefundReasonSeeder::class,
+            SettingSeeder::class,
             CouponTypeSeeder::class,
             DeviceTypeSeeder::class,
             AdsConversionStatusSeeder::class,

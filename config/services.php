@@ -35,4 +35,11 @@ return [
         ],
     ],
 
+    'safe2pay' => [
+        'api_key_sandbox' => env('SAFE2PAY_API_KEY_SANDBOX'),
+        'api_key_production' => env('SAFE2PAY_API_KEY_PRODUCTION'),
+        'is_sandbox' => env('SAFE2PAY_IS_SANDBOX', true),
+        'base_url' => 'https://payment.safe2pay.com.br',
+    ],
+
 ];
