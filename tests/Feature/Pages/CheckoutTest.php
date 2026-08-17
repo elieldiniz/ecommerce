@@ -2,56 +2,185 @@
 
 namespace Tests\Feature\Pages;
 
+use App\Models\HolderType;
+use App\Models\Order;
+use App\Models\OrderFulfillmentStatus;
+use App\Models\OrderStatus;
+use App\Models\Payment;
+use App\Models\PaymentGateway;
+use App\Models\PaymentMethod;
+use App\Models\PaymentStatus;
+use App\Models\Product;
+use App\Models\ProductVariant;
+use App\Models\Setting;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Number;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 class CheckoutTest extends TestCase
 {
-    public function test_route_renders_the_checkout_view(): void
-    {
-        $response = $this->get('/checkout/');
+    use RefreshDatabase;
 
-        $response->assertOk();
-        $response->assertViewIs('pages.checkout');
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        config([
+            'services.safe2pay.base_url' => 'https://payment.safe2pay.com.br',
+            'services.safe2pay.api_key_sandbox' => 'sandbox-key',
+            'services.safe2pay.api_key_production' => 'production-key',
+            'services.safe2pay.is_sandbox' => true,
+        ]);
+
+        OrderStatus::factory()->create(['slug' => 'awaiting_payment']);
+        OrderFulfillmentStatus::factory()->create(['slug' => 'awaiting_data']);
+        PaymentGateway::factory()->create(['slug' => 'safe2pay']);
+        PaymentStatus::factory()->create(['slug' => 'pending', 'weight' => 10]);
+        PaymentStatus::factory()->create(['slug' => 'under_review', 'weight' => 20]);
+        PaymentStatus::factory()->create(['slug' => 'authorized', 'weight' => 40]);
+        HolderType::factory()->create(['slug' => 'pf', 'name' => 'Pessoa Física']);
+        HolderType::factory()->create(['slug' => 'pj', 'name' => 'Pessoa Jurídica']);
+        Setting::factory()->create(['key' => 'pix_expiration_seconds', 'value' => '900', 'group' => 'pagamento']);
     }
 
-    public function test_block_seus_dados_renders_six_fields_and_opt_in(): void
+    private function createProductVariant(string $price = '200.00'): ProductVariant
     {
-        $response = $this->get(route('checkout'));
-
-        $response->assertSee('Seus dados');
-        $response->assertSee('Tipo de pessoa');
-        $response->assertSee('CNPJ');
-        $response->assertSee('Razão social');
-        $response->assertSee('E-mail');
-        $response->assertSee('Telefone com DDD');
-        $response->assertSee('CEP');
-        $response->assertSee('Quero receber novidades e promoções por e-mail');
+        return ProductVariant::factory()->for(Product::factory())->create([
+            'price' => $price,
+            'promotional_price' => null,
+        ]);
     }
 
-    public function test_block_forma_pagamento_renders_three_options_pix_selected(): void
+    private function createPaymentMethods(int $cardMaxInstallments = 12): void
     {
-        $response = $this->get(route('checkout'));
-
-        $response->assertSee('Como você prefere pagar');
-        $response->assertSee('Confirmação imediata · 5% de desconto');
-        $response->assertSee('Até 12x · Sem desconto');
-        $response->assertSee('Compensa em 1 a 3 dias úteis · Sem desconto');
-        $response->assertSee('data-payment-method="pix" class="rounded-lg border-2 border-brand', false);
+        PaymentMethod::factory()->create(['slug' => 'pix', 'name' => 'Pix', 'discount_percentage' => 5, 'max_installments' => 1, 'position' => 0]);
+        PaymentMethod::factory()->create(['slug' => 'cartao', 'name' => 'Cartão de crédito', 'discount_percentage' => 0, 'max_installments' => $cardMaxInstallments, 'position' => 1]);
+        PaymentMethod::factory()->create(['slug' => 'boleto', 'name' => 'Boleto', 'discount_percentage' => 0, 'max_installments' => 1, 'position' => 2]);
     }
 
-    public function test_block_resumo_renders_summary_and_finalizar_button_without_real_submission(): void
+    /**
+     * @return array<string, string>
+     */
+    private function validCustomerFields(string $document = '12345678000199'): array
     {
-        $response = $this->get(route('checkout'));
+        return [
+            'personType' => 'pj',
+            'document' => $document,
+            'legalName' => 'Comércio Digital Lock Ltda',
+            'email' => 'contato@empresaexemplo.com.br',
+            'phone' => '(11) 91234-5678',
+            'postalCode' => '01311-000',
+        ];
+    }
 
-        $response->assertSee('Seu pedido');
-        $response->assertSee('R$ 250,00');
-        $response->assertSee('- R$ 25,00');
-        $response->assertSee('- R$ 11,25');
-        $response->assertSee('R$ 213,75');
-        $response->assertSee('Finalizar compra');
+    public function test_switching_payment_method_updates_the_three_totals_without_reloading_the_document(): void
+    {
+        $this->createPaymentMethods();
+        $variant = $this->createProductVariant('200.00');
 
-        $content = $response->getContent();
-        $this->assertStringNotContainsString('method="POST"', $content);
-        $this->assertStringNotContainsString('<form', $content);
+        $component = Livewire::test('pages::checkout', ['variant' => $variant->id])
+            ->assertOk()
+            ->assertSee(Number::currency('200.00', in: 'BRL', locale: 'pt_BR'))
+            ->assertSee(Number::currency('190.00', in: 'BRL', locale: 'pt_BR'));
+
+        $component->call('selecionarFormaPagamento', 'cartao')
+            ->assertOk()
+            ->assertSee(Number::currency('200.00', in: 'BRL', locale: 'pt_BR'))
+            ->assertDontSee(Number::currency('190.00', in: 'BRL', locale: 'pt_BR'));
+
+        $component->assertNoRedirect();
+    }
+
+    public function test_installment_options_never_exceed_max_installments_and_reflect_db_changes_on_next_render(): void
+    {
+        $this->createPaymentMethods(cardMaxInstallments: 12);
+        $variant = $this->createProductVariant('200.00');
+
+        Livewire::test('pages::checkout', ['variant' => $variant->id])
+            ->call('selecionarFormaPagamento', 'cartao')
+            ->assertSee('12x')
+            ->assertDontSee('13x');
+
+        PaymentMethod::query()->where('slug', 'cartao')->update(['max_installments' => 3]);
+
+        Livewire::test('pages::checkout', ['variant' => $variant->id])
+            ->call('selecionarFormaPagamento', 'cartao')
+            ->assertSee('3x')
+            ->assertDontSee('4x');
+    }
+
+    public function test_a_valid_submission_creates_exactly_one_order_and_one_payment(): void
+    {
+        $this->createPaymentMethods();
+        $variant = $this->createProductVariant('200.00');
+        Http::fake(['*' => Http::response([
+            'IdTransaction' => 123456,
+            'TXID' => 'TXID-ABC',
+            'PaymentObject' => ['QrCode' => '00020126copia-e-cola'],
+        ], 200)]);
+
+        Livewire::test('pages::checkout', ['variant' => $variant->id])
+            ->set($this->validCustomerFields())
+            ->call('selecionarFormaPagamento', 'pix')
+            ->call('finalizarCompra')
+            ->assertHasNoErrors()
+            ->assertRedirect(route('pedido.pagamento', ['id' => Order::query()->first()->id]));
+
+        $this->assertSame(1, Order::query()->count());
+        $this->assertSame(1, Payment::query()->count());
+        $this->assertSame('pending', Payment::query()->first()->status->slug);
+    }
+
+    public function test_a_divergent_front_total_blocks_payment_creation_and_shows_an_error(): void
+    {
+        $this->createPaymentMethods();
+        $variant = $this->createProductVariant('200.00');
+        Http::fake();
+
+        Livewire::test('pages::checkout', ['variant' => $variant->id])
+            ->set($this->validCustomerFields())
+            ->call('selecionarFormaPagamento', 'pix')
+            ->set('confirmedTotal', '999.99')
+            ->call('finalizarCompra')
+            ->assertHasErrors('geral')
+            ->assertNoRedirect();
+
+        Http::assertNothingSent();
+        $this->assertSame(1, Order::query()->count());
+        $this->assertSame(0, Payment::query()->count());
+    }
+
+    public function test_switching_payment_method_after_a_pending_charge_creates_a_new_payment_without_cancelling_the_previous_one(): void
+    {
+        $this->createPaymentMethods();
+        $variant = $this->createProductVariant('200.00');
+        Http::fake(['*' => Http::response([
+            'IdTransaction' => 1,
+            'TXID' => 'TXID-1',
+            'TransactionStatus' => ['Id' => 3],
+            'PaymentObject' => ['QrCode' => 'qr', 'InstallmentQuantity' => 1, 'Brand' => 'Visa', 'LastDigits' => '4242', 'Nsu' => 'NSU-1'],
+        ], 200)]);
+
+        $component = Livewire::test('pages::checkout', ['variant' => $variant->id])
+            ->set($this->validCustomerFields())
+            ->call('selecionarFormaPagamento', 'pix')
+            ->call('finalizarCompra')
+            ->assertHasNoErrors();
+
+        $this->assertSame(1, Order::query()->count());
+        $this->assertSame(1, Payment::query()->count());
+        $firstPayment = Payment::query()->first();
+
+        $component->call('selecionarFormaPagamento', 'cartao')
+            ->set('cardToken', 'tok_abc123')
+            ->set('visitorId', 'visitor-abc123')
+            ->call('finalizarCompra')
+            ->assertHasNoErrors();
+
+        $this->assertSame(1, Order::query()->count());
+        $this->assertSame(2, Payment::query()->count());
+        $this->assertSame('pending', $firstPayment->fresh()->status->slug);
     }
 }
