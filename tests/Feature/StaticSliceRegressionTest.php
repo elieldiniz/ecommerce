@@ -29,7 +29,6 @@ class StaticSliceRegressionTest extends TestCase
     public static function rotasDas13Telas(): array
     {
         return [
-            ['/pedido/1042/pagamento/', false],
             ['/pedido/1042/emissao/', false],
             ['/minha-conta/pedidos/', false],
             ['/painel/', true],

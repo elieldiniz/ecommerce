@@ -15,7 +15,7 @@ Route::view('quem-somos/', 'pages.quem-somos')->name('quem-somos');
 Route::view('suporte/', 'pages.suporte')->name('suporte');
 
 Route::livewire('checkout/', 'pages::checkout')->name('checkout');
-Route::view('pedido/{id}/pagamento/', 'pages.pedido.pagamento')->name('pedido.pagamento');
+Route::livewire('pedido/{id}/pagamento/', 'pages::pedido.pagamento')->name('pedido.pagamento');
 Route::get('pedido/{id}/emissao/', ShowEmissaoController::class)->name('pedido.emissao');
 Route::view('minha-conta/pedidos/', 'pages.minha-conta.pedidos')->name('minha-conta.pedidos');
 
