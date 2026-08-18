@@ -268,6 +268,7 @@ class ProdutosTest extends TestCase
         $response->assertSee('Preço promocional');
         $response->assertSee('Início da vigência da promoção');
         $response->assertSee('Fim da vigência da promoção');
+        $response->assertSee('ID do certificado GFSIS');
     }
 
     public function test_creating_variant_with_valid_data_creates_exactly_one_row_for_selected_product(): void
@@ -464,6 +465,72 @@ class ProdutosTest extends TestCase
         $reloadedProduct = $component->instance()->products()->firstWhere('id', $product->id);
 
         $this->assertSame(1, $reloadedProduct->variants->count());
+    }
+
+    public function test_creating_variant_with_gfsis_certificado_id_persists_the_value(): void
+    {
+        $this->actingAs(User::factory()->create());
+
+        $product = Product::factory()->create();
+        $a1 = CertificateFormat::query()->firstOrCreate(['slug' => 'a1'], ['name' => 'A1', 'requires_hardware' => false]);
+
+        Livewire::test('pages::painel.produtos')
+            ->call('selectProduct', $product->id)
+            ->set('sku', 'ECPF-A1-GFSIS')
+            ->set('certificate_format_id', $a1->id)
+            ->set('validity_months', 12)
+            ->set('price', '250.00')
+            ->set('gfsis_certificado_id', 4794531)
+            ->call('createVariant')
+            ->assertHasNoErrors();
+
+        $this->assertDatabaseHas('product_variants', [
+            'product_id' => $product->id,
+            'sku' => 'ECPF-A1-GFSIS',
+            'gfsis_certificado_id' => 4794531,
+        ]);
+    }
+
+    public function test_creating_variant_without_gfsis_certificado_id_persists_null_without_blocking(): void
+    {
+        $this->actingAs(User::factory()->create());
+
+        $product = Product::factory()->create();
+        $a1 = CertificateFormat::query()->firstOrCreate(['slug' => 'a1'], ['name' => 'A1', 'requires_hardware' => false]);
+
+        Livewire::test('pages::painel.produtos')
+            ->call('selectProduct', $product->id)
+            ->set('sku', 'ECPF-A1-SEM-GFSIS')
+            ->set('certificate_format_id', $a1->id)
+            ->set('validity_months', 12)
+            ->set('price', '250.00')
+            ->call('createVariant')
+            ->assertHasNoErrors();
+
+        $this->assertDatabaseHas('product_variants', [
+            'product_id' => $product->id,
+            'sku' => 'ECPF-A1-SEM-GFSIS',
+            'gfsis_certificado_id' => null,
+        ]);
+    }
+
+    public function test_editing_variant_reflects_gfsis_certificado_id_in_the_form(): void
+    {
+        $this->actingAs(User::factory()->create());
+
+        $product = Product::factory()->create();
+        $a1 = CertificateFormat::query()->firstOrCreate(['slug' => 'a1'], ['name' => 'A1', 'requires_hardware' => false]);
+        $variant = ProductVariant::factory()->for($product)->create(['certificate_format_id' => $a1->id, 'gfsis_certificado_id' => 111222]);
+
+        Livewire::test('pages::painel.produtos')
+            ->call('selectProduct', $product->id)
+            ->call('editVariant', $variant->id)
+            ->assertSet('gfsis_certificado_id', 111222)
+            ->set('gfsis_certificado_id', 333444)
+            ->call('updateVariant')
+            ->assertHasNoErrors();
+
+        $this->assertDatabaseHas('product_variants', ['id' => $variant->id, 'gfsis_certificado_id' => 333444]);
     }
 
     public function test_rnf02_duplicate_variant_format_shows_portuguese_form_error_without_leaking_database_exception(): void

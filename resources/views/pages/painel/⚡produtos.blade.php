@@ -37,6 +37,8 @@ new #[Layout('components.admin-layout', ['activeItem' => 'produtos', 'title' => 
 
     public ?int $certificate_format_id = null;
 
+    public ?int $gfsis_certificado_id = null;
+
     public ?int $validity_months = null;
 
     public ?string $price = null;
@@ -209,6 +211,7 @@ new #[Layout('components.admin-layout', ['activeItem' => 'produtos', 'title' => 
         $this->variantId = $variant->id;
         $this->sku = $variant->sku;
         $this->certificate_format_id = $variant->certificate_format_id;
+        $this->gfsis_certificado_id = $variant->gfsis_certificado_id;
         $this->validity_months = $variant->validity_months;
         $this->price = (string) $variant->price;
         $this->promotional_price = $variant->promotional_price !== null ? (string) $variant->promotional_price : null;
@@ -243,7 +246,7 @@ new #[Layout('components.admin-layout', ['activeItem' => 'produtos', 'title' => 
 
     public function resetVariantForm(): void
     {
-        $this->reset('variantId', 'sku', 'certificate_format_id', 'validity_months', 'price', 'promotional_price', 'promotion_starts_at', 'promotion_ends_at', 'is_default');
+        $this->reset('variantId', 'sku', 'certificate_format_id', 'gfsis_certificado_id', 'validity_months', 'price', 'promotional_price', 'promotion_starts_at', 'promotion_ends_at', 'is_default');
     }
 
     public function setDefaultVariant(int $variantId): void
@@ -274,6 +277,7 @@ new #[Layout('components.admin-layout', ['activeItem' => 'produtos', 'title' => 
                 'integer',
                 Rule::unique('product_variants')->where('product_id', $this->selectedProductId)->ignore($this->variantId),
             ],
+            'gfsis_certificado_id' => ['nullable', 'integer', 'min:1'],
             'validity_months' => ['required', 'integer', 'min:1'],
             'price' => ['required', 'numeric', 'min:0'],
             'promotional_price' => ['nullable', 'numeric', 'min:0'],
@@ -294,6 +298,8 @@ new #[Layout('components.admin-layout', ['activeItem' => 'produtos', 'title' => 
             'certificate_format_id.required' => 'Selecione o formato do certificado.',
             'certificate_format_id.integer' => 'Selecione um formato de certificado válido.',
             'certificate_format_id.unique' => 'Este produto já possui uma variante com este formato.',
+            'gfsis_certificado_id.integer' => 'O ID do certificado GFSIS deve ser um número inteiro.',
+            'gfsis_certificado_id.min' => 'O ID do certificado GFSIS deve ser maior que zero.',
             'validity_months.required' => 'Informe a validade em meses.',
             'validity_months.integer' => 'A validade deve ser um número inteiro.',
             'validity_months.min' => 'A validade deve ser de pelo menos 1 mês.',
@@ -509,6 +515,13 @@ new #[Layout('components.admin-layout', ['activeItem' => 'produtos', 'title' => 
                 <label class="mb-1 block font-sans text-xs font-semibold text-muted">Validade em meses</label>
                 <input type="number" wire:model="validity_months" class="w-full rounded-lg border border-border-light px-3 py-2.5 font-sans text-sm text-ink">
                 @error('validity_months')
+                    <span class="mt-1 block font-sans text-xs text-[#8f2020]">{{ $message }}</span>
+                @enderror
+            </div>
+            <div>
+                <label class="mb-1 block font-sans text-xs font-semibold text-muted">ID do certificado GFSIS</label>
+                <input type="number" wire:model="gfsis_certificado_id" class="w-full rounded-lg border border-border-light px-3 py-2.5 font-sans text-sm text-ink">
+                @error('gfsis_certificado_id')
                     <span class="mt-1 block font-sans text-xs text-[#8f2020]">{{ $message }}</span>
                 @enderror
             </div>

@@ -3,9 +3,11 @@
 namespace Tests\Feature\Pages\Painel;
 
 use App\Models\Customer;
+use App\Models\GfsisStatus;
 use App\Models\IssuanceData;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\OrderItemGfsis;
 use App\Models\OrderStatus;
 use App\Models\Payment;
 use App\Models\User;
@@ -180,6 +182,50 @@ class VendasShowTest extends TestCase
 
         $this->assertSame(0, substr_count($response->getContent(), 'method="POST"'));
         $this->assertStringNotContainsString('wire:click', $response->getContent());
+    }
+
+    public function test_bloco_integracao_exibe_dados_reais_do_order_item_gfsis(): void
+    {
+        $this->actingAs(User::factory()->create());
+
+        $order = Order::factory()->create();
+        $item = OrderItem::factory()->create(['order_id' => $order->id]);
+        $status = GfsisStatus::factory()->create(['slug' => 'aprovado', 'name' => 'Aprovado']);
+        OrderItemGfsis::factory()->create([
+            'order_item_id' => $item->id,
+            'gfsis_order_id' => 4794531,
+            'gfsis_code' => '102930',
+            'status_id' => $status->id,
+            'status_synced_at' => '2026-08-24 09:03:00',
+            'certificate_expires_at' => '2027-08-24',
+            'attempts' => 2,
+        ]);
+
+        $response = $this->get("/painel/vendas/{$order->id}/");
+
+        $response->assertOk();
+        $response->assertSee('4794531');
+        $response->assertSee('102930');
+        $response->assertSee('Aprovado');
+        $response->assertSee('24/08/2027');
+    }
+
+    public function test_bloco_integracao_sem_order_item_gfsis_exibe_placeholder_sem_erro(): void
+    {
+        $this->actingAs(User::factory()->create());
+
+        $order = Order::factory()->create();
+        OrderItem::factory()->create(['order_id' => $order->id]);
+
+        $response = $this->get("/painel/vendas/{$order->id}/");
+
+        $response->assertOk();
+
+        $html = $response->getContent();
+        $start = strpos($html, 'Integração</h3>');
+        $end = strpos($html, '</dl>', $start);
+        $integracaoBlock = substr($html, $start, $end - $start);
+        $this->assertSame(7, substr_count($integracaoBlock, '—'));
     }
 
     public function test_status_cancelled_renderiza_badge_financeiro_variant_erro(): void

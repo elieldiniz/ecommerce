@@ -29,7 +29,7 @@ new #[Layout('components.checkout-layout', ['activeStep' => 2])] #[Title('Aguard
     #[Computed]
     public function order(): ?Order
     {
-        return Order::query()->with('paymentMethod')->find($this->id);
+        return Order::query()->with(['paymentMethod', 'status', 'items.issuanceData'])->find($this->id);
     }
 
     /**
@@ -91,6 +91,14 @@ new #[Layout('components.checkout-layout', ['activeStep' => 2])] #[Title('Aguard
         $order = $this->order;
         $payment = $this->payment;
         $statusSlug = $payment?->status?->slug;
+
+        if ($order !== null && $order->status?->slug === 'paid') {
+            $issuanceData = $order->items->first()?->issuanceData;
+
+            if ($issuanceData !== null) {
+                $this->redirect(route('pedido.emissao', ['id' => $order->id, 'token' => $issuanceData->access_token]));
+            }
+        }
     @endphp
 
     @error('geral')

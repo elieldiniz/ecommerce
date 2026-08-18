@@ -25,7 +25,7 @@ new #[Layout('components.admin-layout', ['activeItem' => 'vendas', 'title' => 'V
     public function order(): ?Order
     {
         return Order::query()
-            ->with(['customer', 'items', 'items.productVariant', 'items.issuanceData', 'status', 'fulfillmentStatus'])
+            ->with(['customer', 'items', 'items.productVariant', 'items.issuanceData', 'items.gfsis', 'items.gfsis.status', 'status', 'fulfillmentStatus'])
             ->find($this->id);
     }
 
@@ -61,6 +61,8 @@ new #[Layout('components.admin-layout', ['activeItem' => 'vendas', 'title' => 'V
         $firstItem = $order->items->first();
         $issuanceData = $firstItem?->issuanceData;
         $issuanceFilled = $issuanceData !== null && $issuanceData->filled_at !== null;
+
+        $orderItemGfsis = $firstItem?->gfsis;
     @endphp
 
     {{-- Bloco: Cabeçalho --}}
@@ -150,13 +152,13 @@ new #[Layout('components.admin-layout', ['activeItem' => 'vendas', 'title' => 'V
         <div class="rounded-xl border border-border bg-white p-5">
             <h3 class="mb-3 font-heading text-sm font-bold text-ink">Integração</h3>
             <dl class="mb-4 flex flex-col gap-1.5 font-sans text-[13px]">
-                <div class="flex justify-between text-muted"><dt>gfsis_order_id</dt><dd class="text-ink">GF-778213</dd></div>
-                <div class="flex justify-between text-muted"><dt>Código GFSIS</dt><dd class="text-ink">GFS-88213</dd></div>
-                <div class="flex justify-between text-muted"><dt>Status GFSIS</dt><dd class="text-ink">Concluído</dd></div>
-                <div class="flex justify-between text-muted"><dt>Agendamento</dt><dd class="text-ink">10/08/2026 · 16h00</dd></div>
-                <div class="flex justify-between text-muted"><dt>Validade até</dt><dd class="text-ink">14/03/2027</dd></div>
-                <div class="flex justify-between text-muted"><dt>Sincronizado em</dt><dd class="text-ink">10/08/2026 · 17h05</dd></div>
-                <div class="flex justify-between text-muted"><dt>Tentativas</dt><dd class="text-ink">1</dd></div>
+                <div class="flex justify-between text-muted"><dt>gfsis_order_id</dt><dd class="text-ink">{{ $orderItemGfsis?->gfsis_order_id ?? '—' }}</dd></div>
+                <div class="flex justify-between text-muted"><dt>Código GFSIS</dt><dd class="text-ink">{{ $orderItemGfsis?->gfsis_code ?? '—' }}</dd></div>
+                <div class="flex justify-between text-muted"><dt>Status GFSIS</dt><dd class="text-ink">{{ $orderItemGfsis?->status?->name ?? '—' }}</dd></div>
+                <div class="flex justify-between text-muted"><dt>Agendamento</dt><dd class="text-ink">{{ $orderItemGfsis?->appointment_date !== null ? $orderItemGfsis->appointment_date->format('d/m/Y').' · '.substr((string) $orderItemGfsis->appointment_time, 0, 5).'h' : '—' }}</dd></div>
+                <div class="flex justify-between text-muted"><dt>Validade até</dt><dd class="text-ink">{{ $orderItemGfsis?->certificate_expires_at?->format('d/m/Y') ?? '—' }}</dd></div>
+                <div class="flex justify-between text-muted"><dt>Sincronizado em</dt><dd class="text-ink">{{ $orderItemGfsis?->status_synced_at !== null ? $orderItemGfsis->status_synced_at->format('d/m/Y').' · '.$orderItemGfsis->status_synced_at->format('H\hi') : '—' }}</dd></div>
+                <div class="flex justify-between text-muted"><dt>Tentativas</dt><dd class="text-ink">{{ $orderItemGfsis?->attempts ?? '—' }}</dd></div>
             </dl>
             <button type="button" class="w-full rounded-lg border border-border-light px-3 py-2.5 font-sans text-xs font-semibold text-ink">Reenviar ao GFSIS</button>
         </div>

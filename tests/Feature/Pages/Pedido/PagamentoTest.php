@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Pages\Pedido;
 
+use App\Models\IssuanceData;
 use App\Models\Order;
 use App\Models\OrderFulfillmentStatus;
 use App\Models\OrderItem;
@@ -161,5 +162,41 @@ class PagamentoTest extends TestCase
 
         Livewire::test('pages::pedido.pagamento', ['id' => $order->id])
             ->assertSee(Number::currency('213.75', in: 'BRL', locale: 'pt_BR'));
+    }
+
+    public function test_paid_order_redirects_to_emissao_route_with_the_real_access_token(): void
+    {
+        $order = $this->createOrder('pix');
+        $order->update(['status_id' => OrderStatus::factory()->create(['slug' => 'paid'])->id]);
+
+        $orderItem = OrderItem::query()->where('order_id', $order->id)->firstOrFail();
+        $issuanceData = IssuanceData::factory()->create([
+            'order_item_id' => $orderItem->id,
+            'access_token_expires_at' => now()->addDays(30),
+        ]);
+
+        $authorized = PaymentStatus::query()->where('slug', 'authorized')->first()
+            ?? PaymentStatus::factory()->create(['slug' => 'authorized', 'weight' => 60]);
+
+        Payment::factory()->create([
+            'order_id' => $order->id,
+            'status_id' => $authorized->id,
+        ]);
+
+        Livewire::test('pages::pedido.pagamento', ['id' => $order->id])
+            ->assertRedirect(route('pedido.emissao', ['id' => $order->id, 'token' => $issuanceData->access_token]));
+    }
+
+    public function test_pending_pix_payment_never_redirects_to_emissao(): void
+    {
+        $order = $this->createOrder('pix');
+        Payment::factory()->create([
+            'order_id' => $order->id,
+            'status_id' => PaymentStatus::query()->where('slug', 'pending')->value('id'),
+        ]);
+
+        Livewire::test('pages::pedido.pagamento', ['id' => $order->id])
+            ->assertOk()
+            ->assertNoRedirect();
     }
 }
