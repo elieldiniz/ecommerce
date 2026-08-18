@@ -9,10 +9,15 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 /**
- * RNF-04 (nenhuma migration/model/controller com lógica de negócio criada) é verificado por checklist manual,
- * não por assertion HTTP: `git diff --stat` desta feature não deve conter nenhum arquivo em
- * `database/migrations/` nem `app/Models/`, e `app/Http/Controllers/Pedido/ShowEmissaoController.php` (único
- * controller novo) não importa nenhuma classe `App\Models\*`.
+ * Regressão do wireframe estático legado: garante que as telas ainda puramente
+ * visuais (sem persistência, sem chamada assíncrona real) permanecem assim.
+ *
+ * `pedido/{id}/emissao/` não faz mais parte de `rotasDas13Telas()` desde a
+ * feature `integracao-gfsis`: a rota passou a exigir `?token=` válido (RF-17),
+ * persistir o formulário em `issuance_data` (RF-01/RF-02) e usar
+ * `App\Models\IssuanceData` em `ShowEmissaoController`/`StoreEmissaoController`
+ * — deixou de ser um wireframe estático e é coberta por testes dedicados em
+ * `tests/Feature/Pages/Pedido/EmissaoTest.php` e `tests/Feature/RouteGuardTest.php`.
  */
 class StaticSliceRegressionTest extends TestCase
 {
@@ -35,7 +40,6 @@ class StaticSliceRegressionTest extends TestCase
     public static function rotasDas13Telas(): array
     {
         return [
-            ['/pedido/1042/emissao/', false],
             ['/minha-conta/pedidos/', false],
             ['/painel/', true],
             ['/painel/vendas/', true],
