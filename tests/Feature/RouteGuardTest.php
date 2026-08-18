@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Order;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -62,6 +63,8 @@ class RouteGuardTest extends TestCase
     #[DataProvider('rotasDoPainel')]
     public function test_authenticated_staff_gets_200_from_all_eight_painel_routes(string $rota): void
     {
+        Order::factory()->create(['id' => 1042]);
+
         $this->actingAs(User::factory()->create());
 
         $response = $this->get($rota);

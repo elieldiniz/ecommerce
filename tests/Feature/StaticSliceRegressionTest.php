@@ -20,6 +20,8 @@ class StaticSliceRegressionTest extends TestCase
 
     private const LIVEWIRE_ROUTES = [
         '/painel/clientes/',
+        '/painel/vendas/',
+        '/painel/vendas/1042/',
     ];
 
     private const ALLOWED_HEX_COLORS = [

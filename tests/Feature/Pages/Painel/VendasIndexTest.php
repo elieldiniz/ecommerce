@@ -75,22 +75,22 @@ class VendasIndexTest extends TestCase
 
     public function test_numero_de_queries_permanece_constante_independente_da_quantidade_de_pedidos(): void
     {
-        $user = User::factory()->create();
-
+        $userFor2 = User::factory()->create();
         Order::factory()->count(2)->create();
 
         DB::enableQueryLog();
         DB::flushQueryLog();
 
-        $this->actingAs($user)->get('/painel/vendas/')->assertOk();
+        $this->actingAs($userFor2)->get('/painel/vendas/')->assertOk();
 
         $countFor2 = count(DB::getQueryLog());
 
+        $userFor20 = User::factory()->create();
         Order::factory()->count(18)->create();
 
         DB::flushQueryLog();
 
-        $this->actingAs($user)->get('/painel/vendas/')->assertOk();
+        $this->actingAs($userFor20)->get('/painel/vendas/')->assertOk();
 
         $countFor20 = count(DB::getQueryLog());
 
