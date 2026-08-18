@@ -1,3 +1,23 @@
+<?php
+
+use App\Models\Product;
+
+$products = Product::with('variants')->where('is_active', true)->orderBy('position')->get();
+
+$certiaRoutes = [
+    'e-cpf' => '/certificado-digital/e-cpf/',
+    'e-cnpj' => '/certificado-digital/e-cnpj/',
+    'mei' => '/certificado-digital-para-mei/',
+];
+
+$ctaLabels = [
+    'e-cpf' => 'Ver e-CPF',
+    'e-cnpj' => 'Ver e-CNPJ',
+    'mei' => 'Ver opções para MEI',
+];
+
+?>
+
 <x-layout title="Certificado Digital A1 e A3 | e-CPF e e-CNPJ Online | Digital Lock">
     <x-slot:meta_description>Emita seu Certificado Digital e-CPF ou e-CNPJ, nos formatos A1 e A3, 100% online por videoconferência. Padrão ICP-Brasil, com suporte na instalação e Pix com confirmação imediata.</x-slot:meta_description>
 
@@ -21,28 +41,20 @@
         <div class="mx-auto max-w-6xl">
             <h2 class="mb-5 font-heading text-2xl font-bold text-ink">Qual Certificado Digital você precisa</h2>
             <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
-                <x-card-produto
-                    titulo="e-CPF"
-                    descricao="Para pessoa física. Assinar documentos, declarar Imposto de Renda e acessar serviços do governo."
-                    preco="A partir de R$ 139,90"
-                    cta-texto="Ver e-CPF"
-                    cta-href="/certificado-digital/e-cpf/"
-                />
-                <x-card-produto
-                    :featured="true"
-                    titulo="e-CNPJ"
-                    descricao="Para empresas. Emitir nota fiscal eletrônica, acessar o e-CAC, enviar eSocial e assinar em nome da empresa."
-                    preco="A partir de R$ 249,90"
-                    cta-texto="Ver e-CNPJ"
-                    cta-href="/certificado-digital/e-cnpj/"
-                />
-                <x-card-produto
-                    titulo="Sou MEI"
-                    descricao="Para microempreendedor individual. O Certificado Digital para emitir nota fiscal e cumprir as obrigações do CNPJ."
-                    preco="A partir de R$ 189,90"
-                    cta-texto="Ver opções para MEI"
-                    cta-href="/certificado-digital-para-mei/"
-                />
+                @foreach ($products as $product)
+                    @php
+                        $prices = $product->variants->where('is_active', true)->pluck('price')->map(fn ($p) => (float) $p)->filter(fn ($p) => $p > 0);
+                        $minPrice = $prices->isNotEmpty() ? 'A partir de R$ ' . number_format($prices->min(), 2, ',', '.') : '—';
+                    @endphp
+                    <x-card-produto
+                        :titulo="$product->name"
+                        :descricao="$product->short_description"
+                        :preco="$minPrice"
+                        :cta-texto="$ctaLabels[$product->slug] ?? 'Ver ' . $product->name"
+                        :cta-href="$certiaRoutes[$product->slug] ?? '/certificado-digital/' . $product->slug . '/'"
+                        :featured="$product->position === 2"
+                    />
+                @endforeach
             </div>
             <a href="/certificado-digital/" class="mt-4 inline-block font-sans text-[13px] font-semibold text-brand">Não sabe qual escolher? Compare os tipos de Certificado Digital →</a>
         </div>

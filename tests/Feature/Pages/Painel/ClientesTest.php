@@ -2,8 +2,12 @@
 
 namespace Tests\Feature\Pages\Painel;
 
+use App\Models\Customer;
+use App\Models\CustomerAddress;
+use App\Models\HolderType;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 class ClientesTest extends TestCase
@@ -17,74 +21,147 @@ class ClientesTest extends TestCase
         $response->assertRedirect(route('login'));
     }
 
-    public function test_route_renders_the_clientes_view(): void
+    public function test_route_renders_the_livewire_component(): void
     {
         $this->actingAs(User::factory()->create());
 
-        $response = $this->get('/painel/clientes/');
-
-        $response->assertOk();
-        $response->assertViewIs('pages.painel.clientes');
+        Livewire::test('pages::painel.clientes')
+            ->assertOk();
     }
 
-    public function test_block_filtros_e_lista_renders_four_filters_search_and_three_customer_rows(): void
+    public function test_block_filtros_renders_four_filters_and_search(): void
     {
         $this->actingAs(User::factory()->create());
 
-        $response = $this->get('/painel/clientes/');
-
-        $response->assertSee('Tipo de pessoa');
-        $response->assertSee('UF');
-        $response->assertSee('Período de cadastro');
-        $response->assertSee('Com certificado vencendo');
-        $response->assertSee('Buscar');
-
-        $response->assertSeeInOrder(['Nome ou razão social', 'Documento', 'Tipo', 'E-mail', 'Pedidos', 'Última compra']);
-        $response->assertSee('Maria Aparecida Souza');
-        $response->assertSee('Comércio Digital Lock Ltda');
-        $response->assertSee('Roberto Lima Castro');
+        Livewire::test('pages::painel.clientes')
+            ->assertSee('Tipo de pessoa')
+            ->assertSee('UF')
+            ->assertSee('Período de cadastro')
+            ->assertSee('Com certificado vencendo')
+            ->assertSee('Buscar');
     }
 
-    public function test_block_ficha_renders_identification_fields_and_seven_independent_address_fields(): void
+    public function test_table_renders_six_columns(): void
     {
         $this->actingAs(User::factory()->create());
 
-        $response = $this->get('/painel/clientes/');
-
-        $response->assertSee('Ficha do cliente · dados');
-        $response->assertSee('Razão social / Nome');
-        $response->assertSee('Documento');
-        $response->assertSee('Telefone');
-
-        $response->assertSee('CEP');
-        $response->assertSee('Logradouro');
-        $response->assertSee('Número');
-        $response->assertSee('Complemento');
-        $response->assertSee('Bairro');
-        $response->assertSee('Município');
-        $response->assertSee('UF');
+        Livewire::test('pages::painel.clientes')
+            ->assertSeeInOrder(['Nome ou razão social', 'Documento', 'Tipo', 'E-mail', 'Pedidos', 'Última compra']);
     }
 
-    public function test_table_historico_de_pedidos_renders_at_least_two_rows(): void
+    public function test_table_lists_customers_from_database(): void
     {
         $this->actingAs(User::factory()->create());
 
-        $response = $this->get('/painel/clientes/');
+        $pf = HolderType::factory()->create(['slug' => 'pf', 'name' => 'Pessoa Física']);
+        $pj = HolderType::factory()->create(['slug' => 'pj', 'name' => 'Pessoa Jurídica']);
 
-        $response->assertSee('Histórico de pedidos');
-        $response->assertSeeInOrder(['Pedido', 'Produto', 'Valor', 'Pagamento', 'Emissão', 'Validade até']);
-        $response->assertSee('#1042');
-        $response->assertSee('#0988');
+        Customer::factory()->create(['legal_name' => 'Maria Aparecida Souza', 'holder_type_id' => $pf->id]);
+        Customer::factory()->create(['legal_name' => 'Comércio Digital Lock Ltda', 'holder_type_id' => $pj->id]);
+        Customer::factory()->create(['legal_name' => 'Roberto Lima Castro', 'holder_type_id' => $pf->id]);
+
+        Livewire::test('pages::painel.clientes')
+            ->assertSee('Maria Aparecida Souza')
+            ->assertSee('Comércio Digital Lock Ltda')
+            ->assertSee('Roberto Lima Castro');
     }
 
-    public function test_table_titulares_vinculados_renders_at_least_two_rows(): void
+    public function test_filter_by_holder_type(): void
     {
         $this->actingAs(User::factory()->create());
 
-        $response = $this->get('/painel/clientes/');
+        $pf = HolderType::factory()->create(['slug' => 'pf', 'name' => 'Pessoa Física']);
+        $pj = HolderType::factory()->create(['slug' => 'pj', 'name' => 'Pessoa Jurídica']);
 
-        $response->assertSee('Titulares vinculados');
-        $response->assertSeeInOrder(['Titular', 'Documento', 'Tipo', 'Responsável', 'Certificado até']);
-        $response->assertSee('João Pedro Almeida');
+        $customerPF = Customer::factory()->create(['holder_type_id' => $pf->id]);
+        $customerPJ = Customer::factory()->create(['holder_type_id' => $pj->id]);
+
+        Livewire::test('pages::painel.clientes')
+            ->set('tipoPessoa', 'pf')
+            ->assertSee($customerPF->legal_name)
+            ->assertDontSee($customerPJ->legal_name);
+
+        Livewire::test('pages::painel.clientes')
+            ->set('tipoPessoa', 'pj')
+            ->assertSee($customerPJ->legal_name)
+            ->assertDontSee($customerPF->legal_name);
+    }
+
+    public function test_filter_by_uf(): void
+    {
+        $this->actingAs(User::factory()->create());
+
+        $pf = HolderType::factory()->create(['slug' => 'pf', 'name' => 'Pessoa Física']);
+
+        $customerSP = Customer::factory()->create(['holder_type_id' => $pf->id]);
+        CustomerAddress::factory()->create(['customer_id' => $customerSP->id, 'state' => 'SP', 'is_primary' => true]);
+
+        $customerRJ = Customer::factory()->create(['holder_type_id' => $pf->id]);
+        CustomerAddress::factory()->create(['customer_id' => $customerRJ->id, 'state' => 'RJ', 'is_primary' => true]);
+
+        Livewire::test('pages::painel.clientes')
+            ->set('uf', 'SP')
+            ->assertSee($customerSP->legal_name)
+            ->assertDontSee($customerRJ->legal_name);
+    }
+
+    public function test_search_by_name(): void
+    {
+        $this->actingAs(User::factory()->create());
+
+        $pf = HolderType::factory()->create(['slug' => 'pf', 'name' => 'Pessoa Física']);
+
+        Customer::factory()->create(['legal_name' => 'Maria Aparecida Souza', 'holder_type_id' => $pf->id]);
+        Customer::factory()->create(['legal_name' => 'Roberto Lima Castro', 'holder_type_id' => $pf->id]);
+
+        Livewire::test('pages::painel.clientes')
+            ->set('busca', 'Maria')
+            ->assertSee('Maria Aparecida Souza')
+            ->assertDontSee('Roberto Lima Castro');
+    }
+
+    public function test_empty_list_shows_message(): void
+    {
+        $this->actingAs(User::factory()->create());
+
+        Livewire::test('pages::painel.clientes')
+            ->set('busca', 'nonexistent')
+            ->assertSee('Nenhum cliente encontrado');
+    }
+
+    public function test_select_customer_highlights_row(): void
+    {
+        $this->actingAs(User::factory()->create());
+
+        $pf = HolderType::factory()->create(['slug' => 'pf', 'name' => 'Pessoa Física']);
+        $customer = Customer::factory()->create(['holder_type_id' => $pf->id]);
+
+        Livewire::test('pages::painel.clientes')
+            ->call('selectCustomer', $customer->id)
+            ->assertSet('selectedCustomerId', $customer->id);
+    }
+
+    public function test_deselect_customer_on_second_click(): void
+    {
+        $this->actingAs(User::factory()->create());
+
+        $pf = HolderType::factory()->create(['slug' => 'pf', 'name' => 'Pessoa Física']);
+        $customer = Customer::factory()->create(['holder_type_id' => $pf->id]);
+
+        Livewire::test('pages::painel.clientes')
+            ->call('selectCustomer', $customer->id)
+            ->assertSet('selectedCustomerId', $customer->id)
+            ->call('selectCustomer', $customer->id)
+            ->assertSet('selectedCustomerId', null);
+    }
+
+    public function test_detail_sections_hidden_when_no_customer_selected(): void
+    {
+        $this->actingAs(User::factory()->create());
+
+        Livewire::test('pages::painel.clientes')
+            ->assertDontSee('Ficha do cliente · dados')
+            ->assertDontSee('Histórico de pedidos')
+            ->assertDontSee('Titulares vinculados');
     }
 }

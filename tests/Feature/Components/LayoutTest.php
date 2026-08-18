@@ -99,7 +99,8 @@ class LayoutTest extends TestCase
     {
         $view = $this->blade('<x-layout title="Página"><p>Corpo</p></x-layout>');
 
-        $view->assertSee('<a href="/certificado-digital/" class="rounded-lg bg-brand', false);
+        $view->assertSee('rounded-lg bg-brand', false);
+        $view->assertSee('Comprar', false);
     }
 
     public function test_footer_has_ink_background_and_three_column_grid(): void

@@ -1,3 +1,9 @@
+@php
+    $ecpf = \App\Models\Product::where('slug', 'e-cpf')->first();
+    $variantA1 = $ecpf?->variants()->where('sku', 'ECPF-A1-12')->first();
+    $variantA3 = $ecpf?->variants()->where('sku', 'ECPF-A3-12')->first();
+@endphp
+
 <x-layout title="Certificado Digital e-CPF A1 e A3 | Emissão Online | Digital Lock">
     <x-slot:meta_description>Emita seu e-CPF nos formatos A1 ou A3, 100% online por videoconferência. Padrão ICP-Brasil, sem taxa extra pela validação.</x-slot:meta_description>
 
@@ -19,8 +25,9 @@
                 preco-a1-pix="R$ 129,90"
                 preco-a3="R$ 219,90"
                 preco-a3-pix="R$ 199,90"
+                :variant-id-a1="$variantA1?->id"
+                :variant-id-a3="$variantA3?->id"
                 cta-texto="Comprar agora"
-                cta-href="#"
             />
         </div>
     </section>
@@ -136,7 +143,7 @@
                 <h2 class="mb-1 font-heading text-xl font-bold text-ink">Compre agora e agende sua videoconferência hoje</h2>
                 <p class="font-sans text-[13px] text-muted">R$ 139,90 ou R$ 129,90 no Pix</p>
             </div>
-            <a href="#" class="rounded-lg bg-brand px-5.5 py-3 text-center font-heading text-sm font-semibold text-white whitespace-nowrap">Comprar e-CPF</a>
+            <a href="{{ $variantA1 ? route('cart.add', $variantA1->id) : '#' }}" class="rounded-lg bg-brand px-5.5 py-3 text-center font-heading text-sm font-semibold text-white whitespace-nowrap">Comprar e-CPF</a>
         </div>
     </section>
 </x-layout>

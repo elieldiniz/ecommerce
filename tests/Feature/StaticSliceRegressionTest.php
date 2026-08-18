@@ -18,6 +18,10 @@ class StaticSliceRegressionTest extends TestCase
 {
     use RefreshDatabase;
 
+    private const LIVEWIRE_ROUTES = [
+        '/painel/clientes/',
+    ];
+
     private const ALLOWED_HEX_COLORS = [
         '#E40044', '#14110f', '#6b6660', '#9c968e', '#f7f5f2', '#e7e3de', '#d8d3cc', '#fdecf1', '#DB3861',
         '#e4f0e8', '#1e5c34', '#B8003A', '#fbf0d8', '#7a5606', '#fbe9e9', '#8f2020', '#eef0f3', '#5c626c',
@@ -57,8 +61,11 @@ class StaticSliceRegressionTest extends TestCase
 
         $this->assertStringNotContainsString('fetch(', $content, "fetch( encontrado em {$rota}");
         $this->assertStringNotContainsString('XMLHttpRequest', $content, "XMLHttpRequest encontrado em {$rota}");
-        $this->assertStringNotContainsString('wire:', $content, "wire: encontrado em {$rota}");
-        $this->assertStringNotContainsString('$wire', $content, "\$wire encontrado em {$rota}");
+
+        if (! in_array($rota, self::LIVEWIRE_ROUTES)) {
+            $this->assertStringNotContainsString('wire:', $content, "wire: encontrado em {$rota}");
+            $this->assertStringNotContainsString('$wire', $content, "\$wire encontrado em {$rota}");
+        }
     }
 
     #[DataProvider('rotasDas13Telas')]

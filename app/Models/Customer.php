@@ -6,19 +6,20 @@ use Database\Factories\CustomerFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
 
 #[Fillable([
-    'holder_type_id', 'legal_name', 'document', 'email', 'phone', 'password_hash',
+    'holder_type_id', 'role_id', 'legal_name', 'document', 'email', 'phone', 'password',
     'email_verified_at', 'terms_accepted_at', 'marketing_opt_in',
 ])]
-#[Hidden(['password_hash'])]
-class Customer extends Model
+#[Hidden(['password', 'remember_token'])]
+class Customer extends Authenticatable
 {
     /** @use HasFactory<CustomerFactory> */
-    use HasFactory;
+    use HasFactory, Notifiable;
 
     /**
      * @return array<string, string>
@@ -29,8 +30,16 @@ class Customer extends Model
             'email_verified_at' => 'datetime',
             'terms_accepted_at' => 'datetime',
             'marketing_opt_in' => 'boolean',
-            'password_hash' => 'hashed',
+            'password' => 'hashed',
         ];
+    }
+
+    /**
+     * @return BelongsTo<Role, $this>
+     */
+    public function role(): BelongsTo
+    {
+        return $this->belongsTo(Role::class);
     }
 
     /**
@@ -63,5 +72,45 @@ class Customer extends Model
     public function couponUses(): HasMany
     {
         return $this->hasMany(CouponUse::class);
+    }
+
+    /**
+     * Get the name for authentication.
+     */
+    public function getAuthIdentifierName(): string
+    {
+        return 'id';
+    }
+
+    /**
+     * Get the password for authentication.
+     */
+    public function getAuthPassword(): string
+    {
+        return $this->password ?? '';
+    }
+
+    /**
+     * Get the token for "remember me" authentication.
+     */
+    public function getRememberToken(): ?string
+    {
+        return $this->remember_token;
+    }
+
+    /**
+     * Set the token for "remember me" authentication.
+     */
+    public function setRememberToken($value): void
+    {
+        $this->remember_token = $value;
+    }
+
+    /**
+     * Get the column name for the "remember me" token.
+     */
+    public function getRememberTokenName(): string
+    {
+        return 'remember_token';
     }
 }

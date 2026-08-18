@@ -1,3 +1,9 @@
+@php
+    $ecnpj = \App\Models\Product::where('slug', 'e-cnpj')->first();
+    $variantA1 = $ecnpj?->variants()->where('sku', 'ECNPJ-A1-12')->first();
+    $variantA3 = $ecnpj?->variants()->where('sku', 'ECNPJ-A3-12')->first();
+@endphp
+
 <x-layout title="Certificado Digital para MEI | e-CNPJ com Emissão Online | Digital Lock">
     <x-slot:meta_description>O Certificado Digital que o MEI precisa para emitir nota fiscal pelo CNPJ e resolver obrigações pela internet. Emissão 100% online.</x-slot:meta_description>
 
@@ -16,8 +22,8 @@
                 :show-selector="false"
                 preco-a1="R$ 249,90"
                 preco-a1-pix="R$ 229,90"
+                :variant-id-a1="$variantA1?->id"
                 cta-texto="Comprar agora"
-                cta-href="/certificado-digital/e-cnpj/"
             />
         </div>
     </section>
