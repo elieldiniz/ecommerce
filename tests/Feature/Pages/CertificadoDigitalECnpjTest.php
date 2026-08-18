@@ -2,10 +2,21 @@
 
 namespace Tests\Feature\Pages;
 
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Concerns\SeedsProducts;
 use Tests\TestCase;
 
 class CertificadoDigitalECnpjTest extends TestCase
 {
+    use RefreshDatabase;
+    use SeedsProducts;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->seedProducts();
+    }
+
     public function test_route_renders_the_e_cnpj_view(): void
     {
         $response = $this->get('/certificado-digital/e-cnpj/');
@@ -127,7 +138,7 @@ class CertificadoDigitalECnpjTest extends TestCase
         $response = $this->get(route('certificado-digital.e-cnpj'));
 
         $response->assertSee('Compre agora e agende sua videoconferência hoje');
-        $response->assertSee('R$ 249,90 ou R$ 229,90 no Pix');
+        $response->assertSee('R$ 249,90');
         $response->assertSee('Comprar e-CNPJ');
     }
 

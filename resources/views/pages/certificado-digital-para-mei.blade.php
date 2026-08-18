@@ -2,6 +2,9 @@
     $ecnpj = \App\Models\Product::where('slug', 'e-cnpj')->first();
     $variantA1 = $ecnpj?->variants()->where('sku', 'ECNPJ-A1-12')->first();
     $variantA3 = $ecnpj?->variants()->where('sku', 'ECNPJ-A3-12')->first();
+
+    $priceA1 = $variantA1 ? 'R$ ' . number_format((float) $variantA1->price, 2, ',', '.') : 'R$ [PREÇO]';
+    $priceA3 = $variantA3 ? 'R$ ' . number_format((float) $variantA3->price, 2, ',', '.') : 'R$ [PREÇO]';
 @endphp
 
 <x-layout title="Certificado Digital para MEI | e-CNPJ com Emissão Online | Digital Lock">
@@ -20,8 +23,8 @@
             </div>
             <x-purchase-panel
                 :show-selector="false"
-                preco-a1="R$ 249,90"
-                preco-a1-pix="R$ 229,90"
+                :preco-a1="$priceA1"
+                :preco-a1-pix="$priceA1"
                 :variant-id-a1="$variantA1?->id"
                 cta-texto="Comprar agora"
             />
@@ -88,14 +91,14 @@
                     :featured="true"
                     titulo="A1 · recomendado"
                     descricao="Arquivo no computador. Não exige token nem leitora, e pode ser enviado ao seu contador."
-                    preco="R$ 249,90"
+                    :preco="$priceA1"
                     cta-texto="Comprar A1"
                     cta-href="/certificado-digital/e-cnpj/"
                 />
                 <x-card-produto
                     titulo="A3"
                     descricao="Token USB. Vale mais tempo, mas exige comprar o equipamento."
-                    preco="R$ 349,90"
+                    :preco="$priceA3"
                     cta-texto="Comprar A3"
                     cta-href="/certificado-digital/e-cnpj/"
                 />
@@ -193,7 +196,7 @@
         <div class="mx-auto flex max-w-6xl flex-col items-start gap-4 md:flex-row md:items-center md:justify-between">
             <div>
                 <h2 class="mb-1 font-heading text-xl font-bold text-ink">Compre agora e agende sua videoconferência hoje</h2>
-                <p class="font-sans text-[13px] text-muted">R$ 249,90 ou R$ 229,90 no Pix</p>
+                <p class="font-sans text-[13px] text-muted">{{ $priceA1 }}</p>
             </div>
             <a href="/certificado-digital/e-cnpj/" class="rounded-lg bg-brand px-5.5 py-3 text-center font-heading text-sm font-semibold text-white whitespace-nowrap">Comprar certificado para MEI</a>
         </div>
