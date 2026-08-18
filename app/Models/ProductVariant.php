@@ -10,8 +10,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
-    'product_id', 'certificate_format_id', 'sku', 'validity_months', 'price', 'promotional_price',
-    'promotion_starts_at', 'promotion_ends_at', 'is_active', 'is_default',
+    'product_id', 'certificate_format_id', 'gfsis_certificado_id', 'sku', 'validity_months', 'price',
+    'promotional_price', 'promotion_starts_at', 'promotion_ends_at', 'is_active', 'is_default',
 ])]
 class ProductVariant extends Model
 {
