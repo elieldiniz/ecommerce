@@ -4,17 +4,9 @@ use App\Models\Product;
 
 $products = Product::with('variants')->where('is_active', true)->orderBy('position')->get();
 
-$certiaRoutes = [
-    'e-cpf' => '/certificado-digital/e-cpf/',
-    'e-cnpj' => '/certificado-digital/e-cnpj/',
-    'mei' => '/certificado-digital-para-mei/',
-];
-
-$ctaLabels = [
-    'e-cpf' => 'Ver e-CPF',
-    'e-cnpj' => 'Ver e-CNPJ',
-    'mei' => 'Ver opções para MEI',
-];
+$ecnpjPrice = $products->firstWhere('slug', 'e-cnpj')
+    ?->variants->where('is_active', true)->pluck('price')->min() ?? 0;
+$ecnpjPriceFormatted = 'A partir de R$ ' . number_format((float) $ecnpjPrice, 2, ',', '.');
 
 ?>
 
@@ -50,11 +42,18 @@ $ctaLabels = [
                         :titulo="$product->name"
                         :descricao="$product->short_description"
                         :preco="$minPrice"
-                        :cta-texto="$ctaLabels[$product->slug] ?? 'Ver ' . $product->name"
-                        :cta-href="$certiaRoutes[$product->slug] ?? '/certificado-digital/' . $product->slug . '/'"
+                        :cta-texto="'Ver ' . $product->slug"
+                        :cta-href="'/certificado-digital/' . $product->slug . '/'"
                         :featured="$product->position === 2"
                     />
                 @endforeach
+                <x-card-produto
+                    titulo="Sou MEI"
+                    descricao="Para microempreendedor individual. O Certificado Digital para emitir nota fiscal e cumprir as obrigações do CNPJ."
+                    :preco="$ecnpjPriceFormatted"
+                    cta-texto="Ver opções para MEI"
+                    cta-href="/certificado-digital-para-mei/"
+                />
             </div>
             <a href="/certificado-digital/" class="mt-4 inline-block font-sans text-[13px] font-semibold text-brand">Não sabe qual escolher? Compare os tipos de Certificado Digital →</a>
         </div>

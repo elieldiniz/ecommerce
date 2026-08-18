@@ -56,15 +56,6 @@ class ProductVariantSeeder extends Seeder
                 'is_active' => true,
                 'is_default' => false,
             ],
-            [
-                'product_id' => $mei->id,
-                'certificate_format_id' => $a1->id,
-                'sku' => 'MEI-A1-12',
-                'validity_months' => 12,
-                'price' => 189.90,
-                'is_active' => true,
-                'is_default' => true,
-            ],
         ];
 
         foreach ($rows as $row) {

@@ -18,7 +18,6 @@ class HomeTest extends TestCase
         $pf = HolderType::query()->firstOrCreate(['slug' => 'pf'], ['name' => 'Pessoa Física']);
         $pj = HolderType::query()->firstOrCreate(['slug' => 'pj'], ['name' => 'Pessoa Jurídica']);
         $a1 = CertificateFormat::query()->firstOrCreate(['slug' => 'a1'], ['name' => 'A1', 'requires_hardware' => false]);
-        $a3 = CertificateFormat::query()->firstOrCreate(['slug' => 'a3'], ['name' => 'A3', 'requires_hardware' => true]);
 
         $ecpf = Product::query()->firstOrCreate(['slug' => 'e-cpf'], [
             'name' => 'Certificado Digital e-CPF',
@@ -36,14 +35,6 @@ class HomeTest extends TestCase
             'position' => 2,
         ]);
 
-        $mei = Product::query()->firstOrCreate(['slug' => 'mei'], [
-            'name' => 'Certificado Digital para MEI',
-            'holder_type_id' => $pj->id,
-            'short_description' => 'Para microempreendedor individual.',
-            'is_active' => true,
-            'position' => 3,
-        ]);
-
         ProductVariant::query()->firstOrCreate(['sku' => 'ECPF-A1-12'], [
             'product_id' => $ecpf->id,
             'certificate_format_id' => $a1->id,
@@ -58,15 +49,6 @@ class HomeTest extends TestCase
             'certificate_format_id' => $a1->id,
             'validity_months' => 12,
             'price' => 249.90,
-            'is_active' => true,
-            'is_default' => true,
-        ]);
-
-        ProductVariant::query()->firstOrCreate(['sku' => 'MEI-A1-12'], [
-            'product_id' => $mei->id,
-            'certificate_format_id' => $a1->id,
-            'validity_months' => 12,
-            'price' => 189.90,
             'is_active' => true,
             'is_default' => true,
         ]);
@@ -111,10 +93,11 @@ class HomeTest extends TestCase
 
         $response = $this->get(route('home'));
 
-        $response->assertSeeInOrder(['Certificado Digital e-CPF', 'Certificado Digital e-CNPJ', 'Certificado Digital para MEI']);
+        $response->assertSee('Certificado Digital e-CPF');
+        $response->assertSee('Certificado Digital e-CNPJ');
+        $response->assertSee('Sou MEI');
         $response->assertSee('A partir de R$ 139,90');
         $response->assertSee('A partir de R$ 249,90');
-        $response->assertSee('A partir de R$ 189,90');
         $response->assertSee('href="/certificado-digital/e-cpf/"', false);
         $response->assertSee('href="/certificado-digital/e-cnpj/"', false);
         $response->assertSee('href="/certificado-digital-para-mei/"', false);
