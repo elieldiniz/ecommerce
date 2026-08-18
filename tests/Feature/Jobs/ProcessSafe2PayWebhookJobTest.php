@@ -4,7 +4,9 @@ namespace Tests\Feature\Jobs;
 
 use App\Jobs\ProcessSafe2PayWebhookJob;
 use App\Models\IntegrationQueueJob;
+use App\Models\IssuanceData;
 use App\Models\Order;
+use App\Models\OrderItem;
 use App\Models\OrderStatus;
 use App\Models\Payment;
 use App\Models\PaymentEvent;
@@ -172,6 +174,42 @@ class ProcessSafe2PayWebhookJobTest extends TestCase
             ->count());
     }
 
+    public function test_the_first_authorization_of_an_order_generates_issuance_data_for_its_order_item(): void
+    {
+        $pendingPayment = PaymentStatus::query()->where('slug', 'pending')->firstOrFail();
+        $awaitingPayment = OrderStatus::query()->where('slug', 'awaiting_payment')->firstOrFail();
+
+        $order = Order::factory()->create([
+            'status_id' => $awaitingPayment->id,
+            'paid_at' => null,
+        ]);
+
+        $orderItem = OrderItem::factory()->create(['order_id' => $order->id]);
+
+        $payment = Payment::factory()->create([
+            'order_id' => $order->id,
+            'gateway_transaction_id' => '999999999',
+            'status_id' => $pendingPayment->id,
+            'paid_at' => null,
+        ]);
+
+        $event = PaymentEvent::factory()->create([
+            'payment_id' => null,
+            'gateway_transaction_id' => '999999999',
+            'payload' => $this->payload(3),
+            'processed_at' => null,
+        ]);
+
+        (new ProcessSafe2PayWebhookJob($event))->handle();
+
+        $issuanceData = IssuanceData::query()->where('order_item_id', $orderItem->id)->first();
+
+        $this->assertNotNull($issuanceData);
+        $this->assertSame(40, strlen($issuanceData->access_token));
+        $this->assertTrue($issuanceData->access_token_expires_at->isFuture());
+        $this->assertNull($issuanceData->filled_at);
+    }
+
     public function test_a_second_authorization_on_an_already_paid_order_does_not_move_the_order_again_and_opens_a_duplicate_refund(): void
     {
         $pendingPayment = PaymentStatus::query()->where('slug', 'pending')->firstOrFail();
@@ -213,6 +251,39 @@ class ProcessSafe2PayWebhookJobTest extends TestCase
         $this->assertFalse($refunds->first()->requires_revocation);
 
         $this->assertSame(0, IntegrationQueueJob::query()->count());
+    }
+
+    public function test_a_second_authorization_on_an_already_paid_order_does_not_generate_a_second_issuance_data_row(): void
+    {
+        $pendingPayment = PaymentStatus::query()->where('slug', 'pending')->firstOrFail();
+        $paid = OrderStatus::query()->where('slug', 'paid')->firstOrFail();
+
+        $order = Order::factory()->create([
+            'status_id' => $paid->id,
+            'paid_at' => now()->subHour(),
+        ]);
+
+        $orderItem = OrderItem::factory()->create(['order_id' => $order->id]);
+        $existingIssuanceData = IssuanceData::factory()->create(['order_item_id' => $orderItem->id]);
+
+        $secondPayment = Payment::factory()->create([
+            'order_id' => $order->id,
+            'gateway_transaction_id' => 'second-attempt-txn',
+            'status_id' => $pendingPayment->id,
+            'paid_at' => null,
+        ]);
+
+        $event = PaymentEvent::factory()->create([
+            'payment_id' => null,
+            'gateway_transaction_id' => 'second-attempt-txn',
+            'payload' => $this->payload(3),
+            'processed_at' => null,
+        ]);
+
+        (new ProcessSafe2PayWebhookJob($event))->handle();
+
+        $this->assertSame(1, IssuanceData::query()->where('order_item_id', $orderItem->id)->count());
+        $this->assertSame($existingIssuanceData->access_token, $existingIssuanceData->fresh()->access_token);
     }
 
     private function financeUser(): User

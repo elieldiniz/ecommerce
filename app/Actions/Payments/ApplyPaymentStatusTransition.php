@@ -2,6 +2,7 @@
 
 namespace App\Actions\Payments;
 
+use App\Actions\Gfsis\GenerateIssuanceAccessToken;
 use App\Actions\Refunds\CreateRefund;
 use App\Models\IntegrationQueueJob;
 use App\Models\OrderStatus;
@@ -98,6 +99,8 @@ class ApplyPaymentStatusTransition
                     'reference_id' => $order->id,
                     'run_at' => now(),
                 ]);
+
+                (new GenerateIssuanceAccessToken)->execute($order);
             });
 
             return;
