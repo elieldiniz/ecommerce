@@ -2,6 +2,7 @@
 
 use App\Actions\Cart\AddToCart;
 use App\Http\Controllers\Pedido\ShowEmissaoController;
+use App\Http\Controllers\Pedido\StoreEmissaoController;
 use App\Http\Controllers\Webhooks\GfsisWebhookController;
 use App\Http\Controllers\Webhooks\Safe2PayWebhookController;
 use App\Http\Middleware\EnsureIssuanceAccessTokenIsValid;
@@ -25,6 +26,9 @@ Route::livewire('pedido/{id}/pagamento/', 'pages::pedido.pagamento')->name('pedi
 Route::get('pedido/{id}/emissao/', ShowEmissaoController::class)
     ->middleware(EnsureIssuanceAccessTokenIsValid::class)
     ->name('pedido.emissao');
+Route::post('pedido/{id}/emissao/', StoreEmissaoController::class)
+    ->middleware(EnsureIssuanceAccessTokenIsValid::class)
+    ->name('pedido.emissao.store');
 Route::view('minha-conta/pedidos/', 'pages.minha-conta.pedidos')->name('minha-conta.pedidos');
 
 Route::get('carrinho/adicionar/{productVariantId}', function ($productVariantId) {

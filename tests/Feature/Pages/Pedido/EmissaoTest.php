@@ -2,15 +2,48 @@
 
 namespace Tests\Feature\Pages\Pedido;
 
+use App\Jobs\RegisterOrderItemWithGfsisJob;
 use App\Models\IssuanceData;
 use App\Models\Order;
+use App\Models\OrderFulfillmentStatus;
 use App\Models\OrderItem;
+use App\Models\OrderStatus;
+use Database\Seeders\OrderFulfillmentStatusSeeder;
+use Database\Seeders\OrderStatusSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Bus;
 use Tests\TestCase;
 
 class EmissaoTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->seed(OrderStatusSeeder::class);
+        $this->seed(OrderFulfillmentStatusSeeder::class);
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function validPfPayload(): array
+    {
+        return [
+            'holder_name' => 'Carla Mendes Rocha',
+            'document' => '32165498700',
+            'email' => 'carla.rocha@exemplo.com.br',
+            'phone' => '11955554444',
+            'postal_code' => '04567000',
+            'street' => 'Avenida Paulista',
+            'number' => '1500',
+            'neighborhood' => 'Bela Vista',
+            'city' => 'São Paulo',
+            'state' => 'SP',
+        ];
+    }
 
     private function createIssuanceData(array $attributes = []): IssuanceData
     {
@@ -255,6 +288,90 @@ class EmissaoTest extends TestCase
         $this->assertSame(
             $extractBlock($pf, 'bloco-o-que-acontece-agora'),
             $extractBlock($pj, 'bloco-o-que-acontece-agora')
+        );
+    }
+
+    public function test_post_with_all_required_pf_fields_persists_issuance_data(): void
+    {
+        Bus::fake();
+
+        $issuanceData = $this->createIssuanceData();
+
+        $response = $this->post($this->emissaoUrl($issuanceData), $this->validPfPayload());
+
+        $response->assertRedirect();
+        $response->assertSessionDoesntHaveErrors();
+
+        $this->assertSame(1, IssuanceData::query()->count());
+
+        $issuanceData->refresh();
+        $this->assertSame('Carla Mendes Rocha', $issuanceData->holder_name);
+        $this->assertSame('32165498700', $issuanceData->document);
+        $this->assertSame('carla.rocha@exemplo.com.br', $issuanceData->email);
+        $this->assertSame('11955554444', $issuanceData->phone);
+        $this->assertSame('04567000', $issuanceData->postal_code);
+        $this->assertSame('Avenida Paulista', $issuanceData->street);
+        $this->assertSame('1500', $issuanceData->number);
+        $this->assertSame('Bela Vista', $issuanceData->neighborhood);
+        $this->assertSame('São Paulo', $issuanceData->city);
+        $this->assertSame('SP', $issuanceData->state);
+        $this->assertNotNull($issuanceData->filled_at);
+    }
+
+    public function test_post_pf_without_document_does_not_alter_issuance_data_and_keeps_error(): void
+    {
+        $issuanceData = $this->createIssuanceData([
+            'holder_name' => 'Valor original',
+            'document' => '11122233344',
+        ]);
+
+        $payload = $this->validPfPayload();
+        unset($payload['document']);
+
+        $response = $this->post($this->emissaoUrl($issuanceData), $payload);
+
+        $response->assertSessionHasErrors('document');
+        $response->assertSessionHasInput('holder_name', $this->validPfPayload()['holder_name']);
+
+        $issuanceData->refresh();
+        $this->assertSame('Valor original', $issuanceData->holder_name);
+        $this->assertSame('11122233344', $issuanceData->document);
+        $this->assertNull($issuanceData->filled_at);
+    }
+
+    public function test_post_completing_data_for_a_paid_order_dispatches_registration_job(): void
+    {
+        Bus::fake();
+
+        $issuanceData = $this->createIssuanceData();
+        $order = $issuanceData->orderItem->order;
+        $order->update(['status_id' => OrderStatus::query()->where('slug', 'paid')->value('id')]);
+
+        $this->post($this->emissaoUrl($issuanceData), $this->validPfPayload());
+
+        Bus::assertDispatched(RegisterOrderItemWithGfsisJob::class);
+
+        $this->assertSame(
+            OrderFulfillmentStatus::query()->where('slug', 'data_complete')->value('id'),
+            $order->fresh()->fulfillment_status_id
+        );
+    }
+
+    public function test_post_completing_data_for_an_unpaid_order_does_not_dispatch_registration_job(): void
+    {
+        Bus::fake();
+
+        $issuanceData = $this->createIssuanceData();
+        $order = $issuanceData->orderItem->order;
+        $order->update(['status_id' => OrderStatus::query()->where('slug', 'awaiting_payment')->value('id')]);
+
+        $this->post($this->emissaoUrl($issuanceData), $this->validPfPayload());
+
+        Bus::assertNotDispatched(RegisterOrderItemWithGfsisJob::class);
+
+        $this->assertSame(
+            OrderFulfillmentStatus::query()->where('slug', 'data_complete')->value('id'),
+            $order->fresh()->fulfillment_status_id
         );
     }
 }
