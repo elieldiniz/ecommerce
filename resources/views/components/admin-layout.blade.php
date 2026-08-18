@@ -27,8 +27,8 @@
 </head>
 <body class="bg-surface-alt font-sans text-ink antialiased">
     <div x-data="{ menuAberto: false }" @keydown.escape.window="menuAberto = false">
-        {{-- Barra mobile: só o hambúrguer, sem nenhum resquício de sidebar quando fechado --}}
-        <div class="flex items-center gap-3 bg-ink px-5 py-4 text-white md:hidden">
+        {{-- Barra mobile --}}
+        <div class="flex items-center gap-3 border-b border-border bg-white px-5 py-4 text-ink md:hidden">
             <button
                 type="button"
                 @click="menuAberto = ! menuAberto"
@@ -43,9 +43,10 @@
         </div>
 
         <div class="flex min-h-screen">
-            <aside class="hidden flex-none flex-col justify-between overflow-y-auto bg-ink px-5 py-6 text-white md:sticky md:top-0 md:flex md:h-screen md:w-60">
+            {{-- Sidebar desktop --}}
+            <aside class="hidden flex-none flex-col justify-between overflow-y-auto border-r border-border bg-white px-5 py-6 text-ink md:sticky md:top-0 md:flex md:h-screen md:w-60">
                 <div>
-                    <div class="mb-8 font-heading text-lg font-bold"><img src="{{ asset('digitallock-logo.png') }}" alt="Digital Lock" class="h-7 w-auto"></div>
+                    <div class="mb-8"><img src="{{ asset('digitallock-logo.png') }}" alt="Digital Lock" class="h-7 w-auto"></div>
                     <nav class="flex flex-col gap-1">
                         @foreach ($itens as $chave => $item)
                             <a
@@ -53,8 +54,8 @@
                                 data-item-nav="{{ $chave }}"
                                 @class([
                                     'flex items-center gap-3 rounded-lg px-3 py-2.5 font-sans text-sm',
-                                    'border-l-[3px] border-brand bg-brand/15 font-semibold text-white' => $chave === $activeItem,
-                                    'text-white/70 hover:text-white' => $chave !== $activeItem,
+                                    'border-l-[3px] border-brand bg-brand/5 font-semibold text-ink' => $chave === $activeItem,
+                                    'text-muted hover:text-ink' => $chave !== $activeItem,
                                 ])
                             >
                                 <x-dynamic-component :component="'flux::icon.'.$item['icon']" class="size-5 flex-none" />
@@ -63,7 +64,7 @@
                         @endforeach
                     </nav>
                 </div>
-                <div class="dark border-t border-white/10 pt-4">
+                <div class="border-t border-border pt-4">
                     <x-desktop-user-menu :mock="$activeItem !== 'configuracoes'" />
                 </div>
             </aside>
@@ -76,12 +77,12 @@
                 class="fixed inset-0 z-20 bg-ink/60 md:hidden"
             ></div>
 
-            {{-- Sidebar completa, abrindo por cima do conteúdo em mobile --}}
+            {{-- Sidebar mobile --}}
             <aside
                 id="painel-menu-mobile"
                 x-show="menuAberto"
                 x-cloak
-                class="fixed inset-y-0 left-0 z-30 flex w-60 flex-none flex-col justify-between overflow-y-auto bg-ink px-5 py-6 text-white md:hidden"
+                class="fixed inset-y-0 left-0 z-30 flex w-60 flex-none flex-col justify-between overflow-y-auto border-r border-border bg-white px-5 py-6 text-ink md:hidden"
             >
                 <div>
                     <div class="mb-8 flex items-center justify-between">
@@ -101,8 +102,8 @@
                                 data-item-nav="{{ $chave }}"
                                 @class([
                                     'flex items-center gap-3 rounded-lg px-3 py-2.5 font-sans text-sm',
-                                    'border-l-[3px] border-brand bg-brand/15 font-semibold text-white' => $chave === $activeItem,
-                                    'text-white/70 hover:text-white' => $chave !== $activeItem,
+                                    'border-l-[3px] border-brand bg-brand/5 font-semibold text-ink' => $chave === $activeItem,
+                                    'text-muted hover:text-ink' => $chave !== $activeItem,
                                 ])
                             >
                                 <x-dynamic-component :component="'flux::icon.'.$item['icon']" class="size-5 flex-none" />
@@ -111,7 +112,7 @@
                         @endforeach
                     </nav>
                 </div>
-                <div class="dark border-t border-white/10 pt-4">
+                <div class="border-t border-border pt-4">
                     <x-desktop-user-menu :mock="$activeItem !== 'configuracoes'" />
                 </div>
             </aside>
@@ -119,7 +120,6 @@
             <div class="min-w-0 flex-1">
                 <header class="flex items-center justify-between border-b border-border bg-white px-7 py-4">
                     <h1 class="font-heading text-lg font-bold text-ink">{{ $title }}</h1>
-                    <span class="font-sans text-xs text-muted">Últimos 30 dias ▾</span>
                 </header>
 
                 <main class="p-7">

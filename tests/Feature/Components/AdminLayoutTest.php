@@ -81,7 +81,7 @@ class AdminLayoutTest extends TestCase
 
         $html = Blade::render('<x-admin-layout active-item="visao-geral" title="Teste">conteudo</x-admin-layout>');
 
-        preg_match('/<div class="flex items-center gap-3 bg-ink.*?<\/div>/s', $html, $matches);
+        preg_match('/<div class="flex items-center gap-3 border-b border-border bg-white.*?<\/div>/s', $html, $matches);
         $barraMobile = $matches[0] ?? '';
 
         $this->assertNotSame('', $barraMobile, 'Barra mobile não encontrada no HTML.');
