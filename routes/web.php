@@ -53,8 +53,8 @@ Route::post('webhooks/safe2pay', Safe2PayWebhookController::class)->name('webhoo
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::view('painel/', 'pages.painel.visao-geral')->name('painel.visao-geral');
-    Route::view('painel/vendas/', 'pages.painel.vendas.index')->name('painel.vendas.index');
-    Route::view('painel/vendas/{id}/', 'pages.painel.vendas.show')->name('painel.vendas.show');
+    Route::livewire('painel/vendas/', 'pages::painel.vendas')->name('painel.vendas.index');
+    Route::livewire('painel/vendas/{id}/', 'pages::painel.vendas.show')->name('painel.vendas.show');
     Route::view('painel/recuperacao/', 'pages.painel.recuperacao')->name('painel.recuperacao');
     Route::livewire('painel/produtos/', 'pages::painel.produtos')->name('painel.produtos');
     Route::view('painel/formas-pagamento/', 'pages.painel.formas-pagamento')->name('painel.formas-pagamento');

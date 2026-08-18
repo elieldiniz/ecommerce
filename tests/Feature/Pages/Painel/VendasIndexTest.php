@@ -2,8 +2,11 @@
 
 namespace Tests\Feature\Pages\Painel;
 
+use App\Models\Order;
+use App\Models\OrderFulfillmentStatus;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class VendasIndexTest extends TestCase
@@ -24,7 +27,76 @@ class VendasIndexTest extends TestCase
         $response = $this->get('/painel/vendas/');
 
         $response->assertOk();
-        $response->assertViewIs('pages.painel.vendas.index');
+    }
+
+    public function test_lista_exibe_numeros_reais_e_nenhum_numero_fixo_do_mockup(): void
+    {
+        $this->actingAs(User::factory()->create());
+
+        Order::factory()->create(['number' => 'PED-000101']);
+        Order::factory()->create(['number' => 'PED-000102']);
+
+        $response = $this->get('/painel/vendas/');
+
+        $response->assertOk();
+        $response->assertSee('PED-000101');
+        $response->assertSee('PED-000102');
+        $response->assertDontSee('#1042');
+        $response->assertDontSee('#1041');
+        $response->assertDontSee('#1040');
+    }
+
+    public function test_coluna_emissao_exibe_variant_erro_quando_fulfillment_status_send_failed(): void
+    {
+        $this->actingAs(User::factory()->create());
+
+        $sendFailed = OrderFulfillmentStatus::where('slug', 'send_failed')->first()
+            ?? OrderFulfillmentStatus::factory()->create(['slug' => 'send_failed', 'name' => 'Falha no envio']);
+
+        Order::factory()->create(['fulfillment_status_id' => $sendFailed->id]);
+
+        $response = $this->get('/painel/vendas/');
+
+        $response->assertOk();
+        $response->assertSee('bg-[#fbe9e9]', false);
+    }
+
+    public function test_lista_paginada_em_vinte_e_cinco_com_rodape_real(): void
+    {
+        $this->actingAs(User::factory()->create());
+
+        Order::factory()->count(30)->create();
+
+        $response = $this->get('/painel/vendas/');
+
+        $response->assertOk();
+        $response->assertSee('Mostrando 1 a 25 de 30');
+    }
+
+    public function test_numero_de_queries_permanece_constante_independente_da_quantidade_de_pedidos(): void
+    {
+        $user = User::factory()->create();
+
+        Order::factory()->count(2)->create();
+
+        DB::enableQueryLog();
+        DB::flushQueryLog();
+
+        $this->actingAs($user)->get('/painel/vendas/')->assertOk();
+
+        $countFor2 = count(DB::getQueryLog());
+
+        Order::factory()->count(18)->create();
+
+        DB::flushQueryLog();
+
+        $this->actingAs($user)->get('/painel/vendas/')->assertOk();
+
+        $countFor20 = count(DB::getQueryLog());
+
+        DB::disableQueryLog();
+
+        $this->assertSame($countFor2, $countFor20);
     }
 
     public function test_block_filtros_renders_seven_controls(): void
@@ -42,17 +114,13 @@ class VendasIndexTest extends TestCase
         $response->assertSee('Buscar por nome, documento ou número do pedido');
     }
 
-    public function test_table_renders_seven_columns_pagamento_and_emissao_separated_with_mock_pagination(): void
+    public function test_table_renders_seven_columns(): void
     {
         $this->actingAs(User::factory()->create());
 
         $response = $this->get('/painel/vendas/');
 
         $response->assertSeeInOrder(['Pedido', 'Cliente', 'Produto', 'Valor', 'Pagamento', 'Emissão', 'Data']);
-        $response->assertSee('Mostrando 1 a 25 de 312');
-
-        preg_match_all('/<tr>/', $response->getContent(), $rows);
-        $this->assertGreaterThanOrEqual(6, count($rows[0]));
     }
 
     public function test_block_acoes_em_lote_renders_three_buttons_without_real_action(): void
