@@ -10,7 +10,7 @@ new #[Layout('components.checkout-layout', ['activeStep' => 1])] #[Title('Criar 
     public string $name = '';
     public string $email = '';
     public string $password = '';
-    public string $passwordConfirmation = '';
+    public string $password_confirmation = '';
 
     public function register(): void
     {
@@ -24,15 +24,15 @@ new #[Layout('components.checkout-layout', ['activeStep' => 1])] #[Title('Criar 
             'name' => $this->name,
             'email' => $this->email,
             'password' => $this->password,
-            'password_confirmation' => $this->passwordConfirmation,
+            'password_confirmation' => $this->password_confirmation,
         ]);
 
         Auth::guard('customer')->login($customer);
 
         $sessionCartId = session()->get('cart_session_id');
 
-        if ($sessionCartId) {
-            $customer->load('cart')->mergeFromSession($sessionCartId);
+        if ($sessionCartId && $customer->cart) {
+            $customer->cart->mergeFromSession($sessionCartId);
             session()->forget('cart_session_id');
         }
 
@@ -71,7 +71,7 @@ new #[Layout('components.checkout-layout', ['activeStep' => 1])] #[Title('Criar 
 
         <div>
             <label class="mb-1 block font-sans text-xs font-semibold text-muted">Confirmar senha</label>
-            <input type="password" wire:model="passwordConfirmation" class="w-full rounded-lg border border-border-light px-3 py-2.5 font-sans text-sm text-ink">
+            <input type="password" wire:model="password_confirmation" class="w-full rounded-lg border border-border-light px-3 py-2.5 font-sans text-sm text-ink">
         </div>
 
         <button type="submit" class="mt-2 w-full rounded-lg bg-brand px-4 py-3 font-heading text-sm font-semibold text-white">Criar conta</button>
