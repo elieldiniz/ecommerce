@@ -79,8 +79,7 @@ class VendasShowTest extends TestCase
         $response = $this->get("/painel/vendas/{$order->id}/");
 
         $response->assertOk();
-        $response->assertSee('SF2P-TESTE');
-        $response->assertSee('E-TESTE-001');
+        $response->assertSeeInOrder(['ID no gateway', 'SF2P-TESTE', 'End-to-end', 'E-TESTE-001']);
     }
 
     public function test_pedido_sem_payment_renderiza_bloco_pagamento_so_com_placeholder(): void
