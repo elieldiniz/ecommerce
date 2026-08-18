@@ -3,6 +3,7 @@
 namespace Tests\Feature\Jobs;
 
 use App\Jobs\ProcessSafe2PayWebhookJob;
+use App\Jobs\RegisterOrderItemWithGfsisJob;
 use App\Models\IntegrationQueueJob;
 use App\Models\IssuanceData;
 use App\Models\Order;
@@ -21,6 +22,8 @@ use Database\Seeders\QueueJobStatusSeeder;
 use Database\Seeders\RefundReasonSeeder;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Bus;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
 
@@ -208,6 +211,73 @@ class ProcessSafe2PayWebhookJobTest extends TestCase
         $this->assertSame(40, strlen($issuanceData->access_token));
         $this->assertTrue($issuanceData->access_token_expires_at->isFuture());
         $this->assertNull($issuanceData->filled_at);
+    }
+
+    public function test_the_first_authorization_of_an_order_dispatches_the_gfsis_registration_job(): void
+    {
+        Bus::fake();
+
+        $pendingPayment = PaymentStatus::query()->where('slug', 'pending')->firstOrFail();
+        $awaitingPayment = OrderStatus::query()->where('slug', 'awaiting_payment')->firstOrFail();
+
+        $order = Order::factory()->create([
+            'status_id' => $awaitingPayment->id,
+            'paid_at' => null,
+        ]);
+
+        Payment::factory()->create([
+            'order_id' => $order->id,
+            'gateway_transaction_id' => '999999999',
+            'status_id' => $pendingPayment->id,
+            'paid_at' => null,
+        ]);
+
+        $event = PaymentEvent::factory()->create([
+            'payment_id' => null,
+            'gateway_transaction_id' => '999999999',
+            'payload' => $this->payload(3),
+            'processed_at' => null,
+        ]);
+
+        (new ProcessSafe2PayWebhookJob($event))->handle();
+
+        Bus::assertDispatched(
+            RegisterOrderItemWithGfsisJob::class,
+            fn (RegisterOrderItemWithGfsisJob $job): bool => $job->order->is($order)
+        );
+    }
+
+    public function test_the_dispatched_gfsis_registration_job_makes_no_http_call_before_issuance_data_is_complete(): void
+    {
+        Http::fake();
+
+        $pendingPayment = PaymentStatus::query()->where('slug', 'pending')->firstOrFail();
+        $awaitingPayment = OrderStatus::query()->where('slug', 'awaiting_payment')->firstOrFail();
+
+        $order = Order::factory()->create([
+            'status_id' => $awaitingPayment->id,
+            'paid_at' => null,
+        ]);
+
+        OrderItem::factory()->create(['order_id' => $order->id]);
+
+        Payment::factory()->create([
+            'order_id' => $order->id,
+            'gateway_transaction_id' => '999999999',
+            'status_id' => $pendingPayment->id,
+            'paid_at' => null,
+        ]);
+
+        $event = PaymentEvent::factory()->create([
+            'payment_id' => null,
+            'gateway_transaction_id' => '999999999',
+            'payload' => $this->payload(3),
+            'processed_at' => null,
+        ]);
+
+        (new ProcessSafe2PayWebhookJob($event))->handle();
+
+        Http::assertNothingSent();
     }
 
     public function test_a_second_authorization_on_an_already_paid_order_does_not_move_the_order_again_and_opens_a_duplicate_refund(): void

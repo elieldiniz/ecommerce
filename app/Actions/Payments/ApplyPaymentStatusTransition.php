@@ -4,6 +4,7 @@ namespace App\Actions\Payments;
 
 use App\Actions\Gfsis\GenerateIssuanceAccessToken;
 use App\Actions\Refunds\CreateRefund;
+use App\Jobs\RegisterOrderItemWithGfsisJob;
 use App\Models\IntegrationQueueJob;
 use App\Models\OrderStatus;
 use App\Models\Payment;
@@ -99,6 +100,8 @@ class ApplyPaymentStatusTransition
                     'reference_id' => $order->id,
                     'run_at' => now(),
                 ]);
+
+                RegisterOrderItemWithGfsisJob::dispatch($order);
 
                 (new GenerateIssuanceAccessToken)->execute($order);
             });
