@@ -39,13 +39,13 @@
                 <flux:icon.bars-3 x-show="! menuAberto" class="size-6" />
                 <flux:icon.x-mark x-show="menuAberto" x-cloak class="size-6" />
             </button>
-            <span class="font-heading text-lg font-bold">digital<span class="text-brand">lock</span></span>
+            <img src="{{ asset('digitallock-logo.png') }}" alt="Digital Lock" class="h-7 w-auto">
         </div>
 
         <div class="flex min-h-screen">
             <aside class="hidden flex-none flex-col justify-between overflow-y-auto bg-ink px-5 py-6 text-white md:sticky md:top-0 md:flex md:h-screen md:w-60">
                 <div>
-                    <div class="mb-8 font-heading text-lg font-bold">digital<span class="text-brand">lock</span></div>
+                    <div class="mb-8 font-heading text-lg font-bold"><img src="{{ asset('digitallock-logo.png') }}" alt="Digital Lock" class="h-7 w-auto"></div>
                     <nav class="flex flex-col gap-1">
                         @foreach ($itens as $chave => $item)
                             <a
@@ -85,7 +85,7 @@
             >
                 <div>
                     <div class="mb-8 flex items-center justify-between">
-                        <span class="font-heading text-lg font-bold">digital<span class="text-brand">lock</span></span>
+                        <img src="{{ asset('digitallock-logo.png') }}" alt="Digital Lock" class="h-7 w-auto">
                         <button
                             type="button"
                             @click="menuAberto = false"
