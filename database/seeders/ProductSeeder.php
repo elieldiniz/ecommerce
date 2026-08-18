@@ -33,14 +33,6 @@ class ProductSeeder extends Seeder
                 'is_active' => true,
                 'position' => 2,
             ],
-            [
-                'slug' => 'mei',
-                'name' => 'Certificado Digital para MEI',
-                'holder_type_id' => $pj->id,
-                'short_description' => 'Para microempreendedor individual. Emitir nota fiscal e cumprir as obrigações do CNPJ.',
-                'is_active' => true,
-                'position' => 3,
-            ],
         ];
 
         foreach ($rows as $row) {

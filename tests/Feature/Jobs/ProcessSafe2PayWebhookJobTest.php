@@ -10,12 +10,16 @@ use App\Models\Payment;
 use App\Models\PaymentEvent;
 use App\Models\PaymentStatus;
 use App\Models\Refund;
+use App\Models\Role;
+use App\Models\User;
+use App\Notifications\PaymentRefundedNotification;
 use Database\Seeders\OrderStatusSeeder;
 use Database\Seeders\PaymentStatusSeeder;
 use Database\Seeders\QueueJobStatusSeeder;
 use Database\Seeders\RefundReasonSeeder;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
 
 class ProcessSafe2PayWebhookJobTest extends TestCase
@@ -209,5 +213,165 @@ class ProcessSafe2PayWebhookJobTest extends TestCase
         $this->assertFalse($refunds->first()->requires_revocation);
 
         $this->assertSame(0, IntegrationQueueJob::query()->count());
+    }
+
+    private function financeUser(): User
+    {
+        $financeRole = Role::query()->where('slug', 'finance')->firstOrFail();
+
+        return User::factory()->create(['role_id' => $financeRole->id]);
+    }
+
+    public function test_transition_to_reversed_without_a_prior_refund_creates_one_and_notifies_finance(): void
+    {
+        Notification::fake();
+
+        $financeUser = $this->financeUser();
+
+        $authorized = PaymentStatus::query()->where('slug', 'authorized')->firstOrFail();
+
+        $payment = Payment::factory()->create([
+            'gateway_transaction_id' => '999999999',
+            'status_id' => $authorized->id,
+        ]);
+
+        $event = PaymentEvent::factory()->create([
+            'payment_id' => null,
+            'gateway_transaction_id' => '999999999',
+            'payload' => $this->payload(6),
+            'processed_at' => null,
+        ]);
+
+        (new ProcessSafe2PayWebhookJob($event))->handle();
+
+        $reversed = PaymentStatus::query()->where('slug', 'reversed')->firstOrFail();
+        $this->assertSame($reversed->id, $payment->fresh()->status_id);
+
+        $refunds = Refund::query()->where('payment_id', $payment->id)->get();
+        $this->assertCount(1, $refunds);
+        $this->assertSame('other', $refunds->first()->reason->slug);
+
+        Notification::assertSentTo($financeUser, PaymentRefundedNotification::class);
+    }
+
+    public function test_transition_to_reversed_with_an_existing_refund_does_not_create_a_second_one(): void
+    {
+        Notification::fake();
+
+        $this->financeUser();
+
+        $authorized = PaymentStatus::query()->where('slug', 'authorized')->firstOrFail();
+
+        $payment = Payment::factory()->create([
+            'gateway_transaction_id' => '999999999',
+            'status_id' => $authorized->id,
+        ]);
+
+        Refund::factory()->create(['payment_id' => $payment->id]);
+
+        $event = PaymentEvent::factory()->create([
+            'payment_id' => null,
+            'gateway_transaction_id' => '999999999',
+            'payload' => $this->payload(6),
+            'processed_at' => null,
+        ]);
+
+        (new ProcessSafe2PayWebhookJob($event))->handle();
+
+        $this->assertSame(1, Refund::query()->where('payment_id', $payment->id)->count());
+    }
+
+    public function test_boleto_code_7_marks_the_payment_expired_and_preserves_the_raw_gateway_status_code(): void
+    {
+        $pending = PaymentStatus::query()->where('slug', 'pending')->firstOrFail();
+        $expired = PaymentStatus::query()->where('slug', 'expired')->firstOrFail();
+
+        $payment = Payment::factory()->create([
+            'gateway_transaction_id' => '999999999',
+            'status_id' => $pending->id,
+        ]);
+
+        $event = PaymentEvent::factory()->create([
+            'payment_id' => null,
+            'gateway_transaction_id' => '999999999',
+            'payload' => $this->payload(7),
+            'processed_at' => null,
+        ]);
+
+        (new ProcessSafe2PayWebhookJob($event))->handle();
+
+        $payment->refresh();
+
+        $this->assertSame($expired->id, $payment->status_id);
+        $this->assertSame('7', $payment->gateway_status_code);
+    }
+
+    public function test_the_full_card_status_cycle_produces_the_expected_final_status_and_dispute_alert(): void
+    {
+        Notification::fake();
+
+        $financeUser = $this->financeUser();
+
+        $pending = PaymentStatus::query()->where('slug', 'pending')->firstOrFail();
+        $underReview = PaymentStatus::query()->where('slug', 'under_review')->firstOrFail();
+        $authorized = PaymentStatus::query()->where('slug', 'authorized')->firstOrFail();
+        $reversed = PaymentStatus::query()->where('slug', 'reversed')->firstOrFail();
+        $awaitingPayment = OrderStatus::query()->where('slug', 'awaiting_payment')->firstOrFail();
+
+        $order = Order::factory()->create([
+            'status_id' => $awaitingPayment->id,
+            'paid_at' => null,
+        ]);
+
+        $payment = Payment::factory()->create([
+            'order_id' => $order->id,
+            'gateway_transaction_id' => '999999999',
+            'status_id' => $pending->id,
+        ]);
+
+        $processCode = function (int $code): void {
+            $event = PaymentEvent::factory()->create([
+                'payment_id' => null,
+                'gateway_transaction_id' => '999999999',
+                'payload' => $this->payload($code),
+                'processed_at' => null,
+            ]);
+
+            (new ProcessSafe2PayWebhookJob($event))->handle();
+        };
+
+        // 14 (Pré-Autorizado) -> under_review
+        $processCode(14);
+        $this->assertSame($underReview->id, $payment->fresh()->status_id);
+
+        // 3 (Autorizado) -> authorized
+        $processCode(3);
+        $this->assertSame($authorized->id, $payment->fresh()->status_id);
+
+        // 8 (Recusado) -> denied, peso menor que authorized, bloqueado
+        $processCode(8);
+        $this->assertSame($authorized->id, $payment->fresh()->status_id);
+
+        // 5 (Em disputa) -> under_review, bloqueado pelo peso, mas dispara alerta mesmo assim
+        $processCode(5);
+        $this->assertSame($authorized->id, $payment->fresh()->status_id);
+
+        // 13 (Chargeback) -> reversed, cria refund com motivo chargeback
+        $processCode(13);
+        $this->assertSame($reversed->id, $payment->fresh()->status_id);
+
+        // 15 (Devolução de Contestação) -> authorized, peso menor que reversed, bloqueado
+        $processCode(15);
+        $this->assertSame($reversed->id, $payment->fresh()->status_id);
+
+        // 6 (Estornado) -> reversed, mesmo peso, bloqueado (não regride nem reaplica)
+        $processCode(6);
+        $this->assertSame($reversed->id, $payment->fresh()->status_id);
+
+        $refunds = Refund::query()->where('payment_id', $payment->id)->get();
+        $this->assertCount(1, $refunds);
+        $this->assertSame('chargeback', $refunds->first()->reason->slug);
+
+        Notification::assertSentToTimes($financeUser, PaymentRefundedNotification::class, 2);
     }
 }

@@ -16,7 +16,6 @@ class ProductVariantSeeder extends Seeder
     {
         $ecpf = Product::query()->where('slug', 'e-cpf')->first();
         $ecnpj = Product::query()->where('slug', 'e-cnpj')->first();
-        $mei = Product::query()->where('slug', 'mei')->first();
         $a1 = CertificateFormat::query()->where('slug', 'a1')->first();
         $a3 = CertificateFormat::query()->where('slug', 'a3')->first();
 

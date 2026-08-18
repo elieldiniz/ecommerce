@@ -9,9 +9,11 @@ use App\Models\Payment;
 use App\Models\PaymentEvent;
 use App\Models\PaymentStatus;
 use App\Models\QueueJobStatus;
+use App\Models\Refund;
 use App\Models\RefundReason;
 use App\Models\Role;
 use App\Models\User;
+use App\Notifications\PaymentRefundedNotification;
 use App\Support\Safe2Pay\TransactionStatus;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -47,9 +49,10 @@ class ProcessSafe2PayWebhookJob implements ShouldQueue
      * `Payment` correspondente) registra `payment_events.error` sem lançar
      * exceção não tratada.
      *
-     * Os efeitos colaterais de negócio de RF-10, RF-15 e RF-17 são
-     * implementados em fase futura desta feature; os de RF-09/RF-24/RF-33
-     * (autorização, múltiplos pagamentos e duplicata) já estão cobertos.
+     * `payments.gateway_status_code` recebe sempre o código bruto recebido,
+     * sem tradução, preservado para auditoria mesmo quando o código mapeia
+     * para um slug interno com rótulo diferente (ex.: `7`/Baixado → `expired`,
+     * RF-17).
      */
     public function handle(): void
     {
@@ -81,14 +84,22 @@ class ProcessSafe2PayWebhookJob implements ShouldQueue
 
         $this->paymentEvent->update(['payment_id' => $payment->id]);
 
+        $payment->update(['gateway_status_code' => (string) $code]);
+
         $targetStatus = PaymentStatus::query()->where('slug', $targetSlug)->first();
 
         if ($targetStatus && $targetStatus->weight > $payment->status->weight) {
             $payment->update(['status_id' => $targetStatus->id]);
 
-            if ($targetSlug === 'authorized') {
-                $this->applyAuthorizedSideEffects($payment);
-            }
+            match ($targetSlug) {
+                'authorized' => $this->applyAuthorizedSideEffects($payment),
+                'reversed' => $this->applyReversedSideEffects($payment, $code),
+                default => null,
+            };
+        }
+
+        if ($code === TransactionStatus::EmDisputa->value) {
+            PaymentRefundedNotification::sendToFinanceTeam($payment);
         }
 
         $this->paymentEvent->update(['processed_at' => now()]);
@@ -134,6 +145,32 @@ class ProcessSafe2PayWebhookJob implements ShouldQueue
             'duplicate_payment_auto_refund',
             '127.0.0.1',
         );
+    }
+
+    /**
+     * RF-10: cria uma linha em `refunds` para o pagamento estornado quando
+     * ainda não existir uma (ou seja, o estorno não foi iniciado antes via
+     * `RequestPixRefund`/`RequestCardRefund`), usando `chargeback` como motivo
+     * quando o código bruto for `13` e `other` para `6`. Em qualquer caso
+     * (refund novo ou já existente), despacha a notificação ao financeiro.
+     */
+    private function applyReversedSideEffects(Payment $payment, int $code): void
+    {
+        $hasExistingRefund = Refund::query()->where('payment_id', $payment->id)->exists();
+
+        if (! $hasExistingRefund) {
+            $reasonSlug = $code === TransactionStatus::Chargeback->value ? 'chargeback' : 'other';
+
+            (new CreateRefund)->execute(
+                $payment,
+                RefundReason::query()->where('slug', $reasonSlug)->firstOrFail(),
+                $this->systemUser(),
+                'reversed_payment_auto_refund',
+                '127.0.0.1',
+            );
+        }
+
+        PaymentRefundedNotification::sendToFinanceTeam($payment);
     }
 
     /**
