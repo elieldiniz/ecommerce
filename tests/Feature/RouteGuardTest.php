@@ -2,7 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Models\IssuanceData;
 use App\Models\Order;
+use App\Models\OrderItem;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -30,6 +32,10 @@ class RouteGuardTest extends TestCase
     }
 
     /**
+     * `pedido/{id}/emissao/` não entra aqui: desde RF-17, a rota exige
+     * `?token=` correspondente a um `issuance_data.access_token` válido,
+     * respondendo 403 sem ele (fecha o IDOR) — testada separadamente abaixo.
+     *
      * @return array<int, array{0: string}>
      */
     public static function rotasPublicasDeLoja(): array
@@ -37,7 +43,6 @@ class RouteGuardTest extends TestCase
         return [
             ['/checkout/'],
             ['/pedido/1042/pagamento/'],
-            ['/pedido/1042/emissao/'],
             ['/minha-conta/pedidos/'],
         ];
     }
@@ -68,6 +73,27 @@ class RouteGuardTest extends TestCase
         $this->actingAs(User::factory()->create());
 
         $response = $this->get($rota);
+
+        $response->assertOk();
+    }
+
+    public function test_guest_is_forbidden_from_pedido_emissao_route_without_token(): void
+    {
+        $response = $this->get('/pedido/1042/emissao/');
+
+        $response->assertForbidden();
+    }
+
+    public function test_guest_gets_200_from_pedido_emissao_route_with_a_valid_token(): void
+    {
+        $order = Order::factory()->create();
+        $orderItem = OrderItem::factory()->create(['order_id' => $order->id]);
+        $issuanceData = IssuanceData::factory()->create([
+            'order_item_id' => $orderItem->id,
+            'access_token_expires_at' => now()->addDay(),
+        ]);
+
+        $response = $this->get('/pedido/'.$order->id.'/emissao/?token='.$issuanceData->access_token);
 
         $response->assertOk();
     }
