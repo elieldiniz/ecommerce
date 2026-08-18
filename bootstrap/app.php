@@ -15,6 +15,7 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withSchedule(function (Schedule $schedule): void {
         $schedule->command('payments:reconcile')->everyFiveMinutes();
+        $schedule->command('gfsis:reconcile-stuck')->hourly();
     })
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->validateCsrfTokens(except: ['webhooks/safe2pay', 'webhooks/gfsis']);
