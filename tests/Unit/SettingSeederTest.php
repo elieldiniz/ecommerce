@@ -5,6 +5,7 @@ namespace Tests\Unit;
 use App\Models\Setting;
 use Database\Seeders\SettingSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 class SettingSeederTest extends TestCase
@@ -48,5 +49,36 @@ class SettingSeederTest extends TestCase
         $this->seed(SettingSeeder::class);
 
         $this->assertSame(2, Setting::query()->where('group', 'pagamento')->count());
+    }
+
+    public function test_it_creates_exactly_the_three_gfsis_settings(): void
+    {
+        $this->seed(SettingSeeder::class);
+
+        $this->assertSame(3, Setting::query()->where('group', 'gfsis')->count());
+    }
+
+    /**
+     * @return array<string, array{0: string}>
+     */
+    public static function gfsisSettingKeys(): array
+    {
+        return [
+            'gfsis_stuck_threshold_hours' => ['gfsis_stuck_threshold_hours'],
+            'gfsis_ponto_atendimento' => ['gfsis_ponto_atendimento'],
+            'gfsis_tipo_validacao' => ['gfsis_tipo_validacao'],
+        ];
+    }
+
+    #[DataProvider('gfsisSettingKeys')]
+    public function test_gfsis_setting_has_a_non_empty_value(string $key): void
+    {
+        $this->seed(SettingSeeder::class);
+
+        $setting = Setting::query()->where('key', $key)->first();
+
+        $this->assertNotNull($setting);
+        $this->assertSame('gfsis', $setting->group);
+        $this->assertNotSame('', trim((string) $setting->value));
     }
 }

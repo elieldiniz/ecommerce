@@ -17,7 +17,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $schedule->command('payments:reconcile')->everyFiveMinutes();
     })
     ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->validateCsrfTokens(except: ['webhooks/safe2pay']);
+        $middleware->validateCsrfTokens(except: ['webhooks/safe2pay', 'webhooks/gfsis']);
         $middleware->alias([
             'role' => RoleMiddleware::class,
         ]);

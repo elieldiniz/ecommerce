@@ -42,4 +42,10 @@ return [
         'base_url' => 'https://payment.safe2pay.com.br',
     ],
 
+    'gfsis' => [
+        'login' => env('GFSIS_LOGIN'),
+        'senha' => env('GFSIS_SENHA'),
+        'base_url' => env('GFSIS_BASE_URL'),
+    ],
+
 ];

@@ -2,6 +2,7 @@
 
 use App\Actions\Cart\AddToCart;
 use App\Http\Controllers\Pedido\ShowEmissaoController;
+use App\Http\Controllers\Webhooks\GfsisWebhookController;
 use App\Http\Controllers\Webhooks\Safe2PayWebhookController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -50,6 +51,7 @@ Route::livewire('cliente/login/', 'pages::auth.customer.login')->name('customer.
 Route::livewire('cliente/registro/', 'pages::auth.customer.register')->name('customer.register');
 
 Route::post('webhooks/safe2pay', Safe2PayWebhookController::class)->name('webhooks.safe2pay');
+Route::post('webhooks/gfsis', GfsisWebhookController::class)->name('webhooks.gfsis');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::view('painel/', 'pages.painel.visao-geral')->name('painel.visao-geral');

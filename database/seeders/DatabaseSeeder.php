@@ -25,6 +25,7 @@ class DatabaseSeeder extends Seeder
             PaymentGatewaySeeder::class,
             OrderStatusSeeder::class,
             OrderFulfillmentStatusSeeder::class,
+            GfsisStatusSeeder::class,
             PaymentStatusSeeder::class,
             RefundReasonSeeder::class,
             SettingSeeder::class,
