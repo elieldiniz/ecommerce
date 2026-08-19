@@ -4,6 +4,7 @@ namespace Tests\Feature\Jobs;
 
 use App\Jobs\ProcessSafe2PayWebhookJob;
 use App\Jobs\RegisterOrderItemWithGfsisJob;
+use App\Mail\IssuanceAccessLinkMail;
 use App\Models\IntegrationQueueJob;
 use App\Models\IssuanceData;
 use App\Models\Order;
@@ -24,6 +25,7 @@ use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
 
@@ -211,6 +213,42 @@ class ProcessSafe2PayWebhookJobTest extends TestCase
         $this->assertSame(40, strlen($issuanceData->access_token));
         $this->assertTrue($issuanceData->access_token_expires_at->isFuture());
         $this->assertNull($issuanceData->filled_at);
+    }
+
+    public function test_the_first_authorization_of_an_order_sends_the_immediate_reinforcement_email_automatically(): void
+    {
+        Mail::fake();
+
+        $pendingPayment = PaymentStatus::query()->where('slug', 'pending')->firstOrFail();
+        $awaitingPayment = OrderStatus::query()->where('slug', 'awaiting_payment')->firstOrFail();
+
+        $order = Order::factory()->create([
+            'status_id' => $awaitingPayment->id,
+            'paid_at' => null,
+        ]);
+
+        $orderItem = OrderItem::factory()->create(['order_id' => $order->id]);
+
+        Payment::factory()->create([
+            'order_id' => $order->id,
+            'gateway_transaction_id' => '999999999',
+            'status_id' => $pendingPayment->id,
+            'paid_at' => null,
+        ]);
+
+        $event = PaymentEvent::factory()->create([
+            'payment_id' => null,
+            'gateway_transaction_id' => '999999999',
+            'payload' => $this->payload(3),
+            'processed_at' => null,
+        ]);
+
+        (new ProcessSafe2PayWebhookJob($event))->handle();
+
+        $issuanceData = IssuanceData::query()->where('order_item_id', $orderItem->id)->firstOrFail();
+
+        Mail::assertSent(IssuanceAccessLinkMail::class, fn ($mail) => $mail->hasTo($order->customer->email)
+            && str_contains($mail->url, $issuanceData->access_token));
     }
 
     public function test_the_first_authorization_of_an_order_dispatches_the_gfsis_registration_job(): void

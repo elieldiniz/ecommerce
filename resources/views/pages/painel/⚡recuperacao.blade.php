@@ -121,11 +121,17 @@ new #[Layout('components.admin-layout', ['activeItem' => 'recuperacao', 'title' 
                 </thead>
                 <tbody>
                     @forelse ($this->filaRecuperacao as $order)
+                        @php $diasNaFila = (int) ($order->paid_at ?? $order->created_at)->diffInDays(now()); @endphp
                         <tr>
                             <td class="border border-border px-3 py-2.5 text-ink">{{ $order->number }}</td>
                             <td class="border border-border px-3 py-2.5 text-ink">{{ $order->customer->legal_name }}</td>
                             <td class="border border-border px-3 py-2.5 text-ink">{{ Number::currency($order->total, in: 'BRL', locale: 'pt_BR') }}</td>
-                            <td class="border border-border px-3 py-2.5 text-ink">{{ (int) ($order->paid_at ?? $order->created_at)->diffInDays(now()) }}</td>
+                            <td class="border border-border px-3 py-2.5 text-ink">
+                                {{ $diasNaFila }}
+                                @if ($diasNaFila >= 5)
+                                    <x-badge-status variant="erro">Contato manual</x-badge-status>
+                                @endif
+                            </td>
                             <td class="border border-border px-3 py-2.5">
                                 <button type="button" class="rounded-lg border border-border-light px-3 py-1.5 font-sans text-xs font-semibold text-ink">Ligar</button>
                                 <button

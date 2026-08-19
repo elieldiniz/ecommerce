@@ -5,6 +5,7 @@ namespace App\Actions\Payments;
 use App\Actions\Gfsis\GenerateIssuanceAccessToken;
 use App\Actions\Refunds\CreateRefund;
 use App\Jobs\RegisterOrderItemWithGfsisJob;
+use App\Mail\IssuanceAccessLinkMail;
 use App\Models\IntegrationQueueJob;
 use App\Models\OrderStatus;
 use App\Models\Payment;
@@ -18,6 +19,7 @@ use App\Notifications\PaymentRefundedNotification;
 use App\Support\Safe2Pay\TransactionStatus;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
 /**
@@ -79,6 +81,9 @@ class ApplyPaymentStatusTransition
      * RF-33: uma autorização subsequente de um pedido já `paid` nunca move
      * `orders.status_id` novamente, abrindo um reembolso automático de
      * duplicata em vez disso.
+     * RF-01 (painel-recuperacao-regua-email): envia o e-mail "Imediato"
+     * (`IssuanceAccessLinkMail`) automaticamente com o token recém-gerado,
+     * sem depender do clique manual em "Reenviar link".
      */
     private function applyAuthorizedSideEffects(Payment $payment): void
     {
@@ -104,6 +109,16 @@ class ApplyPaymentStatusTransition
                 RegisterOrderItemWithGfsisJob::dispatch($order);
 
                 (new GenerateIssuanceAccessToken)->execute($order);
+
+                $order->load(['items.issuanceData', 'customer']);
+                $firstItem = $order->items->first();
+
+                if ($firstItem?->issuanceData !== null) {
+                    Mail::to($order->customer->email)->send(new IssuanceAccessLinkMail(
+                        $order,
+                        route('pedido.emissao', ['id' => $order->id, 'token' => $firstItem->issuanceData->access_token]),
+                    ));
+                }
             });
 
             return;

@@ -206,4 +206,34 @@ class RecuperacaoTest extends TestCase
 
         $response->assertSee('wire:loading.attr="disabled"', false);
     }
+
+    public function test_badge_contato_manual_aparece_para_pedido_com_5_dias_ou_mais(): void
+    {
+        $this->actingAs(User::factory()->create());
+
+        $paid = $this->orderStatus('paid');
+        $awaitingData = $this->fulfillmentStatus('awaiting_data');
+
+        $order = Order::factory()->create(['number' => 'PED-CINCODIA', 'status_id' => $paid->id, 'fulfillment_status_id' => $awaitingData->id, 'paid_at' => now()->subDays(5)]);
+        OrderItem::factory()->create(['order_id' => $order->id]);
+
+        $response = $this->get('/painel/recuperacao/');
+
+        $response->assertSee('Contato manual');
+    }
+
+    public function test_badge_contato_manual_nao_aparece_para_pedido_com_menos_de_5_dias(): void
+    {
+        $this->actingAs(User::factory()->create());
+
+        $paid = $this->orderStatus('paid');
+        $awaitingData = $this->fulfillmentStatus('awaiting_data');
+
+        $order = Order::factory()->create(['number' => 'PED-QUATRODIA', 'status_id' => $paid->id, 'fulfillment_status_id' => $awaitingData->id, 'paid_at' => now()->subDays(4)]);
+        OrderItem::factory()->create(['order_id' => $order->id]);
+
+        $response = $this->get('/painel/recuperacao/');
+
+        $response->assertDontSee('Contato manual');
+    }
 }

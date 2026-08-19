@@ -18,6 +18,7 @@ class SettingSeeder extends Seeder
             ['key' => 'gfsis_stuck_threshold_hours', 'value' => '48', 'group' => 'gfsis'],
             ['key' => 'gfsis_ponto_atendimento', 'value' => '1', 'group' => 'gfsis'],
             ['key' => 'gfsis_tipo_validacao', 'value' => '1', 'group' => 'gfsis'],
+            ['key' => 'recovery_reinforcement_email_threshold_hours', 'value' => '24', 'group' => 'recuperacao'],
         ];
 
         foreach ($rows as $row) {
