@@ -187,4 +187,12 @@ class HomeTest extends TestCase
 
         $response->assertDontSee('w-[', false);
     }
+
+    public function test_mei_card_shows_placeholder_instead_of_zero_when_ecnpj_product_is_missing(): void
+    {
+        $response = $this->get(route('home'));
+
+        $response->assertSee('A partir de R$ [PREÇO]');
+        $response->assertDontSee('A partir de R$ 0,00');
+    }
 }

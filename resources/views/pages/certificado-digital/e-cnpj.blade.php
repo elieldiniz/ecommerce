@@ -1,7 +1,7 @@
 @php
     $ecnpj = \App\Models\Product::where('slug', 'e-cnpj')->first();
-    $variantA1 = $ecnpj?->variants()->where('sku', 'ECNPJ-A1-12')->first();
-    $variantA3 = $ecnpj?->variants()->where('sku', 'ECNPJ-A3-12')->first();
+    $variantA1 = $ecnpj?->variants()->whereHas('certificateFormat', fn ($q) => $q->where('slug', 'a1'))->first();
+    $variantA3 = $ecnpj?->variants()->whereHas('certificateFormat', fn ($q) => $q->where('slug', 'a3'))->first();
 
     $priceA1 = $variantA1 ? 'R$ ' . number_format((float) $variantA1->price, 2, ',', '.') : 'R$ [PREÇO]';
     $priceA3 = $variantA3 ? 'R$ ' . number_format((float) $variantA3->price, 2, ',', '.') : 'R$ [PREÇO]';

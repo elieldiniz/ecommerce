@@ -2,10 +2,10 @@
     $ecpf = \App\Models\Product::where('slug', 'e-cpf')->first();
     $ecnpj = \App\Models\Product::where('slug', 'e-cnpj')->first();
 
-    $ecpfA1 = $ecpf?->variants()->where('sku', 'ECPF-A1-12')->first();
-    $ecpfA3 = $ecpf?->variants()->where('sku', 'ECPF-A3-12')->first();
-    $ecnpjA1 = $ecnpj?->variants()->where('sku', 'ECNPJ-A1-12')->first();
-    $ecnpjA3 = $ecnpj?->variants()->where('sku', 'ECNPJ-A3-12')->first();
+    $ecpfA1 = $ecpf?->variants()->whereHas('certificateFormat', fn ($q) => $q->where('slug', 'a1'))->first();
+    $ecpfA3 = $ecpf?->variants()->whereHas('certificateFormat', fn ($q) => $q->where('slug', 'a3'))->first();
+    $ecnpjA1 = $ecnpj?->variants()->whereHas('certificateFormat', fn ($q) => $q->where('slug', 'a1'))->first();
+    $ecnpjA3 = $ecnpj?->variants()->whereHas('certificateFormat', fn ($q) => $q->where('slug', 'a3'))->first();
 
     $formatMoney = fn (?float $value) => $value !== null ? 'R$ ' . number_format($value, 2, ',', '.') : 'R$ [PREÇO]';
 

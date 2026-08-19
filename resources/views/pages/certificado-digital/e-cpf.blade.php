@@ -1,7 +1,7 @@
 @php
     $ecpf = \App\Models\Product::where('slug', 'e-cpf')->first();
-    $variantA1 = $ecpf?->variants()->where('sku', 'ECPF-A1-12')->first();
-    $variantA3 = $ecpf?->variants()->where('sku', 'ECPF-A3-12')->first();
+    $variantA1 = $ecpf?->variants()->whereHas('certificateFormat', fn ($q) => $q->where('slug', 'a1'))->first();
+    $variantA3 = $ecpf?->variants()->whereHas('certificateFormat', fn ($q) => $q->where('slug', 'a3'))->first();
 
     $priceA1 = $variantA1 ? 'R$ ' . number_format((float) $variantA1->price, 2, ',', '.') : 'R$ [PREÇO]';
     $priceA3 = $variantA3 ? 'R$ ' . number_format((float) $variantA3->price, 2, ',', '.') : 'R$ [PREÇO]';
