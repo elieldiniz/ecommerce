@@ -2,10 +2,22 @@
 
 namespace Tests\Feature\Pages;
 
+use App\Models\ProductVariant;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Concerns\SeedsProducts;
 use Tests\TestCase;
 
 class CertificadoDigitalTest extends TestCase
 {
+    use RefreshDatabase;
+    use SeedsProducts;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->seedProducts();
+    }
+
     public function test_route_renders_the_certificado_digital_view(): void
     {
         $response = $this->get('/certificado-digital/');
@@ -133,6 +145,19 @@ class CertificadoDigitalTest extends TestCase
         $response->assertSee('Já sabe o que precisa?');
         $response->assertSeeInOrder(['Comprar e-CPF', 'Comprar e-CNPJ']);
         $response->assertSee('Fale com a gente no WhatsApp');
+    }
+
+    public function test_prices_come_from_the_database_not_hardcoded_markup(): void
+    {
+        ProductVariant::query()->where('sku', 'ECPF-A1-12')->update(['price' => 177.70]);
+        ProductVariant::query()->where('sku', 'ECNPJ-A3-12')->update(['price' => 411.20]);
+
+        $response = $this->get(route('certificado-digital'));
+
+        $response->assertSee('R$ 177,70');
+        $response->assertSee('R$ 411,20');
+        $response->assertDontSee('R$ 139,90');
+        $response->assertDontSee('R$ 349,90');
     }
 
     public function test_page_only_uses_fixed_widths_inside_scrollable_table_wrappers(): void
