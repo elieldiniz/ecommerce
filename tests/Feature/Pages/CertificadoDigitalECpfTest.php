@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Pages;
 
+use App\Models\ProductVariant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\SeedsProducts;
 use Tests\TestCase;
@@ -140,6 +141,15 @@ class CertificadoDigitalECpfTest extends TestCase
         $response->assertSee('Compre agora e agende sua videoconferência hoje');
         $response->assertSee('R$ 139,90');
         $response->assertSee('Comprar e-CPF');
+    }
+
+    public function test_variant_is_found_by_certificate_format_not_by_a_fixed_sku(): void
+    {
+        ProductVariant::query()->where('sku', 'ECPF-A1-12')->update(['sku' => 'QUALQUER-OUTRO-SKU']);
+
+        $response = $this->get(route('certificado-digital.e-cpf'));
+
+        $response->assertSee('R$ 139,90');
     }
 
     public function test_page_only_uses_fixed_widths_inside_scrollable_table_wrappers(): void

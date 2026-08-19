@@ -5,8 +5,8 @@ use App\Models\Product;
 $products = Product::with('variants')->where('is_active', true)->orderBy('position')->get();
 
 $ecnpjPrice = $products->firstWhere('slug', 'e-cnpj')
-    ?->variants->where('is_active', true)->pluck('price')->min() ?? 0;
-$ecnpjPriceFormatted = 'A partir de R$ ' . number_format((float) $ecnpjPrice, 2, ',', '.');
+    ?->variants->where('is_active', true)->pluck('price')->min();
+$ecnpjPriceFormatted = $ecnpjPrice !== null ? 'A partir de R$ ' . number_format((float) $ecnpjPrice, 2, ',', '.') : 'A partir de R$ [PREÇO]';
 
 ?>
 

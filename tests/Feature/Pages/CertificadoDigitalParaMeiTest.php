@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Pages;
 
+use App\Models\ProductVariant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\SeedsProducts;
 use Tests\TestCase;
@@ -178,5 +179,14 @@ class CertificadoDigitalParaMeiTest extends TestCase
         $response = $this->get(route('certificado-digital-para-mei'));
 
         $response->assertDontSee('w-[', false);
+    }
+
+    public function test_variant_is_found_by_certificate_format_not_by_a_fixed_sku(): void
+    {
+        ProductVariant::query()->where('sku', 'ECNPJ-A1-12')->update(['sku' => 'QUALQUER-OUTRO-SKU']);
+
+        $response = $this->get(route('certificado-digital-para-mei'));
+
+        $response->assertSee('R$ 249,90');
     }
 }

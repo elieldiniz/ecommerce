@@ -160,6 +160,22 @@ class CertificadoDigitalTest extends TestCase
         $response->assertDontSee('R$ 349,90');
     }
 
+    public function test_variants_are_found_by_certificate_format_not_by_fixed_skus(): void
+    {
+        ProductVariant::query()->where('sku', 'ECPF-A1-12')->update(['sku' => 'QUALQUER-OUTRO-SKU-1']);
+        ProductVariant::query()->where('sku', 'ECPF-A3-12')->update(['sku' => 'QUALQUER-OUTRO-SKU-2']);
+        ProductVariant::query()->where('sku', 'ECNPJ-A1-12')->update(['sku' => 'QUALQUER-OUTRO-SKU-3']);
+        ProductVariant::query()->where('sku', 'ECNPJ-A3-12')->update(['sku' => 'QUALQUER-OUTRO-SKU-4']);
+
+        $response = $this->get(route('certificado-digital'));
+
+        $response->assertSee('R$ 139,90');
+        $response->assertSee('R$ 219,90');
+        $response->assertSee('R$ 249,90');
+        $response->assertSee('R$ 349,90');
+        $response->assertDontSee('R$ [PREÇO]');
+    }
+
     public function test_page_only_uses_fixed_widths_inside_scrollable_table_wrappers(): void
     {
         $response = $this->get(route('certificado-digital'));

@@ -67,7 +67,7 @@ Route::post('webhooks/safe2pay', Safe2PayWebhookController::class)->name('webhoo
 Route::post('webhooks/gfsis', GfsisWebhookController::class)->name('webhooks.gfsis');
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::view('painel/', 'pages.painel.visao-geral')->name('painel.visao-geral');
+    Route::livewire('painel/', 'pages::painel.visao-geral')->name('painel.visao-geral');
     Route::livewire('painel/vendas/', 'pages::painel.vendas')->name('painel.vendas.index');
     Route::livewire('painel/vendas/{id}/', 'pages::painel.vendas.show')->name('painel.vendas.show');
     Route::livewire('painel/recuperacao/', 'pages::painel.recuperacao')->name('painel.recuperacao');
