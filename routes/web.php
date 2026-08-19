@@ -9,8 +9,6 @@ use App\Http\Middleware\EnsureIssuanceAccessTokenIsValid;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
-Route::get('login', fn () => redirect()->route('customer.login'))->name('login');
-
 Route::view('/', 'pages.home')->name('home');
 
 Route::view('certificado-digital/', 'pages.certificado-digital')->name('certificado-digital');
