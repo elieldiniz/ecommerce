@@ -60,6 +60,20 @@ class GenerateIssuanceAccessToken
         ];
     }
 
+    public function regenerate(OrderItem $orderItem): string
+    {
+        $issuanceData = IssuanceData::query()->where('order_item_id', $orderItem->id)->firstOrFail();
+
+        $token = $this->generateUniqueToken();
+
+        $issuanceData->update([
+            'access_token' => $token,
+            'access_token_expires_at' => now()->addDays(self::TOKEN_TTL_DAYS),
+        ]);
+
+        return $token;
+    }
+
     private function generateUniqueToken(): string
     {
         do {

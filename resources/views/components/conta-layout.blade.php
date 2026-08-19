@@ -1,20 +1,21 @@
+@props([
+    'title' => 'Minha conta',
+    'activePage' => 'pedidos',
+])
+
 <!DOCTYPE html>
 <html lang="pt-BR" class="scroll-smooth">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-
-    <title>{{ $title }}</title>
-    @isset($meta_description)
-        <meta name="description" content="{{ $meta_description }}">
-    @endisset
-
+    <title>{{ $title }} | Digital Lock</title>
     @fonts
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="bg-white font-sans text-ink antialiased" x-data="{ mobileMenuOpen: false }">
+<body class="flex min-h-screen flex-col bg-surface-alt font-sans text-ink antialiased" x-data="{ mobileMenuOpen: false, sidebarOpen: false }">
 @php
     $customerLoggedIn = Auth::guard('customer')->check();
+    $customer = Auth::guard('customer')->user();
 @endphp
     <header class="relative border-b border-border bg-white" @keydown.escape.window="mobileMenuOpen = false">
         <div class="mx-auto flex max-w-6xl items-center justify-between gap-6 px-6 py-4">
@@ -90,8 +91,48 @@
         </nav>
     </header>
 
-    <main>
-        {{ $slot }}
+    <main class="mx-auto w-full max-w-6xl flex-1 px-6 py-8">
+        {{-- Header da conta --}}
+        <div class="mb-6 flex items-center justify-between">
+            <div>
+                <h1 class="font-heading text-xl font-bold text-ink">Minha conta</h1>
+                @if ($customer)
+                    <p class="mt-0.5 font-sans text-sm text-muted">{{ $customer->legal_name }}</p>
+                @endif
+            </div>
+            <form method="POST" action="{{ route('customer.logout') }}">
+                @csrf
+                <button type="submit" class="flex items-center gap-1.5 rounded-lg border border-border-light px-3 py-2 font-sans text-sm font-medium text-muted hover:border-red-300 hover:text-red-600">
+                    <flux:icon.arrow-right-start-on-rectangle class="size-4" />
+                    Sair
+                </button>
+            </form>
+        </div>
+
+        <div class="flex flex-col gap-6 lg:flex-row">
+            {{-- Sidebar --}}
+            <aside class="w-full shrink-0 lg:w-60">
+                <nav class="flex flex-col gap-0.5 rounded-xl border border-border bg-white p-1.5">
+                    <a href="/minha-conta/pedidos/" class="flex items-center gap-2.5 rounded-lg px-3 py-2.5 font-sans text-sm font-medium transition-colors {{ $activePage === 'pedidos' ? 'bg-brand/5 text-brand' : 'text-ink/70 hover:bg-surface-alt hover:text-ink' }}">
+                        <flux:icon.document-text class="size-4" />
+                        Meus pedidos
+                    </a>
+                    <a href="/minha-conta/dados/" class="flex items-center gap-2.5 rounded-lg px-3 py-2.5 font-sans text-sm font-medium transition-colors {{ $activePage === 'dados' ? 'bg-brand/5 text-brand' : 'text-ink/70 hover:bg-surface-alt hover:text-ink' }}">
+                        <flux:icon.user-circle class="size-4" />
+                        Meus dados
+                    </a>
+                    <a href="/minha-conta/senha/" class="flex items-center gap-2.5 rounded-lg px-3 py-2.5 font-sans text-sm font-medium transition-colors {{ $activePage === 'senha' ? 'bg-brand/5 text-brand' : 'text-ink/70 hover:bg-surface-alt hover:text-ink' }}">
+                        <flux:icon.lock-closed class="size-4" />
+                        Trocar senha
+                    </a>
+                </nav>
+            </aside>
+
+            {{-- Conteúdo --}}
+            <div class="min-w-0 flex-1">
+                {{ $slot }}
+            </div>
+        </div>
     </main>
 
     <footer class="bg-ink px-7 pt-10 pb-6 text-white">

@@ -46,4 +46,11 @@ class IssuanceDataFactory extends Factory
             'filled_at' => null,
         ];
     }
+
+    public function filled(): static
+    {
+        return $this->state(fn () => [
+            'filled_at' => now(),
+        ]);
+    }
 }

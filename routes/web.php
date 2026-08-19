@@ -9,6 +9,8 @@ use App\Http\Middleware\EnsureIssuanceAccessTokenIsValid;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
+Route::get('login', fn () => redirect()->route('customer.login'))->name('login');
+
 Route::view('/', 'pages.home')->name('home');
 
 Route::view('certificado-digital/', 'pages.certificado-digital')->name('certificado-digital');
@@ -29,7 +31,11 @@ Route::get('pedido/{id}/emissao/', ShowEmissaoController::class)
 Route::post('pedido/{id}/emissao/', StoreEmissaoController::class)
     ->middleware(EnsureIssuanceAccessTokenIsValid::class)
     ->name('pedido.emissao.store');
-Route::view('minha-conta/pedidos/', 'pages.minha-conta.pedidos')->name('minha-conta.pedidos');
+Route::middleware('auth:customer')->group(function () {
+    Route::livewire('minha-conta/pedidos/', 'pages::minha-conta.pedidos')->name('minha-conta.pedidos');
+    Route::livewire('minha-conta/dados/', 'pages::minha-conta.dados')->name('minha-conta.dados');
+    Route::livewire('minha-conta/senha/', 'pages::minha-conta.senha')->name('minha-conta.senha');
+});
 
 Route::get('carrinho/adicionar/{productVariantId}', function ($productVariantId) {
     $sessionCartId = session()->get('cart_session_id');
@@ -64,11 +70,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::view('painel/', 'pages.painel.visao-geral')->name('painel.visao-geral');
     Route::livewire('painel/vendas/', 'pages::painel.vendas')->name('painel.vendas.index');
     Route::livewire('painel/vendas/{id}/', 'pages::painel.vendas.show')->name('painel.vendas.show');
-    Route::view('painel/recuperacao/', 'pages.painel.recuperacao')->name('painel.recuperacao');
+    Route::livewire('painel/recuperacao/', 'pages::painel.recuperacao')->name('painel.recuperacao');
     Route::livewire('painel/produtos/', 'pages::painel.produtos')->name('painel.produtos');
     Route::livewire('painel/produtos/novo/', 'pages::painel.produtos.create')->name('painel.produtos.create');
     Route::livewire('painel/produtos/{id}/', 'pages::painel.produtos.show')->name('painel.produtos.show');
     Route::livewire('painel/formas-pagamento/', 'pages::painel.formas-pagamento')->name('painel.formas-pagamento');
+    Route::livewire('painel/formas-pagamento/{id}/', 'pages::painel.formas-pagamento.show')->name('painel.formas-pagamento.show');
+    Route::livewire('painel/formas-pagamento/cupons/novo/', 'pages::painel.formas-pagamento.cupons.create')->name('painel.formas-pagamento.cupons.create');
+    Route::livewire('painel/formas-pagamento/cupons/{id}/', 'pages::painel.formas-pagamento.cupons.show')->name('painel.formas-pagamento.cupons.show');
     Route::livewire('painel/clientes/', 'pages::painel.clientes')->name('painel.clientes');
     Route::livewire('painel/clientes/{id}/', 'pages::painel.clientes.show')->name('painel.clientes.show');
     Route::view('painel/relatorios/', 'pages.painel.relatorios')->name('painel.relatorios');

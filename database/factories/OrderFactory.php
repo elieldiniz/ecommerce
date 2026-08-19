@@ -8,6 +8,7 @@ use App\Models\OrderFulfillmentStatus;
 use App\Models\OrderStatus;
 use App\Models\PaymentMethod;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Carbon;
 
 /**
  * @extends Factory<Order>
@@ -40,5 +41,20 @@ class OrderFactory extends Factory
             'cancelled_at' => null,
             'internal_notes' => null,
         ];
+    }
+
+    public function paid(): static
+    {
+        return $this->state(fn () => [
+            'status_id' => OrderStatus::where('slug', 'paid')->value('id') ?? OrderStatus::factory()->create(['slug' => 'paid'])->id,
+            'paid_at' => Carbon::now(),
+        ]);
+    }
+
+    public function awaitingData(): static
+    {
+        return $this->state(fn () => [
+            'fulfillment_status_id' => OrderFulfillmentStatus::where('slug', 'awaiting_data')->value('id') ?? OrderFulfillmentStatus::factory()->create(['slug' => 'awaiting_data'])->id,
+        ]);
     }
 }

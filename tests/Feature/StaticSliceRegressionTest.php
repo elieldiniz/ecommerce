@@ -28,6 +28,13 @@ class StaticSliceRegressionTest extends TestCase
         '/painel/vendas/',
         '/painel/vendas/1042/',
         '/painel/formas-pagamento/',
+        '/painel/recuperacao/',
+        // '/painel/' e '/painel/relatorios/' seguem Route::view puras (sem Livewire
+        // próprio), mas herdam `wire:` do host de toast do Flux adicionado a
+        // admin-layout.blade.php (feature painel-recuperacao-real) — inerte nessas
+        // telas, sem nenhuma ação real associada.
+        '/painel/',
+        '/painel/relatorios/',
     ];
 
     private const ALLOWED_HEX_COLORS = [

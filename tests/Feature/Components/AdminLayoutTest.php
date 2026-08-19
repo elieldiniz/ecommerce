@@ -117,4 +117,13 @@ class AdminLayoutTest extends TestCase
         $this->assertStringContainsString('aria-label="Fechar menu"', $menuAberto);
         $this->assertStringContainsString('data-flux-icon', $menuAberto);
     }
+
+    public function test_has_a_flux_toast_host(): void
+    {
+        $this->actingAs(User::factory()->create());
+
+        $html = Blade::render('<x-admin-layout active-item="visao-geral" title="Teste">conteudo</x-admin-layout>');
+
+        $this->assertStringContainsString('<ui-toast-group', $html);
+    }
 }

@@ -94,4 +94,34 @@ class GenerateIssuanceAccessTokenTest extends TestCase
 
         $this->assertSame($tokens->count(), $tokens->unique()->count());
     }
+
+    public function test_regenerate_produces_a_different_40_char_token_with_fresh_ttl(): void
+    {
+        $order = $this->makeOrderWithOneItem();
+        (new GenerateIssuanceAccessToken)->execute($order);
+
+        $orderItem = $order->items->first();
+        $tokenAntigo = IssuanceData::query()->firstOrFail()->access_token;
+
+        $tokenRetornado = (new GenerateIssuanceAccessToken)->regenerate($orderItem);
+
+        $issuanceData = IssuanceData::query()->firstOrFail();
+        $this->assertNotSame($tokenAntigo, $issuanceData->access_token);
+        $this->assertSame($issuanceData->access_token, $tokenRetornado);
+        $this->assertSame(40, strlen($issuanceData->access_token));
+        $this->assertTrue($issuanceData->access_token_expires_at->isBetween(now()->addDays(29), now()->addDays(31)));
+    }
+
+    public function test_regenerate_called_twice_produces_two_different_tokens(): void
+    {
+        $order = $this->makeOrderWithOneItem();
+        (new GenerateIssuanceAccessToken)->execute($order);
+
+        $orderItem = $order->items->first();
+
+        $primeiro = (new GenerateIssuanceAccessToken)->regenerate($orderItem);
+        $segundo = (new GenerateIssuanceAccessToken)->regenerate($orderItem);
+
+        $this->assertNotSame($primeiro, $segundo);
+    }
 }
