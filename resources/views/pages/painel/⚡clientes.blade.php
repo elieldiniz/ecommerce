@@ -21,13 +21,6 @@ new #[Layout('components.admin-layout', ['activeItem' => 'clientes', 'title' => 
 
     public string $busca = '';
 
-    public ?int $selectedCustomerId = null;
-
-    public function selectCustomer(int $customerId): void
-    {
-        $this->selectedCustomerId = $this->selectedCustomerId === $customerId ? null : $customerId;
-    }
-
     /**
      * @return LengthAwarePaginator<int, Customer>
      */
@@ -67,49 +60,6 @@ new #[Layout('components.admin-layout', ['activeItem' => 'clientes', 'title' => 
             ->pluck('customer_addresses.state')
             ->sort()
             ->values();
-    }
-
-    #[Computed]
-    public function selectedCustomer(): ?Customer
-    {
-        if ($this->selectedCustomerId === null) {
-            return null;
-        }
-
-        return Customer::with(['holderType', 'addresses' => fn ($q) => $q->where('is_primary', true)])
-            ->find($this->selectedCustomerId);
-    }
-
-    /**
-     * @return \Illuminate\Database\Eloquent\Collection<int, \App\Models\Order>
-     */
-    #[Computed]
-    public function selectedCustomerOrders(): \Illuminate\Database\Eloquent\Collection
-    {
-        if ($this->selectedCustomerId === null) {
-            return collect();
-        }
-
-        return \App\Models\Order::with(['items', 'status', 'fulfillmentStatus', 'items.gfsis'])
-            ->where('customer_id', $this->selectedCustomerId)
-            ->orderBy('created_at', 'desc')
-            ->get();
-    }
-
-    /**
-     * @return \Illuminate\Database\Eloquent\Collection<int, \App\Models\IssuanceData>
-     */
-    #[Computed]
-    public function selectedCustomerHolders(): \Illuminate\Database\Eloquent\Collection
-    {
-        if ($this->selectedCustomerId === null) {
-            return collect();
-        }
-
-        return \App\Models\IssuanceData::with(['holderType', 'orderItem.order', 'orderItem.gfsis'])
-            ->whereHas('orderItem.order', fn ($q) => $q->where('customer_id', $this->selectedCustomerId))
-            ->orderBy('created_at', 'desc')
-            ->get();
     }
 
     public function orderCount(Customer $customer): int
@@ -192,13 +142,10 @@ new #[Layout('components.admin-layout', ['activeItem' => 'clientes', 'title' => 
                 </thead>
                 <tbody>
                     @forelse ($this->customers as $customer)
-                        <tr
-                            wire:click="selectCustomer({{ $customer->id }})"
-                            class="cursor-pointer {{ $selectedCustomerId === $customer->id ? 'bg-brand/5' : 'hover:bg-surface-alt' }}"
-                        >
-                            <td class="border border-border px-3 py-2.5 text-ink">{{ $customer->legal_name }}</td>
+                        <tr class="hover:bg-surface-alt">
+                            <td class="border border-border px-3 py-2.5 text-ink"><a href="{{ route('painel.clientes.show', $customer->id) }}" class="font-semibold text-brand">{{ $customer->legal_name }}</a></td>
                             <td class="border border-border px-3 py-2.5 text-ink">{{ $customer->document }}</td>
-                            <td class="border border-border px-3 py-2.5 text-ink">{{ $customer->holderType->name }}</td>
+                            <td class="border border-border px-3 py-2.5 text-ink">{{ $customer->holderType?->name ?? '—' }}</td>
                             <td class="border border-border px-3 py-2.5 text-ink">{{ $customer->email }}</td>
                             <td class="border border-border px-3 py-2.5 text-ink">{{ $this->orderCount($customer) }}</td>
                             <td class="border border-border px-3 py-2.5 text-ink">{{ $this->lastPurchaseDate($customer) ?? '—' }}</td>
@@ -220,137 +167,4 @@ new #[Layout('components.admin-layout', ['activeItem' => 'clientes', 'title' => 
             {{ $this->customers->links() }}
         </div>
     </section>
-
-    {{-- Bloco: Ficha do cliente · dados --}}
-    @if ($selectedCustomerId && $this->selectedCustomer)
-        <section class="mt-6 rounded-xl border border-border bg-white p-5">
-            <h2 class="mb-4 font-heading text-lg font-bold text-ink">Ficha do cliente · dados</h2>
-            <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <div class="md:col-span-2">
-                    <label class="mb-1 block font-sans text-xs font-semibold text-muted">Razão social / Nome</label>
-                    <input type="text" value="{{ $this->selectedCustomer->legal_name }}" readonly class="w-full rounded-lg border border-border-light bg-surface-alt px-3 py-2.5 font-sans text-sm text-ink">
-                </div>
-                <div>
-                    <label class="mb-1 block font-sans text-xs font-semibold text-muted">Tipo de pessoa</label>
-                    <input type="text" value="{{ $this->selectedCustomer->holderType->name }}" readonly class="w-full rounded-lg border border-border-light bg-surface-alt px-3 py-2.5 font-sans text-sm text-ink">
-                </div>
-                <div>
-                    <label class="mb-1 block font-sans text-xs font-semibold text-muted">Documento</label>
-                    <input type="text" value="{{ $this->selectedCustomer->document }}" readonly class="w-full rounded-lg border border-border-light bg-surface-alt px-3 py-2.5 font-sans text-sm text-ink">
-                </div>
-                <div>
-                    <label class="mb-1 block font-sans text-xs font-semibold text-muted">E-mail</label>
-                    <input type="text" value="{{ $this->selectedCustomer->email }}" readonly class="w-full rounded-lg border border-border-light bg-surface-alt px-3 py-2.5 font-sans text-sm text-ink">
-                </div>
-                <div>
-                    <label class="mb-1 block font-sans text-xs font-semibold text-muted">Telefone</label>
-                    <input type="text" value="{{ $this->selectedCustomer->phone }}" readonly class="w-full rounded-lg border border-border-light bg-surface-alt px-3 py-2.5 font-sans text-sm text-ink">
-                </div>
-                <div>
-                    <label class="mb-1 block font-sans text-xs font-semibold text-muted">CEP</label>
-                    <input type="text" value="{{ $this->selectedCustomer->addresses->first()?->postal_code ?? '—' }}" readonly class="w-full rounded-lg border border-border-light bg-surface-alt px-3 py-2.5 font-sans text-sm text-ink">
-                </div>
-                <div>
-                    <label class="mb-1 block font-sans text-xs font-semibold text-muted">Logradouro</label>
-                    <input type="text" value="{{ $this->selectedCustomer->addresses->first()?->street ?? '—' }}" readonly class="w-full rounded-lg border border-border-light bg-surface-alt px-3 py-2.5 font-sans text-sm text-ink">
-                </div>
-                <div>
-                    <label class="mb-1 block font-sans text-xs font-semibold text-muted">Número</label>
-                    <input type="text" value="{{ $this->selectedCustomer->addresses->first()?->number ?? '—' }}" readonly class="w-full rounded-lg border border-border-light bg-surface-alt px-3 py-2.5 font-sans text-sm text-ink">
-                </div>
-                <div>
-                    <label class="mb-1 block font-sans text-xs font-semibold text-muted">Complemento</label>
-                    <input type="text" value="{{ $this->selectedCustomer->addresses->first()?->complement ?? '—' }}" readonly class="w-full rounded-lg border border-border-light bg-surface-alt px-3 py-2.5 font-sans text-sm text-ink">
-                </div>
-                <div>
-                    <label class="mb-1 block font-sans text-xs font-semibold text-muted">Bairro</label>
-                    <input type="text" value="{{ $this->selectedCustomer->addresses->first()?->neighborhood ?? '—' }}" readonly class="w-full rounded-lg border border-border-light bg-surface-alt px-3 py-2.5 font-sans text-sm text-ink">
-                </div>
-                <div>
-                    <label class="mb-1 block font-sans text-xs font-semibold text-muted">Município</label>
-                    <input type="text" value="{{ $this->selectedCustomer->addresses->first()?->city ?? '—' }}" readonly class="w-full rounded-lg border border-border-light bg-surface-alt px-3 py-2.5 font-sans text-sm text-ink">
-                </div>
-                <div>
-                    <label class="mb-1 block font-sans text-xs font-semibold text-muted">UF</label>
-                    <input type="text" value="{{ $this->selectedCustomer->addresses->first()?->state ?? '—' }}" readonly class="w-full rounded-lg border border-border-light bg-surface-alt px-3 py-2.5 font-sans text-sm text-ink">
-                </div>
-            </div>
-        </section>
-    @endif
-
-    {{-- Bloco: Histórico de pedidos --}}
-    @if ($selectedCustomerId)
-        <section class="mt-6 rounded-xl border border-border bg-white p-5">
-            <h2 class="mb-4 font-heading text-lg font-bold text-ink">Histórico de pedidos</h2>
-            <div class="overflow-x-auto">
-                <table class="w-full min-w-[640px] border-collapse font-sans text-[13px]">
-                    <thead>
-                        <tr>
-                            <th class="border border-border bg-surface-alt px-3 py-2.5 text-left text-xs font-semibold text-ink">Pedido</th>
-                            <th class="border border-border bg-surface-alt px-3 py-2.5 text-left text-xs font-semibold text-ink">Produto</th>
-                            <th class="border border-border bg-surface-alt px-3 py-2.5 text-left text-xs font-semibold text-ink">Valor</th>
-                            <th class="border border-border bg-surface-alt px-3 py-2.5 text-left text-xs font-semibold text-ink">Pagamento</th>
-                            <th class="border border-border bg-surface-alt px-3 py-2.5 text-left text-xs font-semibold text-ink">Emissão</th>
-                            <th class="border border-border bg-surface-alt px-3 py-2.5 text-left text-xs font-semibold text-ink">Validade até</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse ($this->selectedCustomerOrders as $order)
-                            @foreach ($order->items as $item)
-                                <tr>
-                                    <td class="border border-border px-3 py-2.5">
-                                        <a href="{{ route('painel.vendas.show', $order->id) }}" class="font-semibold text-brand">#{{ $order->number }}</a>
-                                    </td>
-                                    <td class="border border-border px-3 py-2.5 text-ink">{{ $item->name_snapshot }}</td>
-                                    <td class="border border-border px-3 py-2.5 text-ink">R$ {{ number_format($order->total, 2, ',', '.') }}</td>
-                                    <td class="border border-border px-3 py-2.5"><x-badge-status :variant="$order->status->slug === 'paid' ? 'emitido' : ($order->status->slug === 'cancelled' ? 'erro' : 'aguardando')">{{ $order->status->name }}</x-badge-status></td>
-                                    <td class="border border-border px-3 py-2.5"><x-badge-status :variant="$order->fulfillmentStatus->slug === 'sent_to_gfsis' ? 'emitido' : ($order->fulfillmentStatus->slug === 'send_failed' ? 'erro' : ($order->fulfillmentStatus->slug === 'data_complete' ? 'agendado' : 'aguardando'))">{{ $order->fulfillmentStatus->name }}</x-badge-status></td>
-                                    <td class="border border-border px-3 py-2.5 text-ink">{{ $item->gfsis?->certificate_expires_at?->format('d/m/Y') ?? '—' }}</td>
-                                </tr>
-                            @endforeach
-                        @empty
-                            <tr>
-                                <td colspan="6" class="border border-border px-3 py-8 text-center font-sans text-sm text-muted">Nenhum pedido encontrado</td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
-        </section>
-    @endif
-
-    {{-- Bloco: Titulares vinculados --}}
-    @if ($selectedCustomerId)
-        <section class="mt-6 rounded-xl border border-border bg-white p-5">
-            <h2 class="mb-4 font-heading text-lg font-bold text-ink">Titulares vinculados</h2>
-            <div class="overflow-x-auto">
-                <table class="w-full min-w-[560px] border-collapse font-sans text-[13px]">
-                    <thead>
-                        <tr>
-                            <th class="border border-border bg-surface-alt px-3 py-2.5 text-left text-xs font-semibold text-ink">Titular</th>
-                            <th class="border border-border bg-surface-alt px-3 py-2.5 text-left text-xs font-semibold text-ink">Documento</th>
-                            <th class="border border-border bg-surface-alt px-3 py-2.5 text-left text-xs font-semibold text-ink">Tipo</th>
-                            <th class="border border-border bg-surface-alt px-3 py-2.5 text-left text-xs font-semibold text-ink">Responsável</th>
-                            <th class="border border-border bg-surface-alt px-3 py-2.5 text-left text-xs font-semibold text-ink">Certificado até</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse ($this->selectedCustomerHolders as $holder)
-                            <tr>
-                                <td class="border border-border px-3 py-2.5 text-ink">{{ $holder->holder_name }}</td>
-                                <td class="border border-border px-3 py-2.5 text-ink">{{ $holder->document }}</td>
-                                <td class="border border-border px-3 py-2.5 text-ink">{{ $holder->holderType->name }}</td>
-                                <td class="border border-border px-3 py-2.5 text-ink">{{ $holder->responsible_name ?? '—' }}</td>
-                                <td class="border border-border px-3 py-2.5 text-ink">{{ $holder->orderItem->gfsis?->certificate_expires_at?->format('d/m/Y') ?? '—' }}</td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="5" class="border border-border px-3 py-8 text-center font-sans text-sm text-muted">Nenhum titular encontrado</td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
-        </section>
-    @endif
 </div>

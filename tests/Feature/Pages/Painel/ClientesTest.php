@@ -129,39 +129,28 @@ class ClientesTest extends TestCase
             ->assertSee('Nenhum cliente encontrado');
     }
 
-    public function test_select_customer_highlights_row(): void
+    public function test_row_links_to_customer_show_without_wire_click_action(): void
     {
         $this->actingAs(User::factory()->create());
 
         $pf = HolderType::factory()->create(['slug' => 'pf', 'name' => 'Pessoa Física']);
         $customer = Customer::factory()->create(['holder_type_id' => $pf->id]);
 
-        Livewire::test('pages::painel.clientes')
-            ->call('selectCustomer', $customer->id)
-            ->assertSet('selectedCustomerId', $customer->id);
+        $response = $this->get('/painel/clientes/');
+
+        $response->assertOk();
+        $response->assertSee(route('painel.clientes.show', $customer->id), false);
+        $response->assertDontSee('wire:click="selectCustomer', false);
     }
 
-    public function test_deselect_customer_on_second_click(): void
+    public function test_customer_without_holder_type_renders_dash_in_list(): void
     {
         $this->actingAs(User::factory()->create());
 
-        $pf = HolderType::factory()->create(['slug' => 'pf', 'name' => 'Pessoa Física']);
-        $customer = Customer::factory()->create(['holder_type_id' => $pf->id]);
+        Customer::factory()->create(['holder_type_id' => null]);
 
         Livewire::test('pages::painel.clientes')
-            ->call('selectCustomer', $customer->id)
-            ->assertSet('selectedCustomerId', $customer->id)
-            ->call('selectCustomer', $customer->id)
-            ->assertSet('selectedCustomerId', null);
-    }
-
-    public function test_detail_sections_hidden_when_no_customer_selected(): void
-    {
-        $this->actingAs(User::factory()->create());
-
-        Livewire::test('pages::painel.clientes')
-            ->assertDontSee('Ficha do cliente · dados')
-            ->assertDontSee('Histórico de pedidos')
-            ->assertDontSee('Titulares vinculados');
+            ->assertOk()
+            ->assertSee('—');
     }
 }
