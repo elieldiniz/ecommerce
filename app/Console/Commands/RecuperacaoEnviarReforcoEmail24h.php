@@ -50,9 +50,9 @@ class RecuperacaoEnviarReforcoEmail24h extends Command
             }
 
             try {
-                $this->resendIssuanceAccessLink->execute($order);
-
-                $this->marcarComoEnviado($order);
+                if ($this->resendIssuanceAccessLink->execute($order)) {
+                    $this->marcarComoEnviado($order);
+                }
             } catch (Throwable $e) {
                 Log::error('recuperacao.reforco_24h_falhou', [
                     'order_id' => $order->id,

@@ -1,7 +1,7 @@
 <?php
 
+use App\Actions\Gfsis\RegisterOrderItemWithGfsis;
 use App\Actions\Gfsis\ResendIssuanceAccessLink;
-use App\Jobs\RegisterOrderItemWithGfsisJob;
 use App\Models\Order;
 use App\Models\OrderItemGfsis;
 use Flux\Flux;
@@ -77,18 +77,32 @@ new #[Layout('components.admin-layout', ['activeItem' => 'recuperacao', 'title' 
     {
         $order = Order::query()->with(['items', 'customer'])->findOrFail($orderId);
 
-        app(ResendIssuanceAccessLink::class)->execute($order);
+        $sucesso = app(ResendIssuanceAccessLink::class)->execute($order);
 
-        Flux::toast(variant: 'success', text: __('Link reenviado.'));
+        if ($sucesso) {
+            Flux::toast(variant: 'success', text: __('Link reenviado.'));
+
+            return;
+        }
+
+        Flux::toast(variant: 'danger', text: __('Não foi possível enviar o e-mail para :cliente. Verifique o endereço cadastrado.', ['cliente' => $order->customer->email]));
     }
 
     public function fixAndResend(int $orderItemGfsisId): void
     {
         $orderItemGfsis = OrderItemGfsis::query()->with('orderItem.order')->findOrFail($orderItemGfsisId);
 
-        RegisterOrderItemWithGfsisJob::dispatch($orderItemGfsis->orderItem->order);
+        $sucesso = app(RegisterOrderItemWithGfsis::class)->execute($orderItemGfsis->orderItem->order);
 
-        Flux::toast(variant: 'success', text: __('Reenviado ao GFSIS.'));
+        if ($sucesso) {
+            Flux::toast(variant: 'success', text: __('Reenviado ao GFSIS com sucesso.'));
+
+            return;
+        }
+
+        $erro = $orderItemGfsis->fresh()->last_error ?? __('erro desconhecido.');
+
+        Flux::toast(variant: 'danger', text: __('Falha ao reenviar ao GFSIS: :erro', ['erro' => $erro]));
     }
 }
 ?>

@@ -159,11 +159,25 @@ new #[Layout('components.admin-layout', ['activeItem' => 'vendas', 'title' => 'V
 
         $action = app(ResendIssuanceAccessLink::class);
 
+        $sucessos = 0;
+
         foreach ($fila as $order) {
-            $action->execute($order);
+            if ($action->execute($order)) {
+                $sucessos++;
+            }
         }
 
-        Flux::toast(variant: 'success', text: __('Recuperação disparada para :count pedidos.', ['count' => $fila->count()]));
+        if ($sucessos === $fila->count()) {
+            Flux::toast(variant: 'success', text: __('Recuperação disparada para :count pedidos.', ['count' => $sucessos]));
+
+            return;
+        }
+
+        Flux::toast(variant: 'danger', text: __(':sucessos de :total pedidos reenviados; :falhas falharam (verifique os e-mails cadastrados).', [
+            'sucessos' => $sucessos,
+            'total' => $fila->count(),
+            'falhas' => $fila->count() - $sucessos,
+        ]));
     }
 }
 ?>

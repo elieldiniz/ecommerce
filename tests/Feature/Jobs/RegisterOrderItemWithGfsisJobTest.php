@@ -3,6 +3,7 @@
 namespace Tests\Feature\Jobs;
 
 use App\Jobs\RegisterOrderItemWithGfsisJob;
+use App\Models\GfsisStatus;
 use App\Models\IssuanceData;
 use App\Models\Order;
 use App\Models\OrderFulfillmentStatus;
@@ -167,13 +168,9 @@ class RegisterOrderItemWithGfsisJobTest extends TestCase
         (new RegisterOrderItemWithGfsisJob($order))->handle();
 
         $firstGfsisOrderId = OrderItemGfsis::query()->firstOrFail()->gfsis_order_id;
+        $this->assertSame('send_failed', $order->fresh()->fulfillmentStatus->slug);
 
-        // Simula um reprocessamento manual após a falha, voltando o pedido
-        // para o gate de dados completos (RF-04) sem alterar o order_item_gfsis.
-        $order->fresh()->update([
-            'fulfillment_status_id' => OrderFulfillmentStatus::query()->where('slug', 'data_complete')->value('id'),
-        ]);
-
+        // Reprocessamento direto: `send_failed` já é retentável, sem reset manual de status.
         (new RegisterOrderItemWithGfsisJob($order))->handle();
 
         $secondGfsisOrderId = OrderItemGfsis::query()->firstOrFail()->gfsis_order_id;
@@ -203,6 +200,55 @@ class RegisterOrderItemWithGfsisJobTest extends TestCase
 
         $this->assertNotNull($orderItemGfsis->last_error);
         $this->assertSame(1, $orderItemGfsis->attempts);
+        $this->assertSame('send_failed', $order->fresh()->fulfillmentStatus->slug);
+    }
+
+    public function test_a_send_failed_order_is_retryable_directly_and_moves_out_of_failure_on_success(): void
+    {
+        $order = $this->makeOrder('paid', 'send_failed');
+        $orderItem = $this->makeOrderItem($order);
+
+        OrderItemGfsis::factory()->create([
+            'order_item_id' => $orderItem->id,
+            'status_id' => GfsisStatus::query()->where('slug', 'falha_envio')->value('id'),
+            'last_error' => 'CPF/CNPJ inválido',
+            'attempts' => 2,
+        ]);
+
+        $this->fakeCriarPedidoVenda(['erro' => false, 'codigo' => '102930', 'mensagem' => 'ok', 'urlPagamento' => 'https://x'], 201);
+
+        (new RegisterOrderItemWithGfsisJob($order))->handle();
+
+        $orderItemGfsis = OrderItemGfsis::query()->firstOrFail();
+
+        Http::assertSent(fn ($request) => str_contains($request->url(), '/gestaofacil/rest/CriaPedidoVendaLTS'));
+        $this->assertSame('enviado_gfsis', $orderItemGfsis->status->slug);
+        $this->assertSame(3, $orderItemGfsis->attempts);
+        $this->assertSame('sent_to_gfsis', $order->fresh()->fulfillmentStatus->slug);
+    }
+
+    public function test_a_send_failed_order_retried_directly_that_fails_again_stays_failed_and_records_the_new_error(): void
+    {
+        $order = $this->makeOrder('paid', 'send_failed');
+        $orderItem = $this->makeOrderItem($order);
+
+        OrderItemGfsis::factory()->create([
+            'order_item_id' => $orderItem->id,
+            'status_id' => GfsisStatus::query()->where('slug', 'falha_envio')->value('id'),
+            'last_error' => 'CPF/CNPJ inválido',
+            'attempts' => 2,
+        ]);
+
+        $this->fakeCriarPedidoVenda(['erro' => true, 'codigo' => '999', 'mensagem' => 'Erro inesperado'], 500);
+
+        (new RegisterOrderItemWithGfsisJob($order))->handle();
+
+        $orderItemGfsis = OrderItemGfsis::query()->firstOrFail();
+
+        Http::assertSent(fn ($request) => str_contains($request->url(), '/gestaofacil/rest/CriaPedidoVendaLTS'));
+        $this->assertSame('falha_envio', $orderItemGfsis->status->slug);
+        $this->assertSame(3, $orderItemGfsis->attempts);
+        $this->assertNotSame('CPF/CNPJ inválido', $orderItemGfsis->last_error);
         $this->assertSame('send_failed', $order->fresh()->fulfillmentStatus->slug);
     }
 

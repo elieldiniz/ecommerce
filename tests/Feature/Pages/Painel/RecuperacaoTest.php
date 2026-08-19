@@ -3,8 +3,8 @@
 namespace Tests\Feature\Pages\Painel;
 
 use App\Actions\Gfsis\GenerateIssuanceAccessToken;
-use App\Jobs\RegisterOrderItemWithGfsisJob;
 use App\Mail\IssuanceAccessLinkMail;
+use App\Models\Customer;
 use App\Models\GfsisStatus;
 use App\Models\IssuanceData;
 use App\Models\Order;
@@ -12,10 +12,14 @@ use App\Models\OrderFulfillmentStatus;
 use App\Models\OrderItem;
 use App\Models\OrderItemGfsis;
 use App\Models\OrderStatus;
+use App\Models\ProductVariant;
+use App\Models\Setting;
 use App\Models\User;
+use Database\Seeders\GfsisStatusSeeder;
+use Database\Seeders\OrderFulfillmentStatusSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\Queue;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -39,6 +43,57 @@ class RecuperacaoTest extends TestCase
     {
         return GfsisStatus::where('slug', $slug)->first()
             ?? GfsisStatus::factory()->create(['slug' => $slug, 'name' => ucfirst($slug)]);
+    }
+
+    /**
+     * Configura credenciais/settings do GFSIS e cria um order_item com
+     * `issuance_data` completo e `gfsis_certificado_id` configurado, prontos
+     * para uma chamada real a `CriaPedidoVendaLTS` (mesmo setup de
+     * `RegisterOrderItemWithGfsisJobTest`).
+     */
+    private function makeFalhaEnvioOrder(): Order
+    {
+        $this->seed(OrderFulfillmentStatusSeeder::class);
+        $this->seed(GfsisStatusSeeder::class);
+
+        Setting::factory()->create(['key' => 'gfsis_ponto_atendimento', 'value' => '10', 'group' => 'gfsis']);
+        Setting::factory()->create(['key' => 'gfsis_tipo_validacao', 'value' => '2', 'group' => 'gfsis']);
+
+        config([
+            'services.gfsis.base_url' => 'https://gfsis.example.com',
+            'services.gfsis.login' => 'integracao-login',
+            'services.gfsis.senha' => 'integracao-senha',
+        ]);
+
+        $order = Order::factory()->create([
+            'number' => 'PED-FALHOU1',
+            'status_id' => $this->orderStatus('paid')->id,
+            'fulfillment_status_id' => $this->fulfillmentStatus('send_failed')->id,
+        ]);
+
+        $productVariant = ProductVariant::factory()->create(['gfsis_certificado_id' => 55]);
+        $item = OrderItem::factory()->create(['order_id' => $order->id, 'product_variant_id' => $productVariant->id]);
+        IssuanceData::factory()->create(['order_item_id' => $item->id]);
+
+        OrderItemGfsis::factory()->create([
+            'order_item_id' => $item->id,
+            'status_id' => $this->gfsisStatus('falha_envio')->id,
+            'last_error' => 'CPF/CNPJ inválido',
+            'attempts' => 2,
+        ]);
+
+        return $order;
+    }
+
+    private function fakeCriarPedidoVenda(array $response, int $status): void
+    {
+        Http::fake([
+            '*/gestaofacil/rest/auth' => Http::response([
+                'acessToken' => 'token-1',
+                'expirationDate' => now()->addMinutes(30)->format('Y-m-d H:i'),
+            ], 200),
+            '*/gestaofacil/rest/CriaPedidoVendaLTS' => Http::response($response, $status),
+        ]);
     }
 
     private function makeQueuedOrder(): Order
@@ -143,6 +198,24 @@ class RecuperacaoTest extends TestCase
         Mail::assertSent(IssuanceAccessLinkMail::class);
     }
 
+    public function test_reenviar_link_com_email_malformado_nao_quebra_a_pagina_e_avisa_a_falha(): void
+    {
+        $this->actingAs(User::factory()->create());
+
+        $customer = Customer::factory()->create(['email' => 'eliel diniz1@outl.com']);
+        $order = Order::factory()->create([
+            'customer_id' => $customer->id,
+            'status_id' => $this->orderStatus('paid')->id,
+            'fulfillment_status_id' => $this->fulfillmentStatus('awaiting_data')->id,
+            'paid_at' => now()->subDays(2),
+        ]);
+        OrderItem::factory()->create(['order_id' => $order->id]);
+
+        Livewire::test('pages::painel.recuperacao')
+            ->call('resendLink', $order->id)
+            ->assertOk();
+    }
+
     public function test_table_regua_automatica_permanece_estatica(): void
     {
         $this->actingAs(User::factory()->create());
@@ -177,23 +250,51 @@ class RecuperacaoTest extends TestCase
         $response->assertSee('Corrigir e reenviar');
     }
 
-    public function test_corrigir_e_reenviar_despacha_job_do_gfsis(): void
+    public function test_corrigir_e_reenviar_com_sucesso_tira_o_pedido_da_fila_de_falhas(): void
     {
-        Queue::fake();
         $this->actingAs(User::factory()->create());
 
-        $order = Order::factory()->create();
-        $item = OrderItem::factory()->create(['order_id' => $order->id]);
-        $orderItemGfsis = OrderItemGfsis::factory()->create([
-            'order_item_id' => $item->id,
-            'status_id' => $this->gfsisStatus('falha_envio')->id,
-        ]);
+        $order = $this->makeFalhaEnvioOrder();
+        $orderItemGfsis = OrderItemGfsis::query()->firstOrFail();
+
+        $this->fakeCriarPedidoVenda(['erro' => false, 'codigo' => '102930', 'mensagem' => 'ok', 'urlPagamento' => 'https://x'], 201);
 
         Livewire::test('pages::painel.recuperacao')
             ->call('fixAndResend', $orderItemGfsis->id)
             ->assertOk();
 
-        Queue::assertPushed(RegisterOrderItemWithGfsisJob::class);
+        Http::assertSent(fn ($request) => str_contains($request->url(), '/gestaofacil/rest/CriaPedidoVendaLTS'));
+
+        $orderItemGfsis->refresh();
+        $this->assertSame('enviado_gfsis', $orderItemGfsis->status->slug);
+        $this->assertSame('sent_to_gfsis', $order->fresh()->fulfillmentStatus->slug);
+
+        Livewire::test('pages::painel.recuperacao')->assertDontSee($order->number);
+    }
+
+    public function test_corrigir_e_reenviar_que_falha_de_novo_permanece_na_fila_com_o_novo_erro(): void
+    {
+        $this->actingAs(User::factory()->create());
+
+        $order = $this->makeFalhaEnvioOrder();
+        $orderItemGfsis = OrderItemGfsis::query()->firstOrFail();
+
+        $this->fakeCriarPedidoVenda(['erro' => true, 'codigo' => '999', 'mensagem' => 'Erro inesperado'], 500);
+
+        Livewire::test('pages::painel.recuperacao')
+            ->call('fixAndResend', $orderItemGfsis->id)
+            ->assertOk();
+
+        Http::assertSent(fn ($request) => str_contains($request->url(), '/gestaofacil/rest/CriaPedidoVendaLTS'));
+
+        $orderItemGfsis->refresh();
+        $this->assertSame('falha_envio', $orderItemGfsis->status->slug);
+        $this->assertSame(3, $orderItemGfsis->attempts);
+        $this->assertNotSame('CPF/CNPJ inválido', $orderItemGfsis->last_error);
+        $this->assertSame('send_failed', $order->fresh()->fulfillmentStatus->slug);
+
+        $response = $this->get('/painel/recuperacao/');
+        $response->assertSee($order->number);
     }
 
     public function test_botoes_de_acao_ficam_desabilitados_durante_requisicao(): void
