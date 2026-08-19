@@ -27,6 +27,7 @@ class StaticSliceRegressionTest extends TestCase
         '/painel/clientes/',
         '/painel/vendas/',
         '/painel/vendas/1042/',
+        '/painel/formas-pagamento/',
     ];
 
     private const ALLOWED_HEX_COLORS = [
