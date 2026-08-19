@@ -63,10 +63,14 @@ new #[Layout('components.layout')] #[Title('Login — Cliente')] class extends C
             @enderror
         </div>
 
-        <label class="flex items-center gap-2 font-sans text-xs text-muted">
-            <input type="checkbox" wire:model="remember">
-            Lembrar de mim
-        </label>
+        <div class="flex items-center justify-between">
+            <label class="flex items-center gap-2 font-sans text-xs text-muted">
+                <input type="checkbox" wire:model="remember">
+                Lembrar de mim
+            </label>
+
+            <a href="{{ route('customer.password.request') }}" class="font-sans text-xs font-semibold text-brand" wire:navigate>Esqueceu sua senha?</a>
+        </div>
 
         <button type="submit" class="mt-2 w-full rounded-lg bg-brand px-4 py-3 font-heading text-sm font-semibold text-white">Entrar</button>
     </form>

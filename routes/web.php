@@ -60,6 +60,8 @@ Route::post('cliente/logout', function () {
 
 Route::livewire('cliente/login/', 'pages::auth.customer.login')->name('customer.login');
 Route::livewire('cliente/registro/', 'pages::auth.customer.register')->name('customer.register');
+Route::livewire('cliente/esqueci-senha/', 'pages::auth.customer.forgot-password')->name('customer.password.request');
+Route::livewire('cliente/redefinir-senha/{token}/', 'pages::auth.customer.reset-password')->name('customer.password.reset');
 
 Route::post('webhooks/safe2pay', Safe2PayWebhookController::class)->name('webhooks.safe2pay');
 Route::post('webhooks/gfsis', GfsisWebhookController::class)->name('webhooks.gfsis');
