@@ -9,3 +9,4 @@ Before planning or editing, find the row whose globs match the file's path and r
 | routes/web.php | .ai/rules/routes.md |
 | tests/** | .ai/rules/tests.md |
 | resources/views/** | .ai/rules/views.md |
+| resources/views/pages/painel/⚡visao-geral.blade.php | .ai/rules/painel-visao-geral.md |
