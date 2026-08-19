@@ -147,13 +147,13 @@ new #[Layout('components.admin-layout', ['activeItem' => 'recuperacao', 'title' 
                                 @endif
                             </td>
                             <td class="border border-border px-3 py-2.5">
-                                <button type="button" class="rounded-lg border border-border-light px-3 py-1.5 font-sans text-xs font-semibold text-ink">Ligar</button>
+                                <button type="button" class="cursor-pointer rounded-lg border border-border-light px-3 py-1.5 font-sans text-xs font-semibold text-ink hover:bg-surface-alt">Ligar</button>
                                 <button
                                     type="button"
                                     wire:click="resendLink({{ $order->id }})"
                                     wire:loading.attr="disabled"
                                     wire:target="resendLink({{ $order->id }})"
-                                    class="ml-2 rounded-lg border border-border-light px-3 py-1.5 font-sans text-xs font-semibold text-ink"
+                                    class="ml-2 cursor-pointer rounded-lg border border-border-light px-3 py-1.5 font-sans text-xs font-semibold text-ink hover:bg-surface-alt disabled:cursor-not-allowed"
                                 >Reenviar link</button>
                             </td>
                         </tr>
@@ -207,7 +207,7 @@ new #[Layout('components.admin-layout', ['activeItem' => 'recuperacao', 'title' 
                                     wire:click="fixAndResend({{ $orderItemGfsis->id }})"
                                     wire:loading.attr="disabled"
                                     wire:target="fixAndResend({{ $orderItemGfsis->id }})"
-                                    class="rounded-lg border border-border-light px-3 py-1.5 font-sans text-xs font-semibold text-ink"
+                                    class="cursor-pointer rounded-lg border border-border-light px-3 py-1.5 font-sans text-xs font-semibold text-ink hover:bg-surface-alt disabled:cursor-not-allowed"
                                 >Corrigir e reenviar</button>
                             </td>
                         </tr>
