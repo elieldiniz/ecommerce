@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Cart;
 use App\Models\Customer;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
@@ -28,7 +29,7 @@ new #[Layout('components.checkout-layout', ['activeStep' => 1])] #[Title('Login 
 
             if ($sessionCartId) {
                 $customer = Auth::guard('customer')->user();
-                $customer->load('cart')->mergeFromSession($sessionCartId);
+                Cart::getOrCreateForCustomer($customer)->mergeFromSession($sessionCartId);
                 session()->forget('cart_session_id');
             }
 

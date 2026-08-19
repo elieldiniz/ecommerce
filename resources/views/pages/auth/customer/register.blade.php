@@ -1,6 +1,7 @@
 <?php
 
 use App\Actions\Fortify\CreateNewCustomer;
+use App\Models\Cart;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -31,8 +32,8 @@ new #[Layout('components.checkout-layout', ['activeStep' => 1])] #[Title('Criar 
 
         $sessionCartId = session()->get('cart_session_id');
 
-        if ($sessionCartId && $customer->cart) {
-            $customer->cart->mergeFromSession($sessionCartId);
+        if ($sessionCartId) {
+            Cart::getOrCreateForCustomer($customer)->mergeFromSession($sessionCartId);
             session()->forget('cart_session_id');
         }
 
