@@ -66,6 +66,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::livewire('painel/vendas/{id}/', 'pages::painel.vendas.show')->name('painel.vendas.show');
     Route::view('painel/recuperacao/', 'pages.painel.recuperacao')->name('painel.recuperacao');
     Route::livewire('painel/produtos/', 'pages::painel.produtos')->name('painel.produtos');
+    Route::livewire('painel/produtos/novo/', 'pages::painel.produtos.create')->name('painel.produtos.create');
+    Route::livewire('painel/produtos/{id}/', 'pages::painel.produtos.show')->name('painel.produtos.show');
     Route::view('painel/formas-pagamento/', 'pages.painel.formas-pagamento')->name('painel.formas-pagamento');
     Route::livewire('painel/clientes/', 'pages::painel.clientes')->name('painel.clientes');
     Route::livewire('painel/clientes/{id}/', 'pages::painel.clientes.show')->name('painel.clientes.show');

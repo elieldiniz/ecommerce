@@ -16,10 +16,9 @@ use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
-new #[Layout('components.admin-layout', ['activeItem' => 'produtos', 'title' => 'Produtos'])] #[Title('Produtos')] class extends Component {
-    public ?int $selectedProductId = null;
-
-    public ?int $productId = null;
+new #[Layout('components.admin-layout', ['activeItem' => 'produtos', 'title' => 'Produtos'])] #[Title('Editar produto')] class extends Component
+{
+    public int $id;
 
     public string $name = '';
 
@@ -51,18 +50,26 @@ new #[Layout('components.admin-layout', ['activeItem' => 'produtos', 'title' => 
 
     public bool $is_default = false;
 
-    public function mount(): void
+    public function mount(int $id): void
     {
-        $this->selectedProductId = null;
+        $product = Product::find($id);
+
+        if ($product === null) {
+            abort(404);
+        }
+
+        $this->id = $product->id;
+        $this->name = $product->name;
+        $this->slug = $product->slug;
+        $this->holder_type_id = $product->holder_type_id;
+        $this->short_description = $this->short_description ?? $product->short_description;
+        $this->position = $product->position;
     }
 
-    /**
-     * @return Collection<int, Product>
-     */
     #[Computed]
-    public function products(): Collection
+    public function product(): ?Product
     {
-        return Product::with(['holderType', 'variants'])->orderBy('position')->get();
+        return Product::with(['holderType'])->find($this->id);
     }
 
     /**
@@ -74,92 +81,13 @@ new #[Layout('components.admin-layout', ['activeItem' => 'produtos', 'title' => 
         return HolderType::orderBy('name')->get();
     }
 
-    public function startingPriceFor(Product $product): string
-    {
-        $currentPrices = $product->variants->map(fn (ProductVariant $variant) => $this->currentPriceFor($variant));
-
-        if ($currentPrices->isEmpty()) {
-            return '—';
-        }
-
-        return Number::currency($currentPrices->min(), in: 'BRL', locale: 'pt_BR');
-    }
-
-    private function currentPriceFor(ProductVariant $variant): float
-    {
-        $now = now();
-
-        $hasActivePromotion = $variant->promotional_price !== null
-            && $variant->promotion_starts_at !== null
-            && $variant->promotion_ends_at !== null
-            && $now->betweenIncluded($variant->promotion_starts_at, $variant->promotion_ends_at);
-
-        return (float) ($hasActivePromotion ? $variant->promotional_price : $variant->price);
-    }
-
-    public function createProduct(): void
-    {
-        $validated = $this->validate($this->productRules(), $this->productMessages());
-
-        DB::transaction(function () use ($validated): void {
-            Product::create([...$validated, 'is_active' => true]);
-        });
-
-        $this->resetProductForm();
-
-        Flux::toast(variant: 'success', text: __('Produto criado.'));
-    }
-
-    public function editProduct(int $productId): void
-    {
-        $product = Product::findOrFail($productId);
-
-        $this->productId = $product->id;
-        $this->name = $product->name;
-        $this->slug = $product->slug;
-        $this->holder_type_id = $product->holder_type_id;
-        $this->short_description = $product->short_description;
-        $this->position = $product->position;
-    }
-
-    public function updateProduct(): void
-    {
-        $validated = $this->validate($this->productRules(), $this->productMessages());
-
-        DB::transaction(function () use ($validated): void {
-            Product::findOrFail($this->productId)->update($validated);
-        });
-
-        $this->resetProductForm();
-
-        Flux::toast(variant: 'success', text: __('Produto atualizado.'));
-    }
-
-    public function resetProductForm(): void
-    {
-        $this->reset('productId', 'name', 'slug', 'holder_type_id', 'short_description', 'position');
-    }
-
-    public function toggleProductStatus(int $productId): void
-    {
-        DB::transaction(function () use ($productId): void {
-            $product = Product::findOrFail($productId);
-            $product->update(['is_active' => ! $product->is_active]);
-        });
-    }
-
-    public function selectProduct(int $productId): void
-    {
-        $this->selectedProductId = $productId;
-    }
-
     /**
      * @return Collection<int, ProductVariant>
      */
     #[Computed]
     public function variants(): Collection
     {
-        return ProductVariant::where('product_id', $this->selectedProductId)->with('certificateFormat')->get();
+        return ProductVariant::where('product_id', $this->id)->with('certificateFormat')->get();
     }
 
     /**
@@ -171,21 +99,26 @@ new #[Layout('components.admin-layout', ['activeItem' => 'produtos', 'title' => 
         return CertificateFormat::orderBy('name')->get();
     }
 
+    public function updateProduct(): void
+    {
+        $validated = $this->validate($this->productRules(), $this->productMessages());
+
+        DB::transaction(function () use ($validated): void {
+            Product::findOrFail($this->id)->update($validated);
+        });
+
+        Flux::toast(variant: 'success', text: __('Produto atualizado.'));
+    }
+
     public function createVariant(): void
     {
-        if ($this->selectedProductId === null) {
-            $this->addError('sku', 'Selecione um produto antes de criar uma variante.');
-
-            return;
-        }
-
         $validated = $this->validate($this->variantRules(), $this->variantMessages());
 
         try {
             DB::transaction(function () use ($validated): void {
                 $variant = ProductVariant::create([
                     ...$validated,
-                    'product_id' => $this->selectedProductId,
+                    'product_id' => $this->id,
                     'is_active' => true,
                 ]);
 
@@ -275,7 +208,7 @@ new #[Layout('components.admin-layout', ['activeItem' => 'produtos', 'title' => 
             'certificate_format_id' => [
                 'required',
                 'integer',
-                Rule::unique('product_variants')->where('product_id', $this->selectedProductId)->ignore($this->variantId),
+                Rule::unique('product_variants')->where('product_id', $this->id)->ignore($this->variantId),
             ],
             'gfsis_certificado_id' => ['nullable', 'integer', 'min:1'],
             'validity_months' => ['required', 'integer', 'min:1'],
@@ -320,7 +253,7 @@ new #[Layout('components.admin-layout', ['activeItem' => 'produtos', 'title' => 
     {
         return [
             'name' => ['required', 'string', 'max:120'],
-            'slug' => ['required', 'string', 'max:120', Rule::unique('products', 'slug')->ignore($this->productId)],
+            'slug' => ['required', 'string', 'max:120', Rule::unique('products', 'slug')->ignore($this->id)],
             'holder_type_id' => ['required', 'integer'],
             'short_description' => ['nullable', 'string', 'max:255'],
             'position' => ['required', 'integer'],
@@ -345,52 +278,19 @@ new #[Layout('components.admin-layout', ['activeItem' => 'produtos', 'title' => 
             'position.integer' => 'A ordem de exibição deve ser um número inteiro.',
         ];
     }
-}; ?>
+}
+?>
 
 <div>
-    {{-- Bloco: Lista --}}
-    <section class="rounded-xl border border-border bg-white p-5">
-        <div class="mb-4 flex items-center justify-between">
-            <h2 class="font-heading text-lg font-bold text-ink">Lista</h2>
-            <button type="button" wire:click="resetProductForm" class="rounded-lg bg-brand px-4 py-2.5 font-heading text-xs font-semibold text-white">Novo produto</button>
-        </div>
-        <div class="overflow-x-auto">
-            <table class="w-full min-w-[560px] border-collapse font-sans text-[13px]">
-                <thead>
-                    <tr>
-                        <th class="border border-border bg-surface-alt px-3 py-2.5 text-left text-xs font-semibold text-ink">Produto</th>
-                        <th class="border border-border bg-surface-alt px-3 py-2.5 text-left text-xs font-semibold text-ink">Tipo</th>
-                        <th class="border border-border bg-surface-alt px-3 py-2.5 text-left text-xs font-semibold text-ink">Slug</th>
-                        <th class="border border-border bg-surface-alt px-3 py-2.5 text-left text-xs font-semibold text-ink">Variantes</th>
-                        <th class="border border-border bg-surface-alt px-3 py-2.5 text-left text-xs font-semibold text-ink">A partir de</th>
-                        <th class="border border-border bg-surface-alt px-3 py-2.5 text-left text-xs font-semibold text-ink">Ativo</th>
-                        <th class="border border-border bg-surface-alt px-3 py-2.5 text-left text-xs font-semibold text-ink">Ações</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach ($this->products as $product)
-                        <tr wire:click="selectProduct({{ $product->id }})" class="cursor-pointer {{ $selectedProductId === $product->id ? 'bg-surface-alt' : '' }}">
-                            <td class="border border-border px-3 py-2.5 text-ink">{{ $product->name }}</td>
-                            <td class="border border-border px-3 py-2.5 text-ink">{{ $product->holderType->name }}</td>
-                            <td class="border border-border px-3 py-2.5 text-ink">{{ $product->slug }}</td>
-                            <td class="border border-border px-3 py-2.5 text-ink">{{ $product->variants->count() }}</td>
-                            <td class="border border-border px-3 py-2.5 text-ink">{{ $this->startingPriceFor($product) }}</td>
-                            <td class="border border-border px-3 py-2.5 text-ink">{{ $product->is_active ? 'Sim' : 'Não' }}</td>
-                            <td class="border border-border px-3 py-2.5 text-ink">
-                                <button type="button" wire:click.stop="editProduct({{ $product->id }})" class="rounded-lg border border-border-light px-3 py-1.5 font-sans text-xs font-semibold text-ink">Editar</button>
-                                <button type="button" wire:click.stop="toggleProductStatus({{ $product->id }})" class="ml-2 rounded-lg border border-border-light px-3 py-1.5 font-sans text-xs font-semibold text-ink">{{ $product->is_active ? 'Desativar' : 'Ativar' }}</button>
-                            </td>
-                        </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
-    </section>
+    <div class="flex items-center justify-between">
+        <h1 class="font-heading text-xl font-bold text-ink">{{ $this->product->name }}</h1>
+        <a href="{{ route('painel.produtos') }}" class="rounded-lg border border-border-light px-4 py-2.5 font-sans text-sm font-semibold text-ink hover:bg-surface-alt cursor-pointer">Voltar</a>
+    </div>
 
     {{-- Bloco: Edição · dados do produto --}}
     <section class="mt-6 rounded-xl border border-border bg-white p-5">
-        <h2 class="mb-4 font-heading text-lg font-bold text-ink">Edição · dados do produto</h2>
-        <form wire:submit="{{ $productId ? 'updateProduct' : 'createProduct' }}" class="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <h2 class="mb-4 font-heading text-lg font-bold text-ink">Dados do produto</h2>
+        <form wire:submit="updateProduct" class="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
                 <label class="mb-1 block font-sans text-xs font-semibold text-muted">Nome</label>
                 <input type="text" wire:model="name" class="w-full rounded-lg border border-border-light px-3 py-2.5 font-sans text-sm text-ink">
@@ -432,7 +332,7 @@ new #[Layout('components.admin-layout', ['activeItem' => 'produtos', 'title' => 
                 @enderror
             </div>
             <div class="md:col-span-2">
-                <button type="submit" class="rounded-lg bg-brand px-4 py-2.5 font-heading text-xs font-semibold text-white">{{ $productId ? 'Salvar alterações' : 'Salvar produto' }}</button>
+                <button type="submit" class="rounded-lg bg-brand px-4 py-2.5 font-heading text-xs font-semibold text-white hover:bg-brand/90 cursor-pointer">Salvar alterações</button>
             </div>
         </form>
     </section>
@@ -441,7 +341,7 @@ new #[Layout('components.admin-layout', ['activeItem' => 'produtos', 'title' => 
     <section class="mt-6 rounded-xl border border-border bg-white p-5">
         <div class="mb-4 flex items-center justify-between">
             <h2 class="font-heading text-lg font-bold text-ink">Variantes do produto</h2>
-            <button type="button" wire:click="resetVariantForm" class="rounded-lg border border-border-light px-4 py-2.5 font-sans text-xs font-semibold text-ink">Nova variante</button>
+            <button type="button" wire:click="resetVariantForm" class="rounded-lg border border-border-light px-4 py-2.5 font-sans text-xs font-semibold text-ink hover:bg-surface-alt cursor-pointer">Nova variante</button>
         </div>
         <div class="overflow-x-auto">
             <table class="w-full min-w-[720px] border-collapse font-sans text-[13px]">
@@ -459,7 +359,7 @@ new #[Layout('components.admin-layout', ['activeItem' => 'produtos', 'title' => 
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach ($this->variants as $variant)
+                    @forelse ($this->variants as $variant)
                         <tr>
                             <td class="border border-border px-3 py-2.5 text-ink">{{ $variant->sku }}</td>
                             <td class="border border-border px-3 py-2.5 text-ink">{{ $variant->certificateFormat->name }}</td>
@@ -476,13 +376,17 @@ new #[Layout('components.admin-layout', ['activeItem' => 'produtos', 'title' => 
                             <td class="border border-border px-3 py-2.5 text-ink">{{ $variant->is_default ? 'Sim' : 'Não' }}</td>
                             <td class="border border-border px-3 py-2.5 text-ink">{{ $variant->is_active ? 'Sim' : 'Não' }}</td>
                             <td class="border border-border px-3 py-2.5 text-ink">
-                                <button type="button" wire:click="editVariant({{ $variant->id }})" class="rounded-lg border border-border-light px-3 py-1.5 font-sans text-xs font-semibold text-ink">Editar</button>
+                                <button type="button" wire:click="editVariant({{ $variant->id }})" class="rounded-lg border border-border-light px-3 py-1.5 font-sans text-xs font-semibold text-ink hover:bg-surface-alt cursor-pointer">Editar</button>
                                 @unless ($variant->is_default)
-                                    <button type="button" wire:click="setDefaultVariant({{ $variant->id }})" class="ml-2 rounded-lg border border-border-light px-3 py-1.5 font-sans text-xs font-semibold text-ink">Marcar como padrão</button>
+                                    <button type="button" wire:click="setDefaultVariant({{ $variant->id }})" class="ml-2 rounded-lg border border-border-light px-3 py-1.5 font-sans text-xs font-semibold text-ink hover:bg-surface-alt cursor-pointer">Marcar como padrão</button>
                                 @endunless
                             </td>
                         </tr>
-                    @endforeach
+                    @empty
+                        <tr>
+                            <td colspan="9" class="border border-border px-3 py-8 text-center font-sans text-sm text-muted">Nenhuma variante encontrada</td>
+                        </tr>
+                    @endforelse
                 </tbody>
             </table>
         </div>
@@ -490,7 +394,7 @@ new #[Layout('components.admin-layout', ['activeItem' => 'produtos', 'title' => 
 
     {{-- Bloco: Edição de variante --}}
     <section class="mt-6 rounded-xl border border-border bg-white p-5">
-        <h2 class="mb-4 font-heading text-lg font-bold text-ink">Edição de variante</h2>
+        <h2 class="mb-4 font-heading text-lg font-bold text-ink">{{ $variantId ? 'Edição de variante' : 'Nova variante' }}</h2>
         <form wire:submit="{{ $variantId ? 'updateVariant' : 'createVariant' }}" class="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
                 <label class="mb-1 block font-sans text-xs font-semibold text-muted">SKU</label>
@@ -558,7 +462,7 @@ new #[Layout('components.admin-layout', ['activeItem' => 'produtos', 'title' => 
                 <label for="is_default" class="font-sans text-xs font-semibold text-muted">Variante padrão</label>
             </div>
             <div class="md:col-span-2">
-                <button type="submit" class="rounded-lg bg-brand px-4 py-2.5 font-heading text-xs font-semibold text-white">{{ $variantId ? 'Salvar alterações' : 'Salvar variante' }}</button>
+                <button type="submit" class="rounded-lg bg-brand px-4 py-2.5 font-heading text-xs font-semibold text-white hover:bg-brand/90 cursor-pointer">{{ $variantId ? 'Salvar variante' : 'Salvar variante' }}</button>
             </div>
         </form>
     </section>
