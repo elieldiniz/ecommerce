@@ -53,7 +53,7 @@ new #[Layout('components.admin-layout', ['activeItem' => 'produtos', 'title' => 
     {
         return [
             'name' => ['required', 'string', 'max:120'],
-            'slug' => ['required', 'string', 'max:120', Rule::unique('products', 'slug')],
+            'slug' => ['required', 'string', 'max:120', 'regex:/^[a-z0-9]+(-[a-z0-9]+)*$/', Rule::unique('products', 'slug')],
             'holder_type_id' => ['required', 'integer'],
             'short_description' => ['nullable', 'string', 'max:255'],
             'position' => ['required', 'integer'],
@@ -70,6 +70,7 @@ new #[Layout('components.admin-layout', ['activeItem' => 'produtos', 'title' => 
             'name.max' => 'O nome deve ter no máximo 120 caracteres.',
             'slug.required' => 'Informe o slug do produto.',
             'slug.max' => 'O slug deve ter no máximo 120 caracteres.',
+            'slug.regex' => 'O slug deve conter apenas letras minúsculas, números e hífens (ex: e-cnpj).',
             'slug.unique' => 'Este slug já está em uso por outro produto.',
             'holder_type_id.required' => 'Selecione o tipo de titular.',
             'holder_type_id.integer' => 'Selecione um tipo de titular válido.',

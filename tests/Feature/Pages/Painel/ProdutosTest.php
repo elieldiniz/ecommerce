@@ -187,6 +187,23 @@ class ProdutosTest extends TestCase
         $this->assertDatabaseCount('products', 1);
     }
 
+    public function test_criacao_with_uppercase_or_malformed_slug_is_rejected(): void
+    {
+        $this->actingAs(User::factory()->create());
+
+        $holderType = HolderType::factory()->create();
+
+        Livewire::test('pages::painel.produtos.create')
+            ->set('name', 'Certificado Digital e-CNPJ')
+            ->set('slug', 'e-CNPJ')
+            ->set('holder_type_id', $holderType->id)
+            ->set('position', 1)
+            ->call('createProduct')
+            ->assertHasErrors(['slug' => 'regex']);
+
+        $this->assertDatabaseCount('products', 0);
+    }
+
     public function test_criacao_without_required_fields_is_rejected(): void
     {
         $this->actingAs(User::factory()->create());
@@ -280,6 +297,21 @@ class ProdutosTest extends TestCase
             'holder_type_id' => $holderType->id,
             'position' => 5,
         ]);
+    }
+
+    public function test_edicao_with_uppercase_or_malformed_slug_is_rejected(): void
+    {
+        $this->actingAs(User::factory()->create());
+
+        $holderType = HolderType::factory()->create();
+        $product = Product::factory()->create(['slug' => 'e-cnpj', 'holder_type_id' => $holderType->id]);
+
+        Livewire::test('pages::painel.produtos.show', ['id' => $product->id])
+            ->set('slug', 'e-CNPJ')
+            ->call('updateProduct')
+            ->assertHasErrors(['slug' => 'regex']);
+
+        $this->assertDatabaseHas('products', ['id' => $product->id, 'slug' => 'e-cnpj']);
     }
 
     public function test_edicao_slug_conflict_is_rejected(): void
