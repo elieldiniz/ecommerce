@@ -7,7 +7,7 @@ use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
-new #[Layout('components.checkout-layout', ['activeStep' => 1])] #[Title('Login — Cliente')] class extends Component {
+new #[Layout('components.layout')] #[Title('Login — Cliente')] class extends Component {
     public string $email = '';
     public string $password = '';
     public bool $remember = false;
