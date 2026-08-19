@@ -1,3 +1,18 @@
+@php
+    $ecpf = \App\Models\Product::where('slug', 'e-cpf')->first();
+    $ecnpj = \App\Models\Product::where('slug', 'e-cnpj')->first();
+
+    $ecpfA1 = $ecpf?->variants()->where('sku', 'ECPF-A1-12')->first();
+    $ecpfA3 = $ecpf?->variants()->where('sku', 'ECPF-A3-12')->first();
+    $ecnpjA1 = $ecnpj?->variants()->where('sku', 'ECNPJ-A1-12')->first();
+    $ecnpjA3 = $ecnpj?->variants()->where('sku', 'ECNPJ-A3-12')->first();
+
+    $formatMoney = fn (?float $value) => $value !== null ? 'R$ ' . number_format($value, 2, ',', '.') : 'R$ [PREÇO]';
+
+    $ecpfFrom = collect([$ecpfA1, $ecpfA3])->filter()->min('price');
+    $ecnpjFrom = collect([$ecnpjA1, $ecnpjA3])->filter()->min('price');
+@endphp
+
 <x-layout title="Certificado Digital A1 e A3 | e-CPF e e-CNPJ | Digital Lock">
     <x-slot:meta_description>Compare os tipos de Certificado Digital, descubra qual você precisa e emita 100% online por videoconferência. Padrão ICP-Brasil.</x-slot:meta_description>
 
@@ -27,14 +42,14 @@
                 <x-card-produto
                     titulo="e-CPF"
                     descricao="Representa você como pessoa física. Assinar documentos, declarar o Imposto de Renda e acessar os serviços do governo."
-                    preco="A partir de R$ 139,90"
+                    :preco="'A partir de ' . $formatMoney($ecpfFrom)"
                     cta-texto="Ver e-CPF"
                     cta-href="/certificado-digital/e-cpf/"
                 />
                 <x-card-produto
                     titulo="e-CNPJ"
                     descricao="Representa a sua empresa. Emitir nota fiscal, acessar o e-CAC e assinar em nome do CNPJ."
-                    preco="A partir de R$ 249,90"
+                    :preco="'A partir de ' . $formatMoney($ecnpjFrom)"
                     cta-texto="Ver e-CNPJ"
                     cta-href="/certificado-digital/e-cnpj/"
                 />
@@ -87,7 +102,7 @@
                             <td class="border-b border-border px-3 py-2.5 text-ink">Pessoa física</td>
                             <td class="border-b border-border px-3 py-2.5 text-ink">Arquivo</td>
                             <td class="border-b border-border px-3 py-2.5 text-ink">1 ano</td>
-                            <td class="border-b border-border px-3 py-2.5 text-ink">R$ 139,90</td>
+                            <td class="border-b border-border px-3 py-2.5 text-ink">{{ $formatMoney($ecpfA1?->price) }}</td>
                             <td class="border-b border-border px-3 py-2.5"><a href="/certificado-digital/e-cpf/" class="inline-block rounded-md bg-brand px-3 py-1.5 font-heading text-xs font-semibold text-white">Comprar</a></td>
                         </tr>
                         <tr>
@@ -95,7 +110,7 @@
                             <td class="border-b border-border px-3 py-2.5 text-ink">Pessoa física</td>
                             <td class="border-b border-border px-3 py-2.5 text-ink">Token ou cartão</td>
                             <td class="border-b border-border px-3 py-2.5 text-ink">1 a 3 anos</td>
-                            <td class="border-b border-border px-3 py-2.5 text-ink">R$ 219,90</td>
+                            <td class="border-b border-border px-3 py-2.5 text-ink">{{ $formatMoney($ecpfA3?->price) }}</td>
                             <td class="border-b border-border px-3 py-2.5"><a href="/certificado-digital/e-cpf/" class="inline-block rounded-md bg-brand px-3 py-1.5 font-heading text-xs font-semibold text-white">Comprar</a></td>
                         </tr>
                         <tr>
@@ -103,7 +118,7 @@
                             <td class="border-b border-border px-3 py-2.5 text-ink">Empresa e MEI</td>
                             <td class="border-b border-border px-3 py-2.5 text-ink">Arquivo</td>
                             <td class="border-b border-border px-3 py-2.5 text-ink">1 ano</td>
-                            <td class="border-b border-border px-3 py-2.5 text-ink">R$ 249,90</td>
+                            <td class="border-b border-border px-3 py-2.5 text-ink">{{ $formatMoney($ecnpjA1?->price) }}</td>
                             <td class="border-b border-border px-3 py-2.5"><a href="/certificado-digital/e-cnpj/" class="inline-block rounded-md bg-brand px-3 py-1.5 font-heading text-xs font-semibold text-white">Comprar</a></td>
                         </tr>
                         <tr>
@@ -111,7 +126,7 @@
                             <td class="px-3 py-2.5 text-ink">Empresa e MEI</td>
                             <td class="px-3 py-2.5 text-ink">Token ou cartão</td>
                             <td class="px-3 py-2.5 text-ink">1 a 3 anos</td>
-                            <td class="px-3 py-2.5 text-ink">R$ 349,90</td>
+                            <td class="px-3 py-2.5 text-ink">{{ $formatMoney($ecnpjA3?->price) }}</td>
                             <td class="px-3 py-2.5"><a href="/certificado-digital/e-cnpj/" class="inline-block rounded-md bg-brand px-3 py-1.5 font-heading text-xs font-semibold text-white">Comprar</a></td>
                         </tr>
                     </tbody>
