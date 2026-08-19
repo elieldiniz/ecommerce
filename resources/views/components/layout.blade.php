@@ -12,7 +12,7 @@
     @fonts
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="bg-white font-sans text-ink antialiased" x-data="{ mobileMenuOpen: false }">
+<body class="flex min-h-screen flex-col bg-white font-sans text-ink antialiased" x-data="{ mobileMenuOpen: false }">
 @php
     $customerLoggedIn = Auth::guard('customer')->check();
 @endphp
@@ -90,7 +90,7 @@
         </nav>
     </header>
 
-    <main>
+    <main class="flex-1">
         {{ $slot }}
     </main>
 
