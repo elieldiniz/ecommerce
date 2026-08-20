@@ -80,7 +80,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::livewire('painel/formas-pagamento/cupons/{id}/', 'pages::painel.formas-pagamento.cupons.show')->name('painel.formas-pagamento.cupons.show');
     Route::livewire('painel/clientes/', 'pages::painel.clientes')->name('painel.clientes');
     Route::livewire('painel/clientes/{id}/', 'pages::painel.clientes.show')->name('painel.clientes.show');
-    Route::view('painel/relatorios/', 'pages.painel.relatorios')->name('painel.relatorios');
+    Route::livewire('painel/relatorios/', 'pages::painel.relatorios')->name('painel.relatorios');
 
     Route::livewire('painel/configuracoes/', 'pages::painel.configuracoes')->name('painel.configuracoes');
 });
