@@ -136,6 +136,34 @@ class PagamentoTest extends TestCase
         $this->assertNotSame($expiredPayment->pix_id, Payment::query()->latest('id')->first()->pix_id);
     }
 
+    public function test_has_error_true_on_retry_shows_a_generic_error_and_creates_no_new_payment(): void
+    {
+        $order = $this->createOrder('pix');
+        Payment::factory()->create([
+            'order_id' => $order->id,
+            'status_id' => PaymentStatus::query()->where('slug', 'expired')->value('id'),
+            'pix_id' => 'TXID-EXPIRED',
+            'qr_code_payload' => 'expired-qr-code-payload',
+        ]);
+
+        Http::fake(['*' => Http::response([
+            'HasError' => true,
+            'ErrorCode' => '301',
+            'Error' => 'Recurso não permitido em Sandbox.',
+        ], 200)]);
+
+        $countBefore = Payment::query()->where('order_id', $order->id)->count();
+
+        $component = Livewire::test('pages::pedido.pagamento', ['id' => $order->id])
+            ->call('tentarNovamente')
+            ->assertHasErrors('geral');
+
+        $message = $component->errors()->first('geral');
+        $this->assertStringNotContainsString('HasError', $message);
+        $this->assertStringNotContainsString('301', $message);
+        $this->assertSame($countBefore, Payment::query()->where('order_id', $order->id)->count());
+    }
+
     public function test_page_reflects_status_changes_via_poll_without_client_action(): void
     {
         $order = $this->createOrder('pix');
