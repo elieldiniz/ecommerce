@@ -180,8 +180,10 @@ class VendasShowTest extends TestCase
         $response->assertSee('Status GFSIS');
         $response->assertSee('Reenviar ao GFSIS');
 
-        $this->assertSame(0, substr_count($response->getContent(), 'method="POST"'));
-        $this->assertStringNotContainsString('wire:click', $response->getContent());
+        $content = $response->getContent();
+        $mainContent = substr($content, strpos($content, 'min-w-0 flex-1'));
+        $this->assertSame(0, substr_count($mainContent, 'method="POST"'), 'A área de conteúdo não deve ter formulário embutido (o form de logout da sidebar é esperado).');
+        $this->assertStringNotContainsString('wire:click', $mainContent);
     }
 
     public function test_bloco_integracao_exibe_dados_reais_do_order_item_gfsis(): void

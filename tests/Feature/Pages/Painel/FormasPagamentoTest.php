@@ -184,7 +184,10 @@ class FormasPagamentoTest extends TestCase
 
         $response->assertDontSee('Edição de cupom');
         $response->assertDontSee('name="wire:model"', false);
-        $this->assertSame(0, substr_count($response->getContent(), '<form'));
+
+        $content = $response->getContent();
+        $mainContent = substr($content, strpos($content, 'min-w-0 flex-1'));
+        $this->assertSame(0, substr_count($mainContent, '<form'), 'A área de conteúdo não deve ter formulário embutido (o form de logout da sidebar é esperado).');
     }
 
     public function test_select_variante_restrita_exibe_produto_e_sku_na_lista(): void
