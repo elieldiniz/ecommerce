@@ -326,7 +326,7 @@ new #[Layout('components.checkout-layout', ['activeStep' => 2])] #[Title('Checko
             <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
                     <label class="mb-1 block font-sans text-xs font-semibold text-muted">Tipo de pessoa</label>
-                    <select wire:model="personType" class="w-full rounded-lg border border-border-light px-3 py-2.5 font-sans text-sm text-ink">
+                    <select wire:model.live="personType" class="w-full rounded-lg border border-border-light px-3 py-2.5 font-sans text-sm text-ink">
                         <option value="pf">Pessoa física</option>
                         <option value="pj">Pessoa jurídica</option>
                     </select>
@@ -339,7 +339,7 @@ new #[Layout('components.checkout-layout', ['activeStep' => 2])] #[Title('Checko
                     @enderror
                 </div>
                 <div class="md:col-span-2">
-                    <label class="mb-1 block font-sans text-xs font-semibold text-muted">Razão social</label>
+                    <label class="mb-1 block font-sans text-xs font-semibold text-muted">{{ $personType === 'pf' ? 'Nome completo' : 'Razão social' }}</label>
                     <input type="text" wire:model="legalName" class="w-full rounded-lg border border-border-light px-3 py-2.5 font-sans text-sm text-ink">
                     @error('legalName')
                         <span class="mt-1 block font-sans text-xs text-[#8f2020]">{{ $message }}</span>
