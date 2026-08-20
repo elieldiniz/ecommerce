@@ -52,6 +52,7 @@ class ChargePixPayment
             // TXID não é retornado por este endpoint de criação — sem fonte confirmada hoje.
             'pix_id' => null,
             'qr_code_payload' => $response->json('ResponseDetail.Key'),
+            'qr_code_image_url' => $response->json('ResponseDetail.QrCode'),
             'expires_at' => now()->addSeconds($expirationSeconds),
         ]);
     }

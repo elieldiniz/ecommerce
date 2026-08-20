@@ -134,8 +134,12 @@ new #[Layout('components.checkout-layout', ['activeStep' => 2])] #[Title('Aguard
         <section wire:poll.5s class="rounded-xl border border-border bg-white p-6 text-center" data-payment-status="{{ $statusSlug }}">
             <h1 class="mb-4 font-heading text-lg font-bold text-ink">Escaneie para pagar</h1>
 
-            <div class="mx-auto mb-4 flex size-44 items-center justify-center rounded-lg border border-border-light bg-surface-alt font-sans text-xs text-muted-light">
-                QR Code Pix
+            <div class="mx-auto mb-4 flex size-44 items-center justify-center overflow-hidden rounded-lg border border-border-light bg-surface-alt">
+                @if ($payment->qr_code_image_url)
+                    <img src="{{ $payment->qr_code_image_url }}" alt="QR Code Pix" class="h-full w-full object-contain">
+                @else
+                    <span class="font-sans text-xs text-muted-light">QR Code Pix</span>
+                @endif
             </div>
 
             <div class="mb-4 font-sans text-sm text-ink">Pedido #{{ $order->number }} · {{ Number::currency($order->total, in: 'BRL', locale: 'pt_BR') }}</div>

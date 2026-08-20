@@ -71,6 +71,7 @@ class ChargePixPaymentTest extends TestCase
         $this->assertSame('138667690', $payment->gateway_transaction_id);
         $this->assertNull($payment->pix_id);
         $this->assertSame('00020126borges-copia-e-cola', $payment->qr_code_payload);
+        $this->assertSame('https://images.safe2pay.com.br/pix/exemplo.png', $payment->qr_code_image_url);
         $this->assertNotNull($payment->expires_at);
         $this->assertSame('pending', $payment->status->slug);
     }

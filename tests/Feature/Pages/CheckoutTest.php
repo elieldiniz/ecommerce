@@ -137,6 +137,23 @@ class CheckoutTest extends TestCase
         $this->assertSame('pending', Payment::query()->first()->status->slug);
     }
 
+    public function test_reusing_an_email_already_tied_to_a_different_document_shows_an_error_instead_of_crashing(): void
+    {
+        $this->createPaymentMethods();
+        $variant = $this->createProductVariant('200.00');
+        Customer::factory()->create(['document' => '99988877000166', 'email' => 'contato@empresaexemplo.com.br']);
+
+        Livewire::test('pages::checkout', ['variant' => $variant->id])
+            ->set($this->validCustomerFields(document: '12345678000199'))
+            ->call('selecionarFormaPagamento', 'pix')
+            ->call('finalizarCompra')
+            ->assertHasErrors('email')
+            ->assertNoRedirect();
+
+        $this->assertSame(1, Customer::query()->count());
+        $this->assertSame(0, Order::query()->count());
+    }
+
     public function test_a_divergent_front_total_blocks_payment_creation_and_shows_an_error(): void
     {
         $this->createPaymentMethods();
