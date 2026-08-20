@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 #[Fillable([
     'order_id', 'payment_gateway_id', 'payment_method_id', 'status_id', 'gateway_transaction_id',
     'gateway_status_code', 'gross_amount', 'gateway_fee', 'net_amount', 'pix_id', 'end_to_end_id',
-    'qr_code_payload', 'boleto_digitable_line', 'receipt_url', 'installments', 'card_brand',
+    'qr_code_payload', 'qr_code_image_url', 'boleto_digitable_line', 'receipt_url', 'installments', 'card_brand',
     'card_last_digits', 'authorization_nsu', 'expires_at', 'paid_at', 'expected_settlement_date',
 ])]
 class Payment extends Model

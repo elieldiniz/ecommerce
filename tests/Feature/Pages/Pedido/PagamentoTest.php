@@ -67,12 +67,15 @@ class PagamentoTest extends TestCase
             'order_id' => $order->id,
             'status_id' => PaymentStatus::query()->where('slug', 'pending')->value('id'),
             'qr_code_payload' => '00020126580014br.gov.bcb.pix0136real-qr-code-payload5204000053039865802BR5913DIGITAL LOCK',
+            'qr_code_image_url' => 'https://images.safe2pay.com.br/pix/real-qr-code.png',
         ]);
 
         Livewire::test('pages::pedido.pagamento', ['id' => $order->id])
             ->assertOk()
             ->assertSee($payment->qr_code_payload, false)
-            ->assertSee('Pedido #'.$order->number);
+            ->assertSee('Pedido #'.$order->number)
+            ->assertSee('<img', false)
+            ->assertSee($payment->qr_code_image_url, false);
     }
 
     public function test_boleto_payment_shows_the_real_digitable_line_and_receipt_url(): void
@@ -88,7 +91,8 @@ class PagamentoTest extends TestCase
         Livewire::test('pages::pedido.pagamento', ['id' => $order->id])
             ->assertOk()
             ->assertSee($payment->boleto_digitable_line, false)
-            ->assertSee($payment->receipt_url, false);
+            ->assertSee($payment->receipt_url, false)
+            ->assertDontSee('<img', false);
     }
 
     public function test_expired_pix_payment_never_shows_its_own_qr_code_payload(): void
