@@ -12,3 +12,4 @@ Before planning or editing, find the row whose globs match the file's path and r
 | resources/views/pages/painel/⚡visao-geral.blade.php | .ai/rules/painel-visao-geral.md |
 | resources/views/pages/certificado-digital.blade.php, resources/views/pages/certificado-digital/**, resources/views/pages/certificado-digital-para-mei.blade.php, resources/views/pages/home.blade.php | .ai/rules/produto-variant-lookup.md |
 | resources/views/pages/painel/formas-pagamento/⚡show.blade.php, app/Support/Safe2Pay/PaymentMethodCode.php | .ai/rules/payment-method-slug.md |
+| resources/views/pages/painel/vendas/⚡show.blade.php | .ai/rules/vendas-linha-do-tempo.md |

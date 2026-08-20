@@ -3,6 +3,7 @@
 namespace Tests\Feature\Pages\Painel;
 
 use App\Models\Customer;
+use App\Models\GfsisEvent;
 use App\Models\GfsisStatus;
 use App\Models\IssuanceData;
 use App\Models\Order;
@@ -140,7 +141,7 @@ class VendasShowTest extends TestCase
         $this->assertSame(6, substr_count($titularBlock, '—'));
     }
 
-    public function test_conteudo_estatico_de_origem_da_venda_linha_do_tempo_e_integracao_permanece_identico(): void
+    public function test_conteudo_estatico_de_origem_da_venda_e_integracao_permanece_identico(): void
     {
         $this->actingAs(User::factory()->create());
 
@@ -160,20 +161,6 @@ class VendasShowTest extends TestCase
         $response->assertSee('Sessões até a compra');
         $response->assertSee('Status de conversão enviada');
 
-        $response->assertSee('Linha do tempo');
-        $response->assertSeeInOrder([
-            'Pedido criado',
-            'Pagamento autorizado',
-            'Dados de emissão preenchidos',
-            'Enviado ao GFSIS',
-            'Videoconferência realizada',
-            'Certificado emitido',
-        ]);
-        $response->assertSee('webhook');
-        $response->assertSee('sistema');
-        $response->assertSee('cliente');
-        $response->assertSee('fila');
-
         $response->assertSee('Integração');
         $response->assertSee('gfsis_order_id');
         $response->assertSee('Código GFSIS');
@@ -184,6 +171,49 @@ class VendasShowTest extends TestCase
         $mainContent = substr($content, strpos($content, 'min-w-0 flex-1'));
         $this->assertSame(0, substr_count($mainContent, 'method="POST"'), 'A área de conteúdo não deve ter formulário embutido (o form de logout da sidebar é esperado).');
         $this->assertStringNotContainsString('wire:click', $mainContent);
+    }
+
+    public function test_linha_do_tempo_reflete_eventos_reais_do_pedido_em_ordem_cronologica(): void
+    {
+        $this->actingAs(User::factory()->create());
+
+        $order = Order::factory()->create([
+            'created_at' => '2026-08-10 14:22:00',
+            'paid_at' => '2026-08-10 14:23:00',
+        ]);
+        $item = OrderItem::factory()->create(['order_id' => $order->id]);
+        IssuanceData::factory()->create(['order_item_id' => $item->id, 'filled_at' => '2026-08-10 14:30:00']);
+        $gfsis = OrderItemGfsis::factory()->create(['order_item_id' => $item->id, 'sent_at' => '2026-08-10 14:35:00']);
+        GfsisEvent::factory()->create(['gfsis_order_id' => $gfsis->gfsis_order_id, 'payload' => ['status' => 'APROVADO'], 'received_at' => '2026-08-10 16:00:00']);
+        GfsisEvent::factory()->create(['gfsis_order_id' => $gfsis->gfsis_order_id, 'payload' => ['status' => 'EMITIDO'], 'received_at' => '2026-08-10 17:05:00']);
+        // ENVIADO já é representado por "Enviado ao GFSIS" (sent_at) e não deve duplicar a linha do tempo.
+        GfsisEvent::factory()->create(['gfsis_order_id' => $gfsis->gfsis_order_id, 'payload' => ['status' => 'ENVIADO'], 'received_at' => '2026-08-10 14:36:00']);
+
+        $response = $this->get("/painel/vendas/{$order->id}/");
+
+        $response->assertOk();
+        $response->assertSee('Linha do tempo');
+        $response->assertSeeInOrder([
+            'Pedido criado',
+            'Pagamento autorizado',
+            'Dados de emissão preenchidos',
+            'Enviado ao GFSIS',
+            'Aprovado pelo GFSIS (videoconferência validada)',
+            'Certificado emitido',
+        ]);
+        $response->assertSee('webhook');
+        $response->assertSee('sistema');
+        $response->assertSee('cliente');
+        $response->assertSee('fila');
+        $response->assertSee('10/08/2026 14:22');
+        $response->assertSee('10/08/2026 17:05');
+
+        // Um segundo pedido não pode "vazar" eventos do primeiro na linha do tempo.
+        $otherOrder = Order::factory()->create(['created_at' => '2026-08-11 09:00:00']);
+        OrderItem::factory()->create(['order_id' => $otherOrder->id]);
+
+        $otherResponse = $this->get("/painel/vendas/{$otherOrder->id}/");
+        $otherResponse->assertDontSee('Certificado emitido');
     }
 
     public function test_bloco_integracao_exibe_dados_reais_do_order_item_gfsis(): void
