@@ -5,6 +5,7 @@ namespace Tests\Unit\Actions\Checkout;
 use App\Actions\Checkout\CreateOrderFromCart;
 use App\Models\Coupon;
 use App\Models\CouponType;
+use App\Models\CouponUse;
 use App\Models\Customer;
 use App\Models\Order;
 use App\Models\OrderFulfillmentStatus;
@@ -143,5 +144,153 @@ class CreateOrderFromCartTest extends TestCase
 
         $this->assertSame(0, Order::query()->count());
         $this->assertSame(0, OrderItem::query()->count());
+    }
+
+    public function test_an_expired_coupon_is_not_applied_and_no_coupon_use_is_recorded(): void
+    {
+        OrderStatus::factory()->create(['slug' => 'awaiting_payment']);
+        OrderFulfillmentStatus::factory()->create(['slug' => 'awaiting_data']);
+        $customer = Customer::factory()->create();
+        $paymentMethod = PaymentMethod::factory()->create(['discount_percentage' => 0]);
+        $variant = ProductVariant::factory()->create(['price' => '200.00', 'promotional_price' => null]);
+        $coupon = Coupon::factory()->create([
+            'type_id' => CouponType::factory()->create(['slug' => 'fixed_amount'])->id,
+            'value' => '20.00',
+            'starts_at' => now()->subMonth(),
+            'ends_at' => now()->subDay(),
+        ]);
+
+        $order = (new CreateOrderFromCart)->execute(
+            $customer,
+            new Collection([['product_variant_id' => $variant->id, 'quantity' => 1]]),
+            $paymentMethod,
+            $coupon,
+            '127.0.0.1',
+            'PHPUnit',
+        );
+
+        $this->assertNull($order->coupon_id);
+        $this->assertSame('0.00', (string) $order->coupon_discount);
+        $this->assertSame('200.00', (string) $order->total);
+        $this->assertSame(0, CouponUse::query()->count());
+        $this->assertSame(0, $coupon->fresh()->uses_count);
+    }
+
+    public function test_a_coupon_at_its_usage_limit_is_not_applied(): void
+    {
+        OrderStatus::factory()->create(['slug' => 'awaiting_payment']);
+        OrderFulfillmentStatus::factory()->create(['slug' => 'awaiting_data']);
+        $customer = Customer::factory()->create();
+        $paymentMethod = PaymentMethod::factory()->create(['discount_percentage' => 0]);
+        $variant = ProductVariant::factory()->create(['price' => '200.00', 'promotional_price' => null]);
+        $coupon = Coupon::factory()->create([
+            'type_id' => CouponType::factory()->create(['slug' => 'fixed_amount'])->id,
+            'value' => '20.00',
+            'usage_limit' => 1,
+            'uses_count' => 1,
+        ]);
+
+        $order = (new CreateOrderFromCart)->execute(
+            $customer,
+            new Collection([['product_variant_id' => $variant->id, 'quantity' => 1]]),
+            $paymentMethod,
+            $coupon,
+            '127.0.0.1',
+            'PHPUnit',
+        );
+
+        $this->assertNull($order->coupon_id);
+        $this->assertSame('0.00', (string) $order->coupon_discount);
+        $this->assertSame(0, CouponUse::query()->count());
+    }
+
+    public function test_a_coupon_restricted_to_a_different_variant_is_not_applied(): void
+    {
+        OrderStatus::factory()->create(['slug' => 'awaiting_payment']);
+        OrderFulfillmentStatus::factory()->create(['slug' => 'awaiting_data']);
+        $customer = Customer::factory()->create();
+        $paymentMethod = PaymentMethod::factory()->create(['discount_percentage' => 0]);
+        $variant = ProductVariant::factory()->create(['price' => '200.00', 'promotional_price' => null]);
+        $otherVariant = ProductVariant::factory()->create();
+        $coupon = Coupon::factory()->create([
+            'type_id' => CouponType::factory()->create(['slug' => 'fixed_amount'])->id,
+            'value' => '20.00',
+            'restricted_variant_id' => $otherVariant->id,
+        ]);
+
+        $order = (new CreateOrderFromCart)->execute(
+            $customer,
+            new Collection([['product_variant_id' => $variant->id, 'quantity' => 1]]),
+            $paymentMethod,
+            $coupon,
+            '127.0.0.1',
+            'PHPUnit',
+        );
+
+        $this->assertNull($order->coupon_id);
+        $this->assertSame('0.00', (string) $order->coupon_discount);
+        $this->assertSame(0, CouponUse::query()->count());
+    }
+
+    public function test_a_coupon_at_its_per_customer_limit_is_not_applied(): void
+    {
+        OrderStatus::factory()->create(['slug' => 'awaiting_payment']);
+        OrderFulfillmentStatus::factory()->create(['slug' => 'awaiting_data']);
+        $customer = Customer::factory()->create();
+        $paymentMethod = PaymentMethod::factory()->create(['discount_percentage' => 0]);
+        $variant = ProductVariant::factory()->create(['price' => '200.00', 'promotional_price' => null]);
+        $coupon = Coupon::factory()->create([
+            'type_id' => CouponType::factory()->create(['slug' => 'fixed_amount'])->id,
+            'value' => '20.00',
+            'per_customer_limit' => 1,
+        ]);
+        CouponUse::factory()->create(['coupon_id' => $coupon->id, 'customer_id' => $customer->id]);
+
+        $order = (new CreateOrderFromCart)->execute(
+            $customer,
+            new Collection([['product_variant_id' => $variant->id, 'quantity' => 1]]),
+            $paymentMethod,
+            $coupon,
+            '127.0.0.1',
+            'PHPUnit',
+        );
+
+        $this->assertNull($order->coupon_id);
+        $this->assertSame('0.00', (string) $order->coupon_discount);
+        $this->assertSame(1, CouponUse::query()->count());
+    }
+
+    public function test_a_valid_coupon_is_applied_and_records_a_coupon_use_and_increments_uses_count(): void
+    {
+        OrderStatus::factory()->create(['slug' => 'awaiting_payment']);
+        OrderFulfillmentStatus::factory()->create(['slug' => 'awaiting_data']);
+        $customer = Customer::factory()->create();
+        $paymentMethod = PaymentMethod::factory()->create(['discount_percentage' => 0]);
+        $variant = ProductVariant::factory()->create(['price' => '200.00', 'promotional_price' => null]);
+        $coupon = Coupon::factory()->create([
+            'type_id' => CouponType::factory()->create(['slug' => 'fixed_amount'])->id,
+            'value' => '20.00',
+            'usage_limit' => 5,
+            'uses_count' => 0,
+        ]);
+
+        $order = (new CreateOrderFromCart)->execute(
+            $customer,
+            new Collection([['product_variant_id' => $variant->id, 'quantity' => 1]]),
+            $paymentMethod,
+            $coupon,
+            '127.0.0.1',
+            'PHPUnit',
+        );
+
+        $this->assertSame($coupon->id, $order->coupon_id);
+        $this->assertSame('20.00', (string) $order->coupon_discount);
+
+        $couponUse = CouponUse::query()->sole();
+        $this->assertSame($coupon->id, $couponUse->coupon_id);
+        $this->assertSame($order->id, $couponUse->order_id);
+        $this->assertSame($customer->id, $couponUse->customer_id);
+        $this->assertSame('20.00', (string) $couponUse->discount_applied);
+        $this->assertSame(1, $coupon->fresh()->uses_count);
     }
 }

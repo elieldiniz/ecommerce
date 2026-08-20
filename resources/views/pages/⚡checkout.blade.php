@@ -2,6 +2,7 @@
 
 use App\Actions\Checkout\CreateOrderFromCart;
 use App\Actions\Checkout\RecalculateOrderTotals;
+use App\Actions\Checkout\ValidateCoupon;
 use App\Actions\Payments\ChargeBoletoPayment;
 use App\Actions\Payments\ChargeCardPayment;
 use App\Actions\Payments\ChargePixPayment;
@@ -86,13 +87,33 @@ new #[Layout('components.checkout-layout', ['activeStep' => 2])] #[Title('Checko
     }
 
     #[Computed]
-    public function coupon(): ?Coupon
+    public function couponError(): ?string
     {
         if (trim($this->couponCode) === '') {
             return null;
         }
 
-        return Coupon::query()->where('code', strtoupper(trim($this->couponCode)))->where('is_active', true)->first();
+        $coupon = Coupon::query()->where('code', strtoupper(trim($this->couponCode)))->first();
+
+        if ($coupon === null) {
+            return 'Cupom não encontrado.';
+        }
+
+        $customer = $this->document !== ''
+            ? Customer::query()->where('document', $this->document)->first()
+            : null;
+
+        return (new ValidateCoupon)->execute($coupon, $this->productVariant, $customer);
+    }
+
+    #[Computed]
+    public function coupon(): ?Coupon
+    {
+        if (trim($this->couponCode) === '' || $this->couponError !== null) {
+            return null;
+        }
+
+        return Coupon::query()->where('code', strtoupper(trim($this->couponCode)))->first();
     }
 
     /**
@@ -439,6 +460,10 @@ new #[Layout('components.checkout-layout', ['activeStep' => 2])] #[Title('Checko
             <input type="text" wire:model="couponCode" placeholder="Código do cupom" class="w-full rounded-lg border border-border-light px-3 py-2.5 font-sans text-sm text-ink">
             <button type="button" wire:click="aplicarCupom" class="rounded-lg border border-border-light px-4 py-2.5 font-sans text-sm font-semibold text-ink">Aplicar</button>
         </div>
+
+        @if ($this->couponError)
+            <p class="-mt-3 mb-4 font-sans text-xs text-[#8f2020]">{{ $this->couponError }}</p>
+        @endif
 
         <dl class="flex flex-col gap-2 border-t border-border pt-4 font-sans text-sm">
             <div class="flex justify-between text-muted">
