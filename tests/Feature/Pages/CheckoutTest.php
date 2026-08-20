@@ -6,6 +6,7 @@ use App\Models\Coupon;
 use App\Models\CouponType;
 use App\Models\CouponUse;
 use App\Models\Customer;
+use App\Models\CustomerAddress;
 use App\Models\HolderType;
 use App\Models\Order;
 use App\Models\OrderFulfillmentStatus;
@@ -76,6 +77,12 @@ class CheckoutTest extends TestCase
             'email' => 'contato@empresaexemplo.com.br',
             'phone' => '(11) 91234-5678',
             'postalCode' => '01311-000',
+            'street' => 'Av. Paulista',
+            'number' => '1000',
+            'complement' => 'Sala 2',
+            'neighborhood' => 'Bela Vista',
+            'city' => 'São Paulo',
+            'state' => 'SP',
         ];
     }
 
@@ -203,6 +210,157 @@ class CheckoutTest extends TestCase
         $this->assertSame(1, Order::query()->count());
         $this->assertSame(2, Payment::query()->count());
         $this->assertSame('pending', $firstPayment->fresh()->status->slug);
+    }
+
+    public function test_missing_street_number_neighborhood_city_or_state_blocks_submission(): void
+    {
+        $this->createPaymentMethods();
+        $variant = $this->createProductVariant('200.00');
+
+        foreach (['street', 'number', 'neighborhood', 'city', 'state'] as $field) {
+            Livewire::test('pages::checkout', ['variant' => $variant->id])
+                ->set($this->validCustomerFields())
+                ->set($field, '')
+                ->call('selecionarFormaPagamento', 'pix')
+                ->call('finalizarCompra')
+                ->assertHasErrors($field)
+                ->assertNoRedirect();
+        }
+
+        $this->assertSame(0, Order::query()->count());
+        $this->assertSame(0, CustomerAddress::query()->count());
+        $this->assertSame(0, Payment::query()->count());
+    }
+
+    public function test_a_postal_code_with_fewer_than_eight_digits_blocks_submission(): void
+    {
+        $this->createPaymentMethods();
+        $variant = $this->createProductVariant('200.00');
+
+        Livewire::test('pages::checkout', ['variant' => $variant->id])
+            ->set($this->validCustomerFields())
+            ->set('postalCode', '123')
+            ->call('selecionarFormaPagamento', 'pix')
+            ->call('finalizarCompra')
+            ->assertHasErrors('postalCode')
+            ->assertNoRedirect();
+
+        $this->assertSame(0, Order::query()->count());
+        $this->assertSame(0, CustomerAddress::query()->count());
+    }
+
+    public function test_an_invalid_state_blocks_submission_while_a_valid_state_does_not(): void
+    {
+        $this->createPaymentMethods();
+        $variant = $this->createProductVariant('200.00');
+
+        Livewire::test('pages::checkout', ['variant' => $variant->id])
+            ->set($this->validCustomerFields())
+            ->set('state', 'XX')
+            ->call('selecionarFormaPagamento', 'pix')
+            ->call('finalizarCompra')
+            ->assertHasErrors('state')
+            ->assertNoRedirect();
+
+        $this->assertSame(0, Order::query()->count());
+
+        Http::fake(['*' => Http::response([
+            'IdTransaction' => 1,
+            'TXID' => 'TXID-1',
+            'PaymentObject' => ['QrCode' => 'qr'],
+        ], 200)]);
+
+        Livewire::test('pages::checkout', ['variant' => $variant->id])
+            ->set($this->validCustomerFields())
+            ->set('state', 'SP')
+            ->call('selecionarFormaPagamento', 'pix')
+            ->call('finalizarCompra')
+            ->assertHasNoErrors('state');
+    }
+
+    public function test_a_valid_submission_persists_exactly_one_primary_customer_address_before_charging(): void
+    {
+        $this->createPaymentMethods();
+        $variant = $this->createProductVariant('200.00');
+        Http::fake(['*' => Http::response([
+            'IdTransaction' => 1,
+            'TXID' => 'TXID-1',
+            'PaymentObject' => ['QrCode' => 'qr'],
+        ], 200)]);
+
+        Livewire::test('pages::checkout', ['variant' => $variant->id])
+            ->set($this->validCustomerFields())
+            ->call('selecionarFormaPagamento', 'pix')
+            ->call('finalizarCompra')
+            ->assertHasNoErrors();
+
+        $customer = Customer::query()->sole();
+        $address = CustomerAddress::query()->where('customer_id', $customer->id)->where('is_primary', true)->sole();
+
+        $this->assertSame(1, CustomerAddress::query()->where('customer_id', $customer->id)->where('is_primary', true)->count());
+        $this->assertMatchesRegularExpression('/^\d{8}$/', $address->postal_code);
+        $this->assertSame('Av. Paulista', $address->street);
+        $this->assertSame('1000', $address->number);
+        $this->assertSame('Sala 2', $address->complement);
+        $this->assertSame('Bela Vista', $address->neighborhood);
+        $this->assertSame('São Paulo', $address->city);
+        $this->assertSame('SP', $address->state);
+    }
+
+    public function test_resubmitting_with_a_different_address_updates_the_single_primary_row_instead_of_creating_a_second_one(): void
+    {
+        $this->createPaymentMethods();
+        $variant = $this->createProductVariant('200.00');
+        Http::fake(['*' => Http::response([
+            'IdTransaction' => 1,
+            'TXID' => 'TXID-1',
+            'PaymentObject' => ['QrCode' => 'qr'],
+        ], 200)]);
+
+        Livewire::test('pages::checkout', ['variant' => $variant->id])
+            ->set($this->validCustomerFields())
+            ->call('selecionarFormaPagamento', 'pix')
+            ->call('finalizarCompra')
+            ->assertHasNoErrors();
+
+        $customer = Customer::query()->sole();
+
+        Livewire::test('pages::checkout', ['variant' => $variant->id])
+            ->set($this->validCustomerFields())
+            ->set('street', 'Rua Nova Endereço')
+            ->set('city', 'Campinas')
+            ->call('selecionarFormaPagamento', 'pix')
+            ->call('finalizarCompra')
+            ->assertHasNoErrors();
+
+        $this->assertSame(1, CustomerAddress::query()->where('customer_id', $customer->id)->where('is_primary', true)->count());
+        $address = CustomerAddress::query()->where('customer_id', $customer->id)->where('is_primary', true)->sole();
+        $this->assertSame('Rua Nova Endereço', $address->street);
+        $this->assertSame('Campinas', $address->city);
+    }
+
+    public function test_has_error_true_from_safe2pay_shows_a_generic_error_and_creates_no_payment(): void
+    {
+        $this->createPaymentMethods();
+        $variant = $this->createProductVariant('200.00');
+        Http::fake(['*' => Http::response([
+            'HasError' => true,
+            'ErrorCode' => '023',
+            'Error' => 'A rua do endereço do cliente informado é inválida.',
+        ], 200)]);
+
+        $component = Livewire::test('pages::checkout', ['variant' => $variant->id])
+            ->set($this->validCustomerFields())
+            ->call('selecionarFormaPagamento', 'pix')
+            ->call('finalizarCompra')
+            ->assertHasErrors('geral')
+            ->assertNoRedirect();
+
+        $message = $component->errors()->first('geral');
+        $this->assertStringNotContainsString('HasError', $message);
+        $this->assertStringNotContainsString('023', $message);
+        $this->assertStringNotContainsString('inválida', $message);
+        $this->assertSame(0, Payment::query()->count());
     }
 
     private function createCoupon(array $attributes = []): Coupon

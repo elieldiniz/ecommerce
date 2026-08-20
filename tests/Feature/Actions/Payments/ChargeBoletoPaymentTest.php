@@ -4,6 +4,7 @@ namespace Tests\Feature\Actions\Payments;
 
 use App\Actions\Payments\ChargeBoletoPayment;
 use App\Exceptions\Payments\PaymentTotalMismatchException;
+use App\Exceptions\Payments\Safe2PayChargeFailedException;
 use App\Models\Customer;
 use App\Models\CustomerAddress;
 use App\Models\Order;
@@ -85,6 +86,26 @@ class ChargeBoletoPaymentTest extends TestCase
         }
 
         Http::assertNothingSent();
+        $this->assertSame(0, Payment::query()->count());
+    }
+
+    public function test_has_error_true_in_a_200_response_throws_and_creates_no_payment(): void
+    {
+        $order = $this->createOrder();
+        Http::fake(['*' => Http::response([
+            'HasError' => true,
+            'ErrorCode' => '023',
+            'Error' => 'A rua do endereço do cliente informado é inválida.',
+            'RequestId' => '40006d31-0000-e500-b63f-84710c7967bb',
+        ], 200)]);
+
+        try {
+            (new ChargeBoletoPayment)->execute($order, '100.00');
+            $this->fail('Esperava-se Safe2PayChargeFailedException.');
+        } catch (Safe2PayChargeFailedException $exception) {
+            $this->assertSame('023', $exception->rawResponse()['ErrorCode']);
+        }
+
         $this->assertSame(0, Payment::query()->count());
     }
 }

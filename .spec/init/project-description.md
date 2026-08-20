@@ -211,3 +211,14 @@ rotas desta fase estão definidos na feature spec correspondente, a ser produzid
 - **Página de parceria com contadores/ERP:** decisão de negócio ainda não fechada; fora de escopo até então.
 - **Textos jurídicos das páginas legais** (Política de Privacidade, Termos de Uso): pendentes de redação
   jurídica externa ao time de desenvolvimento.
+- **3DS (autenticação de cartão de crédito) via Safe2Pay MPI:** implementar ou não — decisão do dono do
+  negócio, não bloqueia o cartão funcionar (a cobrança em si não depende disso). Sem 3DS, uma compra com
+  cartão roubado/clonado que o titular verdadeiro contesta depois (chargeback) é prejuízo integral da Digital
+  Lock — o banco do cliente estorna o valor e a loja não tem como reaver. Com 3DS autenticado com sucesso, esse
+  risco de chargeback passa a ser do emissor do cartão/bandeira, não da loja (liability shift). Cobre só 4 das
+  8 bandeiras aceitas (Visa, Mastercard, Elo, Amex — via `Safe2Pay.Mpi`, script `verify_3DS2.min.js`); JCB,
+  Diners, Discover e Aura continuam sem essa proteção mesmo se implementado. Custo: fricção extra no checkout
+  (às vezes aparece uma tela de confirmação do banco antes de fechar a compra) e mais complexidade de
+  integração/teste. Nenhuma exigência legal ou de bandeira encontrada que torne isso obrigatório (verificado
+  contra a documentação oficial da Safe2Pay e a normativa 021 da ABECS, que é sobre outro assunto — padronização
+  de mensagens de recusa, não 3DS). Levantamento completo: artifact "Plano do Cofre".

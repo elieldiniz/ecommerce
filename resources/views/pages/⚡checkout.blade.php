@@ -9,13 +9,16 @@ use App\Actions\Payments\ChargePixPayment;
 use App\Exceptions\Payments\InstallmentLimitExceededException;
 use App\Exceptions\Payments\MissingVisitorIdException;
 use App\Exceptions\Payments\PaymentTotalMismatchException;
+use App\Exceptions\Payments\Safe2PayChargeFailedException;
 use App\Models\Coupon;
 use App\Models\Customer;
+use App\Models\CustomerAddress;
 use App\Models\HolderType;
 use App\Models\Order;
 use App\Models\PaymentMethod;
 use App\Models\ProductVariant;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Number;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
@@ -47,6 +50,18 @@ new #[Layout('components.checkout-layout', ['activeStep' => 2])] #[Title('Checko
     public string $phone = '';
 
     public string $postalCode = '';
+
+    public string $street = '';
+
+    public string $number = '';
+
+    public string $complement = '';
+
+    public string $neighborhood = '';
+
+    public string $city = '';
+
+    public string $state = '';
 
     public bool $marketingOptIn = true;
 
@@ -129,6 +144,18 @@ new #[Layout('components.checkout-layout', ['activeStep' => 2])] #[Title('Checko
         }
 
         return range(1, max(1, $paymentMethod->max_installments));
+    }
+
+    /**
+     * Lista fechada das 27 UFs (UI-04), exposta ao template — a view Blade deste componente
+     * é compilada fora do escopo da classe, então `self::VALID_STATES` não resolveria ali.
+     *
+     * @return list<string>
+     */
+    #[Computed]
+    public function states(): array
+    {
+        return self::VALID_STATES;
     }
 
     /**
@@ -237,6 +264,22 @@ new #[Layout('components.checkout-layout', ['activeStep' => 2])] #[Title('Checko
             ],
         );
 
+        // RF-05: persiste o endereço primário do cliente antes de qualquer cobrança —
+        // PaymentPayloadBuilder::buildAddress() lê esta linha via Customer->addresses().
+        // Upsert idempotente, mesma chave de identidade usada acima para Customer.
+        CustomerAddress::query()->updateOrCreate(
+            ['customer_id' => $customer->id, 'is_primary' => true],
+            [
+                'postal_code' => preg_replace('/\D/', '', $this->postalCode),
+                'street' => $this->street,
+                'number' => $this->number,
+                'complement' => trim($this->complement) !== '' ? trim($this->complement) : null,
+                'neighborhood' => $this->neighborhood,
+                'city' => $this->city,
+                'state' => $this->state,
+            ],
+        );
+
         $coupon = $this->coupon;
         $order = $this->orderId !== null ? Order::query()->find($this->orderId) : null;
 
@@ -281,6 +324,15 @@ new #[Layout('components.checkout-layout', ['activeStep' => 2])] #[Title('Checko
             $this->addError('geral', $e->getMessage());
 
             return;
+        } catch (Safe2PayChargeFailedException $e) {
+            Log::error('safe2pay.charge_failed', [
+                'order_id' => $order->id,
+                'order_number' => $order->number,
+                'response' => $e->rawResponse(),
+            ]);
+            $this->addError('geral', 'Não foi possível concluir o pagamento. Tente novamente em instantes.');
+
+            return;
         }
 
         $this->redirectRoute('pedido.pagamento', ['id' => $order->id]);
@@ -298,7 +350,19 @@ new #[Layout('components.checkout-layout', ['activeStep' => 2])] #[Title('Checko
     }
 
     /**
-     * @return array<string, array<int, string>>
+     * Lista fechada das 27 UFs brasileiras (UI-04) — `customer_addresses.state` continua
+     * `char(2)` solto no banco, sem FK/lookup (decisão fechada em `database-schema.md`); esta
+     * é a única trava de integridade sobre o campo, aplicada na validação.
+     *
+     * @var list<string>
+     */
+    private const VALID_STATES = [
+        'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS', 'MG', 'PA',
+        'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO',
+    ];
+
+    /**
+     * @return array<string, array<int, mixed>>
      */
     private function customerRules(): array
     {
@@ -308,7 +372,22 @@ new #[Layout('components.checkout-layout', ['activeStep' => 2])] #[Title('Checko
             'legalName' => ['required', 'string', 'max:180'],
             'email' => ['required', 'email', 'max:180'],
             'phone' => ['required', 'string', 'max:20'],
-            'postalCode' => ['required', 'string', 'max:9'],
+            'postalCode' => [
+                'required',
+                'string',
+                'max:9',
+                function (string $attribute, mixed $value, \Closure $fail): void {
+                    if (strlen(preg_replace('/\D/', '', $value)) !== 8) {
+                        $fail('O CEP precisa ter 8 dígitos.');
+                    }
+                },
+            ],
+            'street' => ['required', 'string', 'max:180'],
+            'number' => ['required', 'string', 'max:20'],
+            'complement' => ['nullable', 'string', 'max:120'],
+            'neighborhood' => ['required', 'string', 'max:120'],
+            'city' => ['required', 'string', 'max:120'],
+            'state' => ['required', 'string', Rule::in(self::VALID_STATES)],
         ];
     }
 
@@ -324,6 +403,12 @@ new #[Layout('components.checkout-layout', ['activeStep' => 2])] #[Title('Checko
             'email.email' => 'Informe um e-mail válido.',
             'phone.required' => 'Informe o telefone com DDD.',
             'postalCode.required' => 'Informe o CEP.',
+            'street.required' => 'Informe a rua.',
+            'number.required' => 'Informe o número.',
+            'neighborhood.required' => 'Informe o bairro.',
+            'city.required' => 'Informe a cidade.',
+            'state.required' => 'Informe a UF.',
+            'state.in' => 'Informe uma UF válida.',
         ];
     }
 }; ?>
@@ -374,6 +459,53 @@ new #[Layout('components.checkout-layout', ['activeStep' => 2])] #[Title('Checko
                     <label class="mb-1 block font-sans text-xs font-semibold text-muted">CEP</label>
                     <input type="text" wire:model="postalCode" class="w-full rounded-lg border border-border-light px-3 py-2.5 font-sans text-sm text-ink">
                     @error('postalCode')
+                        <span class="mt-1 block font-sans text-xs text-[#8f2020]">{{ $message }}</span>
+                    @enderror
+                </div>
+                <div class="md:col-span-2">
+                    <label class="mb-1 block font-sans text-xs font-semibold text-muted">Rua</label>
+                    <input type="text" wire:model="street" class="w-full rounded-lg border border-border-light px-3 py-2.5 font-sans text-sm text-ink">
+                    @error('street')
+                        <span class="mt-1 block font-sans text-xs text-[#8f2020]">{{ $message }}</span>
+                    @enderror
+                </div>
+                <div>
+                    <label class="mb-1 block font-sans text-xs font-semibold text-muted">Número</label>
+                    <input type="text" wire:model="number" class="w-full rounded-lg border border-border-light px-3 py-2.5 font-sans text-sm text-ink">
+                    @error('number')
+                        <span class="mt-1 block font-sans text-xs text-[#8f2020]">{{ $message }}</span>
+                    @enderror
+                </div>
+                <div>
+                    <label class="mb-1 block font-sans text-xs font-semibold text-muted">Complemento (opcional)</label>
+                    <input type="text" wire:model="complement" class="w-full rounded-lg border border-border-light px-3 py-2.5 font-sans text-sm text-ink">
+                    @error('complement')
+                        <span class="mt-1 block font-sans text-xs text-[#8f2020]">{{ $message }}</span>
+                    @enderror
+                </div>
+                <div>
+                    <label class="mb-1 block font-sans text-xs font-semibold text-muted">Bairro</label>
+                    <input type="text" wire:model="neighborhood" class="w-full rounded-lg border border-border-light px-3 py-2.5 font-sans text-sm text-ink">
+                    @error('neighborhood')
+                        <span class="mt-1 block font-sans text-xs text-[#8f2020]">{{ $message }}</span>
+                    @enderror
+                </div>
+                <div>
+                    <label class="mb-1 block font-sans text-xs font-semibold text-muted">Cidade</label>
+                    <input type="text" wire:model="city" class="w-full rounded-lg border border-border-light px-3 py-2.5 font-sans text-sm text-ink">
+                    @error('city')
+                        <span class="mt-1 block font-sans text-xs text-[#8f2020]">{{ $message }}</span>
+                    @enderror
+                </div>
+                <div>
+                    <label class="mb-1 block font-sans text-xs font-semibold text-muted">UF</label>
+                    <select wire:model="state" class="w-full rounded-lg border border-border-light px-3 py-2.5 font-sans text-sm text-ink">
+                        <option value="">Selecione</option>
+                        @foreach ($this->states as $uf)
+                            <option value="{{ $uf }}">{{ $uf }}</option>
+                        @endforeach
+                    </select>
+                    @error('state')
                         <span class="mt-1 block font-sans text-xs text-[#8f2020]">{{ $message }}</span>
                     @enderror
                 </div>

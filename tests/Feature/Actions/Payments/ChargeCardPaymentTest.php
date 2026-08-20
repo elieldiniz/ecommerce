@@ -6,6 +6,7 @@ use App\Actions\Payments\ChargeCardPayment;
 use App\Exceptions\Payments\InstallmentLimitExceededException;
 use App\Exceptions\Payments\MissingVisitorIdException;
 use App\Exceptions\Payments\PaymentTotalMismatchException;
+use App\Exceptions\Payments\Safe2PayChargeFailedException;
 use App\Models\Customer;
 use App\Models\CustomerAddress;
 use App\Models\Order;
@@ -191,5 +192,25 @@ class ChargeCardPaymentTest extends TestCase
         $payment = (new ChargeCardPayment)->execute($order, '100.00', 'token', 3, 'visitor-abc');
 
         $this->assertSame('999', $payment->card_brand);
+    }
+
+    public function test_has_error_true_in_a_200_response_throws_and_creates_no_payment(): void
+    {
+        $order = $this->createOrder();
+        Http::fake(['*' => Http::response([
+            'HasError' => true,
+            'ErrorCode' => '023',
+            'Error' => 'A rua do endereço do cliente informado é inválida.',
+            'RequestId' => '40001559-0000-e500-b63f-84710c7967bb',
+        ], 200)]);
+
+        try {
+            (new ChargeCardPayment)->execute($order, '100.00', 'token', 3, 'visitor-abc');
+            $this->fail('Esperava-se Safe2PayChargeFailedException.');
+        } catch (Safe2PayChargeFailedException $exception) {
+            $this->assertSame('023', $exception->rawResponse()['ErrorCode']);
+        }
+
+        $this->assertSame(0, Payment::query()->count());
     }
 }

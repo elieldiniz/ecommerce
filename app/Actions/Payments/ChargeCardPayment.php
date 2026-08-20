@@ -6,6 +6,7 @@ use App\Actions\Checkout\RecalculateOrderTotals;
 use App\Exceptions\Payments\InstallmentLimitExceededException;
 use App\Exceptions\Payments\MissingVisitorIdException;
 use App\Exceptions\Payments\PaymentTotalMismatchException;
+use App\Exceptions\Payments\Safe2PayChargeFailedException;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Models\PaymentGateway;
@@ -55,6 +56,10 @@ class ChargeCardPayment
 
         $response = (new Safe2PayClient)->charge($payload);
         $response->throw();
+
+        if ($response->json('HasError') === true) {
+            throw new Safe2PayChargeFailedException((array) $response->json());
+        }
 
         $statusSlug = TransactionStatus::fromCode((int) $response->json('ResponseDetail.Status'))->toInternalStatusSlug();
 
