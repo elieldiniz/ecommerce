@@ -2,6 +2,7 @@
 
 use App\Actions\Checkout\CreateOrderFromCart;
 use App\Actions\Checkout\RecalculateOrderTotals;
+use App\Actions\Checkout\ValidateCoupon;
 use App\Actions\Payments\ChargeBoletoPayment;
 use App\Actions\Payments\ChargeCardPayment;
 use App\Actions\Payments\ChargePixPayment;
@@ -86,13 +87,33 @@ new #[Layout('components.checkout-layout', ['activeStep' => 2])] #[Title('Checko
     }
 
     #[Computed]
-    public function coupon(): ?Coupon
+    public function couponError(): ?string
     {
         if (trim($this->couponCode) === '') {
             return null;
         }
 
-        return Coupon::query()->where('code', strtoupper(trim($this->couponCode)))->where('is_active', true)->first();
+        $coupon = Coupon::query()->where('code', strtoupper(trim($this->couponCode)))->first();
+
+        if ($coupon === null) {
+            return 'Cupom não encontrado.';
+        }
+
+        $customer = $this->document !== ''
+            ? Customer::query()->where('document', $this->document)->first()
+            : null;
+
+        return (new ValidateCoupon)->execute($coupon, $this->productVariant, $customer);
+    }
+
+    #[Computed]
+    public function coupon(): ?Coupon
+    {
+        if (trim($this->couponCode) === '' || $this->couponError !== null) {
+            return null;
+        }
+
+        return Coupon::query()->where('code', strtoupper(trim($this->couponCode)))->first();
     }
 
     /**
@@ -305,7 +326,7 @@ new #[Layout('components.checkout-layout', ['activeStep' => 2])] #[Title('Checko
             <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
                     <label class="mb-1 block font-sans text-xs font-semibold text-muted">Tipo de pessoa</label>
-                    <select wire:model="personType" class="w-full rounded-lg border border-border-light px-3 py-2.5 font-sans text-sm text-ink">
+                    <select wire:model.live="personType" class="w-full rounded-lg border border-border-light px-3 py-2.5 font-sans text-sm text-ink">
                         <option value="pf">Pessoa física</option>
                         <option value="pj">Pessoa jurídica</option>
                     </select>
@@ -318,7 +339,7 @@ new #[Layout('components.checkout-layout', ['activeStep' => 2])] #[Title('Checko
                     @enderror
                 </div>
                 <div class="md:col-span-2">
-                    <label class="mb-1 block font-sans text-xs font-semibold text-muted">Razão social</label>
+                    <label class="mb-1 block font-sans text-xs font-semibold text-muted">{{ $personType === 'pf' ? 'Nome completo' : 'Razão social' }}</label>
                     <input type="text" wire:model="legalName" class="w-full rounded-lg border border-border-light px-3 py-2.5 font-sans text-sm text-ink">
                     @error('legalName')
                         <span class="mt-1 block font-sans text-xs text-[#8f2020]">{{ $message }}</span>
@@ -439,6 +460,10 @@ new #[Layout('components.checkout-layout', ['activeStep' => 2])] #[Title('Checko
             <input type="text" wire:model="couponCode" placeholder="Código do cupom" class="w-full rounded-lg border border-border-light px-3 py-2.5 font-sans text-sm text-ink">
             <button type="button" wire:click="aplicarCupom" class="rounded-lg border border-border-light px-4 py-2.5 font-sans text-sm font-semibold text-ink">Aplicar</button>
         </div>
+
+        @if ($this->couponError)
+            <p class="-mt-3 mb-4 font-sans text-xs text-[#8f2020]">{{ $this->couponError }}</p>
+        @endif
 
         <dl class="flex flex-col gap-2 border-t border-border pt-4 font-sans text-sm">
             <div class="flex justify-between text-muted">

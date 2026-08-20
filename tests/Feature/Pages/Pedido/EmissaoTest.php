@@ -8,10 +8,12 @@ use App\Models\Order;
 use App\Models\OrderFulfillmentStatus;
 use App\Models\OrderItem;
 use App\Models\OrderStatus;
+use App\Models\PaymentMethod;
 use Database\Seeders\OrderFulfillmentStatusSeeder;
 use Database\Seeders\OrderStatusSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Bus;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 class EmissaoTest extends TestCase
@@ -45,9 +47,9 @@ class EmissaoTest extends TestCase
         ];
     }
 
-    private function createIssuanceData(array $attributes = []): IssuanceData
+    private function createIssuanceData(array $attributes = [], array $orderAttributes = []): IssuanceData
     {
-        $order = Order::factory()->create();
+        $order = Order::factory()->create($orderAttributes);
         $orderItem = OrderItem::factory()->create(['order_id' => $order->id]);
 
         return IssuanceData::factory()->create(array_merge([
@@ -230,18 +232,43 @@ class EmissaoTest extends TestCase
         $response->assertSee('value="11912345678"', false);
     }
 
-    public function test_block_confirmacao_renders_success_icon_order_and_value(): void
+    public function test_block_confirmacao_renders_success_icon_order_and_real_value(): void
     {
-        $issuanceData = $this->createIssuanceData();
+        $pix = PaymentMethod::factory()->create(['name' => 'Pix', 'slug' => 'pix']);
+        $issuanceData = $this->createIssuanceData([], ['total' => 249.90, 'payment_method_id' => $pix->id]);
         $order = $issuanceData->orderItem->order;
 
         $response = $this->get($this->emissaoUrl($issuanceData));
 
         $response->assertSee('id="bloco-confirmacao"', false);
         $response->assertSee('Pagamento confirmado');
-        $response->assertSee('Pedido #'.$order->id.' · R$ 213,75 no Pix');
+        $response->assertSee('Pedido #'.$order->id.' · R$ 249,90 no Pix');
         $response->assertSee('data-flux-icon', false);
         $response->assertSee('bg-[#e4f0e8]', false);
+    }
+
+    /**
+     * @return array<string, array{0: string, 1: float, 2: string}>
+     */
+    public static function formasDePagamento(): array
+    {
+        return [
+            'pix' => ['pix', 139.90, 'Pix'],
+            'boleto' => ['boleto', 219.90, 'Boleto'],
+            'cartao' => ['cartao', 349.90, 'Cartão de crédito'],
+        ];
+    }
+
+    #[DataProvider('formasDePagamento')]
+    public function test_block_confirmacao_reflects_the_real_total_and_payment_method_for_each_method(string $slug, float $total, string $nomeExibido): void
+    {
+        $paymentMethod = PaymentMethod::factory()->create(['name' => $nomeExibido, 'slug' => $slug]);
+        $issuanceData = $this->createIssuanceData([], ['total' => $total, 'payment_method_id' => $paymentMethod->id]);
+        $order = $issuanceData->orderItem->order;
+
+        $response = $this->get($this->emissaoUrl($issuanceData));
+
+        $response->assertSee('Pedido #'.$order->id.' · R$ '.number_format($total, 2, ',', '.').' no '.$nomeExibido);
     }
 
     public function test_block_o_que_acontece_agora_reuses_passo_a_passo_component(): void

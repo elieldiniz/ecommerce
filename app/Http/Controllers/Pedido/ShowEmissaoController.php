@@ -22,11 +22,13 @@ class ShowEmissaoController extends Controller
 
         /** @var IssuanceData $issuanceData */
         $issuanceData = $request->attributes->get('issuanceData');
+        $issuanceData->loadMissing('orderItem.order.paymentMethod');
 
         return view('pages.pedido.emissao', [
             'id' => $id,
             'holderType' => $holderType,
             'issuanceData' => $issuanceData,
+            'order' => $issuanceData->orderItem->order,
         ]);
     }
 }

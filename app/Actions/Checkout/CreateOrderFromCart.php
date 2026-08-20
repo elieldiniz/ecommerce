@@ -3,6 +3,7 @@
 namespace App\Actions\Checkout;
 
 use App\Models\Coupon;
+use App\Models\CouponUse;
 use App\Models\Customer;
 use App\Models\Order;
 use App\Models\OrderFulfillmentStatus;
@@ -48,7 +49,17 @@ class CreateOrderFromCart
                 ];
             });
 
-            $totals = (new RecalculateOrderTotals)->execute($snapshotItems, $paymentMethod, $coupon);
+            $appliedCoupon = null;
+
+            if ($coupon !== null) {
+                $lockedCoupon = Coupon::query()->whereKey($coupon->id)->lockForUpdate()->first();
+
+                if ($lockedCoupon !== null && (new ValidateCoupon)->execute($lockedCoupon, $variants->first(), $customer) === null) {
+                    $appliedCoupon = $lockedCoupon;
+                }
+            }
+
+            $totals = (new RecalculateOrderTotals)->execute($snapshotItems, $paymentMethod, $appliedCoupon);
 
             $order = Order::query()->create([
                 'number' => $this->generateNumber(),
@@ -56,7 +67,7 @@ class CreateOrderFromCart
                 'status_id' => OrderStatus::query()->where('slug', 'awaiting_payment')->value('id'),
                 'fulfillment_status_id' => OrderFulfillmentStatus::query()->where('slug', 'awaiting_data')->value('id'),
                 'payment_method_id' => $paymentMethod->id,
-                'coupon_id' => $coupon?->id,
+                'coupon_id' => $appliedCoupon?->id,
                 'subtotal' => $totals['subtotal'],
                 'coupon_discount' => $totals['coupon_discount'],
                 'payment_method_discount' => $totals['payment_method_discount'],
@@ -75,6 +86,16 @@ class CreateOrderFromCart
                     'quantity' => $item['quantity'],
                     'total' => bcmul((string) $item['unit_price'], (string) $item['quantity'], 2),
                 ]);
+            }
+
+            if ($appliedCoupon !== null) {
+                CouponUse::create([
+                    'coupon_id' => $appliedCoupon->id,
+                    'order_id' => $order->id,
+                    'customer_id' => $customer->id,
+                    'discount_applied' => $totals['coupon_discount'],
+                ]);
+                $appliedCoupon->increment('uses_count');
             }
 
             return $order->load('items');

@@ -2,6 +2,10 @@
 
 namespace Tests\Feature\Pages;
 
+use App\Models\Coupon;
+use App\Models\CouponType;
+use App\Models\CouponUse;
+use App\Models\Customer;
 use App\Models\HolderType;
 use App\Models\Order;
 use App\Models\OrderFulfillmentStatus;
@@ -182,5 +186,114 @@ class CheckoutTest extends TestCase
         $this->assertSame(1, Order::query()->count());
         $this->assertSame(2, Payment::query()->count());
         $this->assertSame('pending', $firstPayment->fresh()->status->slug);
+    }
+
+    private function createCoupon(array $attributes = []): Coupon
+    {
+        return Coupon::factory()->create([
+            'type_id' => CouponType::factory()->create(['slug' => 'fixed_amount'])->id,
+            'value' => '20.00',
+            ...$attributes,
+        ]);
+    }
+
+    public function test_an_unknown_coupon_code_shows_a_not_found_error_and_applies_no_discount(): void
+    {
+        $this->createPaymentMethods();
+        $variant = $this->createProductVariant('200.00');
+
+        Livewire::test('pages::checkout', ['variant' => $variant->id])
+            ->set('couponCode', 'NAOEXISTE')
+            ->assertSee('Cupom não encontrado.')
+            ->assertSet('coupon', null);
+    }
+
+    public function test_an_expired_coupon_shows_an_error_and_applies_no_discount(): void
+    {
+        $this->createPaymentMethods();
+        $variant = $this->createProductVariant('200.00');
+        $coupon = $this->createCoupon(['code' => 'VENCIDO', 'starts_at' => now()->subMonth(), 'ends_at' => now()->subDay()]);
+
+        Livewire::test('pages::checkout', ['variant' => $variant->id])
+            ->set('couponCode', $coupon->code)
+            ->assertSee('Este cupom expirou.')
+            ->assertSet('coupon', null);
+    }
+
+    public function test_a_coupon_at_its_usage_limit_shows_an_error_and_applies_no_discount(): void
+    {
+        $this->createPaymentMethods();
+        $variant = $this->createProductVariant('200.00');
+        $coupon = $this->createCoupon(['code' => 'ESGOTADO', 'usage_limit' => 1, 'uses_count' => 1]);
+
+        Livewire::test('pages::checkout', ['variant' => $variant->id])
+            ->set('couponCode', $coupon->code)
+            ->assertSee('Este cupom atingiu o limite de usos.')
+            ->assertSet('coupon', null);
+    }
+
+    public function test_a_coupon_restricted_to_a_different_variant_shows_an_error_and_applies_no_discount(): void
+    {
+        $this->createPaymentMethods();
+        $variant = $this->createProductVariant('200.00');
+        $otherVariant = $this->createProductVariant('150.00');
+        $coupon = $this->createCoupon(['code' => 'OUTROVAR', 'restricted_variant_id' => $otherVariant->id]);
+
+        Livewire::test('pages::checkout', ['variant' => $variant->id])
+            ->set('couponCode', $coupon->code)
+            ->assertSee('Este cupom não é válido para o produto selecionado.')
+            ->assertSet('coupon', null);
+    }
+
+    public function test_a_coupon_at_its_per_customer_limit_shows_an_error_once_the_document_is_filled(): void
+    {
+        $this->createPaymentMethods();
+        $variant = $this->createProductVariant('200.00');
+        $customer = Customer::factory()->create(['document' => '12345678000199']);
+        $coupon = $this->createCoupon(['code' => 'JAUSADO', 'per_customer_limit' => 1]);
+        CouponUse::factory()->create(['coupon_id' => $coupon->id, 'customer_id' => $customer->id]);
+
+        Livewire::test('pages::checkout', ['variant' => $variant->id])
+            ->set('document', '12345678000199')
+            ->set('couponCode', $coupon->code)
+            ->assertSee('Você já utilizou este cupom o número máximo de vezes permitido.')
+            ->assertSet('coupon', null);
+    }
+
+    public function test_a_valid_coupon_shows_no_error_and_is_resolved(): void
+    {
+        $this->createPaymentMethods();
+        $variant = $this->createProductVariant('200.00');
+        $coupon = $this->createCoupon(['code' => 'VALIDO']);
+
+        Livewire::test('pages::checkout', ['variant' => $variant->id])
+            ->set('couponCode', $coupon->code)
+            ->assertDontSee('Cupom não encontrado.')
+            ->assertSet('couponError', null)
+            ->assertSet('coupon.id', $coupon->id);
+    }
+
+    public function test_an_invalid_coupon_at_submission_time_is_silently_dropped_and_the_order_has_no_discount(): void
+    {
+        $this->createPaymentMethods();
+        $variant = $this->createProductVariant('200.00');
+        $coupon = $this->createCoupon(['code' => 'ESGOTADO2', 'usage_limit' => 1, 'uses_count' => 1]);
+        Http::fake(['*' => Http::response([
+            'IdTransaction' => 1,
+            'TXID' => 'TXID-1',
+            'PaymentObject' => ['QrCode' => 'qr'],
+        ], 200)]);
+
+        Livewire::test('pages::checkout', ['variant' => $variant->id])
+            ->set($this->validCustomerFields())
+            ->set('couponCode', $coupon->code)
+            ->call('selecionarFormaPagamento', 'pix')
+            ->call('finalizarCompra')
+            ->assertHasNoErrors();
+
+        $order = Order::query()->sole();
+        $this->assertNull($order->coupon_id);
+        $this->assertSame('0.00', (string) $order->coupon_discount);
+        $this->assertSame(0, CouponUse::query()->count());
     }
 }

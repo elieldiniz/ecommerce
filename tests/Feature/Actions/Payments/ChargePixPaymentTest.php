@@ -57,16 +57,19 @@ class ChargePixPaymentTest extends TestCase
     {
         $order = $this->createOrder();
         Http::fake(['*' => Http::response([
-            'IdTransaction' => 138667690,
-            'TXID' => 'TXID-ABC-123',
-            'PaymentObject' => ['QrCode' => '00020126borges-copia-e-cola'],
+            'ResponseDetail' => [
+                'IdTransaction' => 138667690,
+                'Key' => '00020126borges-copia-e-cola',
+                'QrCode' => 'https://images.safe2pay.com.br/pix/exemplo.png',
+            ],
+            'HasError' => false,
         ], 200)]);
 
         $payment = (new ChargePixPayment)->execute($order, '100.00');
 
         $this->assertSame(1, Payment::query()->count());
         $this->assertSame('138667690', $payment->gateway_transaction_id);
-        $this->assertSame('TXID-ABC-123', $payment->pix_id);
+        $this->assertNull($payment->pix_id);
         $this->assertSame('00020126borges-copia-e-cola', $payment->qr_code_payload);
         $this->assertNotNull($payment->expires_at);
         $this->assertSame('pending', $payment->status->slug);
@@ -76,9 +79,8 @@ class ChargePixPaymentTest extends TestCase
     {
         $order = $this->createOrder();
         Http::fake(['*' => Http::response([
-            'IdTransaction' => 1,
-            'TXID' => 'TXID-1',
-            'PaymentObject' => ['QrCode' => 'qr'],
+            'ResponseDetail' => ['IdTransaction' => 1, 'Key' => 'qr'],
+            'HasError' => false,
         ], 200)]);
 
         (new ChargePixPayment)->execute($order, '100.00');
@@ -93,9 +95,8 @@ class ChargePixPaymentTest extends TestCase
         $order = $this->createOrder();
         Setting::query()->where('key', 'pix_expiration_seconds')->update(['value' => '1800']);
         Http::fake(['*' => Http::response([
-            'IdTransaction' => 1,
-            'TXID' => 'TXID-1',
-            'PaymentObject' => ['QrCode' => 'qr'],
+            'ResponseDetail' => ['IdTransaction' => 1, 'Key' => 'qr'],
+            'HasError' => false,
         ], 200)]);
 
         (new ChargePixPayment)->execute($order, '100.00');
@@ -119,7 +120,7 @@ class ChargePixPaymentTest extends TestCase
         $this->assertSame(0, Payment::query()->count());
     }
 
-    public function test_two_charges_for_the_same_order_create_two_rows_with_different_pix_ids(): void
+    public function test_two_charges_for_the_same_order_create_two_rows_with_different_gateway_transaction_ids(): void
     {
         $order = $this->createOrder();
         Http::fake(function () {
@@ -127,9 +128,8 @@ class ChargePixPaymentTest extends TestCase
             $calls++;
 
             return Http::response([
-                'IdTransaction' => 1000 + $calls,
-                'TXID' => 'TXID-'.$calls,
-                'PaymentObject' => ['QrCode' => 'qr-'.$calls],
+                'ResponseDetail' => ['IdTransaction' => 1000 + $calls, 'Key' => 'qr-'.$calls],
+                'HasError' => false,
             ], 200);
         });
 
@@ -137,6 +137,6 @@ class ChargePixPaymentTest extends TestCase
         $second = (new ChargePixPayment)->execute($order, '100.00');
 
         $this->assertSame(2, Payment::query()->where('order_id', $order->id)->count());
-        $this->assertNotSame($first->pix_id, $second->pix_id);
+        $this->assertNotSame($first->gateway_transaction_id, $second->gateway_transaction_id);
     }
 }

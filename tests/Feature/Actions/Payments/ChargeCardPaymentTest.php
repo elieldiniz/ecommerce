@@ -62,14 +62,18 @@ class ChargeCardPaymentTest extends TestCase
     private function fakeAuthorizedResponse(): void
     {
         Http::fake(['*' => Http::response([
-            'IdTransaction' => 138667690,
-            'TransactionStatus' => ['Id' => 3, 'Code' => '3', 'Name' => 'Autorizado'],
-            'PaymentObject' => [
-                'InstallmentQuantity' => 3,
-                'Brand' => 'Visa',
-                'LastDigits' => '1111',
-                'Nsu' => 'NSU-000123',
+            'ResponseDetail' => [
+                'IdTransaction' => 138667690,
+                'Status' => 3,
+                'Tid' => '020006495642',
+                'AuthorizationCode' => '205340',
+                'CreditCard' => [
+                    'CardNumber' => '402400******1111',
+                    'Brand' => 1,
+                    'Installments' => 3,
+                ],
             ],
+            'HasError' => false,
         ], 200)]);
     }
 
@@ -144,7 +148,7 @@ class ChargeCardPaymentTest extends TestCase
         $this->assertSame(3, $payment->installments);
         $this->assertSame('Visa', $payment->card_brand);
         $this->assertSame('1111', $payment->card_last_digits);
-        $this->assertSame('NSU-000123', $payment->authorization_nsu);
+        $this->assertSame('020006495642', $payment->authorization_nsu);
         $this->assertSame('authorized', $payment->status->slug);
         $this->assertNull($payment->gateway_fee);
         $this->assertNull($payment->net_amount);
@@ -165,5 +169,27 @@ class ChargeCardPaymentTest extends TestCase
 
         Http::assertNothingSent();
         $this->assertSame(0, Payment::query()->count());
+    }
+
+    public function test_an_unrecognized_brand_code_stores_the_raw_code_instead_of_failing(): void
+    {
+        $order = $this->createOrder();
+        Http::fake(['*' => Http::response([
+            'ResponseDetail' => [
+                'IdTransaction' => 138667690,
+                'Status' => 3,
+                'Tid' => '020006495642',
+                'CreditCard' => [
+                    'CardNumber' => '402400******1111',
+                    'Brand' => 999,
+                    'Installments' => 3,
+                ],
+            ],
+            'HasError' => false,
+        ], 200)]);
+
+        $payment = (new ChargeCardPayment)->execute($order, '100.00', 'token', 3, 'visitor-abc');
+
+        $this->assertSame('999', $payment->card_brand);
     }
 }

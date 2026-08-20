@@ -25,7 +25,7 @@ new #[Layout('components.admin-layout', ['activeItem' => 'vendas', 'title' => 'V
     public function order(): ?Order
     {
         return Order::query()
-            ->with(['customer', 'items', 'items.productVariant', 'items.issuanceData', 'items.gfsis', 'items.gfsis.status', 'status', 'fulfillmentStatus'])
+            ->with(['customer', 'items', 'items.productVariant', 'items.issuanceData', 'items.gfsis', 'items.gfsis.status', 'items.gfsis.events', 'status', 'fulfillmentStatus'])
             ->find($this->id);
     }
 
@@ -37,6 +37,61 @@ new #[Layout('components.admin-layout', ['activeItem' => 'vendas', 'title' => 'V
             ->with(['method', 'status'])
             ->latest('id')
             ->first();
+    }
+
+    /**
+     * Monta a linha do tempo real do pedido a partir das datas já gravadas em
+     * orders/issuance_data/order_item_gfsis e do log de webhooks do GFSIS
+     * (gfsis_events). Eventos CRIADO/ENVIADO do GFSIS são ignorados aqui
+     * porque já são representados por "Enviado ao GFSIS" (order_item_gfsis.sent_at).
+     *
+     * @return array<int, array{date: string, description: string, origin: string}>
+     */
+    #[Computed]
+    public function timeline(): array
+    {
+        $order = $this->order;
+        $events = [];
+
+        $events[] = ['at' => $order->created_at, 'description' => 'Pedido criado', 'origin' => 'sistema'];
+
+        if ($order->paid_at !== null) {
+            $events[] = ['at' => $order->paid_at, 'description' => 'Pagamento autorizado', 'origin' => 'webhook'];
+        }
+
+        foreach ($order->items as $item) {
+            if ($item->issuanceData?->filled_at !== null) {
+                $events[] = ['at' => $item->issuanceData->filled_at, 'description' => 'Dados de emissão preenchidos', 'origin' => 'cliente'];
+            }
+
+            if ($item->gfsis?->sent_at !== null) {
+                $events[] = ['at' => $item->gfsis->sent_at, 'description' => 'Enviado ao GFSIS', 'origin' => 'fila'];
+            }
+
+            foreach ($item->gfsis?->events ?? [] as $gfsisEvent) {
+                $description = match (strtoupper((string) ($gfsisEvent->payload['status'] ?? ''))) {
+                    'APROVADO' => 'Aprovado pelo GFSIS (videoconferência validada)',
+                    'EMITIDO' => 'Certificado emitido',
+                    'RECUSADO' => 'Recusado pelo GFSIS',
+                    'CANCELADO' => 'Cancelado no GFSIS',
+                    default => null,
+                };
+
+                if ($description === null) {
+                    continue;
+                }
+
+                $events[] = ['at' => $gfsisEvent->received_at, 'description' => $description, 'origin' => 'webhook'];
+            }
+        }
+
+        usort($events, fn (array $a, array $b) => $a['at'] <=> $b['at']);
+
+        return array_map(fn (array $event) => [
+            'date' => $event['at']->format('d/m/Y H:i'),
+            'description' => $event['description'],
+            'origin' => $event['origin'],
+        ], $events);
     }
 }
 ?>
@@ -184,13 +239,6 @@ new #[Layout('components.admin-layout', ['activeItem' => 'vendas', 'title' => 'V
     {{-- Bloco: Linha do tempo --}}
     <section class="mt-6 rounded-xl border border-border bg-white p-5">
         <h2 class="mb-4 font-heading text-lg font-bold text-ink">Linha do tempo</h2>
-        <x-timeline :events="[
-            ['date' => '10/08/2026 14:22', 'description' => 'Pedido criado', 'origin' => 'sistema'],
-            ['date' => '10/08/2026 14:23', 'description' => 'Pagamento autorizado', 'origin' => 'webhook'],
-            ['date' => '10/08/2026 14:30', 'description' => 'Dados de emissão preenchidos', 'origin' => 'cliente'],
-            ['date' => '10/08/2026 14:35', 'description' => 'Enviado ao GFSIS', 'origin' => 'fila'],
-            ['date' => '10/08/2026 16:00', 'description' => 'Videoconferência realizada', 'origin' => 'sistema'],
-            ['date' => '10/08/2026 17:05', 'description' => 'Certificado emitido', 'origin' => 'webhook'],
-        ]" />
+        <x-timeline :events="$this->timeline" />
     </section>
 </div>

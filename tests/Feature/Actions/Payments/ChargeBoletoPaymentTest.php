@@ -55,16 +55,18 @@ class ChargeBoletoPaymentTest extends TestCase
     {
         $order = $this->createOrder();
         Http::fake(['*' => Http::response([
-            'IdTransaction' => 138667690,
-            'PaymentObject' => [
+            'ResponseDetail' => [
+                'IdTransaction' => 138667690,
                 'DigitableLine' => '23793.38128 60000.000003 00000.000158 1 87540000038900',
-                'Url' => 'https://safe2pay.com.br/boleto/138667690',
+                'BankSlipUrl' => 'https://invoices.safe2pay.com.br/?codigo=138667690',
             ],
+            'HasError' => false,
         ], 200)]);
 
         $payment = (new ChargeBoletoPayment)->execute($order, '100.00');
 
         $this->assertSame(1, Payment::query()->count());
+        $this->assertSame('138667690', $payment->gateway_transaction_id);
         $this->assertNotEmpty($payment->boleto_digitable_line);
         $this->assertNotEmpty($payment->receipt_url);
         $this->assertSame('pending', $payment->status->slug);

@@ -18,8 +18,9 @@ class ChargePixPayment
      * Cobra via Pix Dinâmico (`POST /v2/payment`, `PaymentMethod = "6"`), nunca
      * `/v2/staticPix` (RF-06). Recalcula os totais e bloqueia antes de qualquer
      * chamada HTTP se `$frontTotal` divergir (RF-28). Cada chamada gera uma nova
-     * linha em `payments` com novo TXID, nunca reaproveitando o QR de uma
-     * tentativa anterior (RF-11, RF-25).
+     * linha em `payments` com novo `gateway_transaction_id`, nunca reaproveitando
+     * o QR de uma tentativa anterior (RF-11, RF-25). `pix_id` fica `null` — o
+     * endpoint de criação não retorna TXID.
      */
     public function execute(Order $order, string $frontTotal): Payment
     {
@@ -46,10 +47,11 @@ class ChargePixPayment
             'payment_gateway_id' => PaymentGateway::query()->where('slug', 'safe2pay')->value('id'),
             'payment_method_id' => $order->payment_method_id,
             'status_id' => PaymentStatus::query()->where('slug', 'pending')->value('id'),
-            'gateway_transaction_id' => (string) $response->json('IdTransaction'),
+            'gateway_transaction_id' => (string) $response->json('ResponseDetail.IdTransaction'),
             'gross_amount' => $totals['total'],
-            'pix_id' => (string) $response->json('TXID'),
-            'qr_code_payload' => $response->json('PaymentObject.QrCode'),
+            // TXID não é retornado por este endpoint de criação — sem fonte confirmada hoje.
+            'pix_id' => null,
+            'qr_code_payload' => $response->json('ResponseDetail.Key'),
             'expires_at' => now()->addSeconds($expirationSeconds),
         ]);
     }
