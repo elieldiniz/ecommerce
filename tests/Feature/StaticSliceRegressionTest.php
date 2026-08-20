@@ -85,7 +85,14 @@ class StaticSliceRegressionTest extends TestCase
     #[DataProvider('rotasDas13Telas')]
     public function test_no_form_or_button_has_real_functional_submission(string $rota, bool $requerAuth): void
     {
-        $content = $this->visit($rota, $requerAuth)->getContent();
+        $fullContent = $this->visit($rota, $requerAuth)->getContent();
+
+        // O form de "Sair" na sidebar (admin-layout.blade.php/conta-layout.blade.php) é
+        // intencionalmente real (POST para route('logout')/route('customer.logout')) —
+        // não faz parte do "wireframe estático" que este teste protege. Verifica só a
+        // área de conteúdo, depois da sidebar.
+        $sidebarBoundary = strpos($fullContent, 'min-w-0 flex-1');
+        $content = $sidebarBoundary !== false ? substr($fullContent, $sidebarBoundary) : $fullContent;
 
         $this->assertStringNotContainsString('method="POST"', $content, "method=\"POST\" encontrado em {$rota}");
         $this->assertStringNotContainsString('method="PUT"', $content, "method=\"PUT\" encontrado em {$rota}");

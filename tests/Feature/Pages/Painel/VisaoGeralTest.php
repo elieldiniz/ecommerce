@@ -59,6 +59,16 @@ class VisaoGeralTest extends TestCase
         Livewire::test('pages::painel.visao-geral')->assertOk();
     }
 
+    public function test_sair_button_renders_a_real_logout_form(): void
+    {
+        $this->actingAs(User::factory()->create());
+
+        $response = $this->get('/painel/');
+
+        $response->assertSee('action="'.route('logout').'"', false);
+        $response->assertSee('data-test="logout-button"', false);
+    }
+
     public function test_pagina_nao_quebra_sem_nenhum_pedido(): void
     {
         $this->actingAs(User::factory()->create());

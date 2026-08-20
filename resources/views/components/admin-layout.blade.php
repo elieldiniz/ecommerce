@@ -65,7 +65,7 @@
                     </nav>
                 </div>
                 <div class="border-t border-border pt-4">
-                    <x-desktop-user-menu :mock="$activeItem !== 'configuracoes'" />
+                    <x-desktop-user-menu />
                 </div>
             </aside>
 
@@ -113,7 +113,7 @@
                     </nav>
                 </div>
                 <div class="border-t border-border pt-4">
-                    <x-desktop-user-menu :mock="$activeItem !== 'configuracoes'" />
+                    <x-desktop-user-menu />
                 </div>
             </aside>
 

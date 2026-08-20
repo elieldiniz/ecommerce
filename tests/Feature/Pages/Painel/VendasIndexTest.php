@@ -165,7 +165,9 @@ class VendasIndexTest extends TestCase
         $response->assertSee('Reenviar ao GFSIS');
         $response->assertSee('Disparar recuperação');
 
-        $this->assertSame(0, substr_count($response->getContent(), 'method="POST"'));
+        $content = $response->getContent();
+        $mainContent = substr($content, strpos($content, 'min-w-0 flex-1'));
+        $this->assertSame(0, substr_count($mainContent, 'method="POST"'), 'A área de conteúdo não deve ter formulário embutido (o form de logout da sidebar é esperado).');
     }
 
     public function test_tabela_de_pedidos_nao_tem_checkbox_de_selecao(): void
