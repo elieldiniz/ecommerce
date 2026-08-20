@@ -55,10 +55,10 @@ class ChargeBoletoPayment
             'payment_gateway_id' => PaymentGateway::query()->where('slug', 'safe2pay')->value('id'),
             'payment_method_id' => $order->payment_method_id,
             'status_id' => PaymentStatus::query()->where('slug', 'pending')->value('id'),
-            'gateway_transaction_id' => (string) $response->json('IdTransaction'),
+            'gateway_transaction_id' => (string) $response->json('ResponseDetail.IdTransaction'),
             'gross_amount' => $totals['total'],
-            'boleto_digitable_line' => $response->json('PaymentObject.DigitableLine'),
-            'receipt_url' => $response->json('PaymentObject.Url'),
+            'boleto_digitable_line' => $response->json('ResponseDetail.DigitableLine'),
+            'receipt_url' => $response->json('ResponseDetail.BankSlipUrl'),
         ]);
     }
 }

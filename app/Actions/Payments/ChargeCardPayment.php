@@ -10,6 +10,7 @@ use App\Models\Order;
 use App\Models\Payment;
 use App\Models\PaymentGateway;
 use App\Models\PaymentStatus;
+use App\Support\Safe2Pay\CardBrand;
 use App\Support\Safe2Pay\PaymentPayloadBuilder;
 use App\Support\Safe2Pay\Safe2PayClient;
 use App\Support\Safe2Pay\TransactionStatus;
@@ -55,19 +56,22 @@ class ChargeCardPayment
         $response = (new Safe2PayClient)->charge($payload);
         $response->throw();
 
-        $statusSlug = TransactionStatus::fromCode((int) $response->json('TransactionStatus.Id'))->toInternalStatusSlug();
+        $statusSlug = TransactionStatus::fromCode((int) $response->json('ResponseDetail.Status'))->toInternalStatusSlug();
+
+        $cardNumber = (string) $response->json('ResponseDetail.CreditCard.CardNumber');
+        $brandCode = (int) $response->json('ResponseDetail.CreditCard.Brand');
 
         return Payment::query()->create([
             'order_id' => $order->id,
             'payment_gateway_id' => PaymentGateway::query()->where('slug', 'safe2pay')->value('id'),
             'payment_method_id' => $order->payment_method_id,
             'status_id' => PaymentStatus::query()->where('slug', $statusSlug)->value('id'),
-            'gateway_transaction_id' => (string) $response->json('IdTransaction'),
+            'gateway_transaction_id' => (string) $response->json('ResponseDetail.IdTransaction'),
             'gross_amount' => $totals['total'],
-            'installments' => $response->json('PaymentObject.InstallmentQuantity') ?? $installments,
-            'card_brand' => $response->json('PaymentObject.Brand'),
-            'card_last_digits' => $response->json('PaymentObject.LastDigits'),
-            'authorization_nsu' => $response->json('PaymentObject.Nsu'),
+            'installments' => $response->json('ResponseDetail.CreditCard.Installments') ?? $installments,
+            'card_brand' => CardBrand::tryFrom($brandCode)?->label() ?? (string) $brandCode,
+            'card_last_digits' => substr($cardNumber, -4),
+            'authorization_nsu' => $response->json('ResponseDetail.Tid'),
         ]);
     }
 }
