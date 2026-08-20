@@ -214,6 +214,17 @@ new #[Layout('components.checkout-layout', ['activeStep' => 2])] #[Title('Checko
             ]);
         }
 
+        $emailBelongsToAnotherDocument = Customer::query()
+            ->where('email', $this->email)
+            ->where('document', '!=', $this->document)
+            ->exists();
+
+        if ($emailBelongsToAnotherDocument) {
+            $this->addError('email', 'Esse e-mail já está cadastrado com outro CPF/CNPJ. Use outro e-mail ou faça login.');
+
+            return;
+        }
+
         $customer = Customer::query()->updateOrCreate(
             ['document' => $this->document],
             [
