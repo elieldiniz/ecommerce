@@ -19,7 +19,7 @@
                 <flux:icon.check class="size-6 text-[#1e5c34]" />
             </div>
             <h1 class="mb-1 font-heading text-lg font-bold text-ink">Pagamento confirmado</h1>
-            <p class="font-sans text-sm text-muted">Pedido #{{ $id }} · R$ 213,75 no Pix</p>
+            <p class="font-sans text-sm text-muted">Pedido #{{ $id }} · R$ {{ number_format((float) $order->total, 2, ',', '.') }} no {{ $order->paymentMethod->name }}</p>
         </section>
 
         {{-- Bloco 2: dados de emissão (PF ou PJ, condicional) --}}
