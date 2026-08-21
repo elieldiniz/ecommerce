@@ -40,6 +40,7 @@ return [
         'api_key_production' => env('SAFE2PAY_API_KEY_PRODUCTION'),
         'is_sandbox' => env('SAFE2PAY_IS_SANDBOX', true),
         'base_url' => 'https://payment.safe2pay.com.br',
+        'installment_base_url' => 'https://api.safe2pay.com.br',
     ],
 
     'gfsis' => [

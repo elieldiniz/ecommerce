@@ -125,7 +125,7 @@ sequenceDiagram
 - UI-01 [State-Driven]: WHILE a forma de pagamento selecionada for `cartao` e o número do cartão falhar a validação de Luhn ou não corresponder a nenhum prefixo (BIN) das 8 bandeiras suportadas por `CardBrand` (verified at app/Support/Safe2Pay/CardBrand.php:12-19), o botão "Finalizar compra" DEVE permanecer desabilitado.
   - AC: Com um número de cartão que falha Luhn (ex.: dígito verificador trocado) ou não bate com nenhum prefixo de bandeira suportada, o botão "Finalizar compra" fica desabilitado mesmo com os demais campos preenchidos.
 
-- UI-02 [State-Driven]: WHILE a validade MM/AA for inválida — mês fora de 01-12, ou ano/mês anterior ao mês corrente — o botão "Finalizar compra" DEVE permanecer desabilitado.
+- UI-02 [State-Driven]: WHILE a validade MM/yyyy for inválida — mês fora de 01-12, ou ano/mês anterior ao mês corrente — o botão "Finalizar compra" DEVE permanecer desabilitado.
   - AC: Uma validade com mês `13` ou com ano anterior ao ano corrente mantém "Finalizar compra" desabilitado; uma validade igual ao mês/ano corrente é aceita.
 
 - UI-03 [State-Driven]: WHILE o CVV não for numérico com 3 dígitos (ou 4 dígitos quando a bandeira detectada for American Express), o botão "Finalizar compra" DEVE permanecer desabilitado.
@@ -142,7 +142,7 @@ sequenceDiagram
 
 ### Contracts
 
-- CT-01: `POST` rota interna nova de tokenização (nome final é sugestão em FLEXIBLE, ex.: `/checkout/tokenizar-cartao`), registrada em `routes/web.php` fora de qualquer middleware `auth` (mesma acessibilidade pública da rota `checkout`, verified at routes/web.php:24). Request: `{ "holder": string, "cardNumber": string, "expirationDate": string (MM/AA), "securityCode": string }`. Response 200: `{ "token": string, "brand": string, "last4": string de 4 dígitos }`.
+- CT-01: `POST` rota interna nova de tokenização (nome final é sugestão em FLEXIBLE, ex.: `/checkout/tokenizar-cartao`), registrada em `routes/web.php` fora de qualquer middleware `auth` (mesma acessibilidade pública da rota `checkout`, verified at routes/web.php:24). Request: `{ "holder": string, "cardNumber": string, "expirationDate": string (MM/yyyy — ano com 4 dígitos, confirmado contra o sandbox real da Safe2Pay em POST /v2/payment; correção de uma suposição anterior de MM/AA), "securityCode": string }`. Response 200: `{ "token": string, "brand": string, "last4": string de 4 dígitos }`.
 - CT-02: Resposta de erro da rota de tokenização quando a Safe2Pay recusa (`HasError: true`, RF-02) ou a chamada HTTP falha: status de erro (ex.: 422) com corpo `{ "message": string }` — nunca inclui a chave `token`.
 
 ### Non-Functional Requirements
@@ -169,7 +169,7 @@ sequenceDiagram
 | RF-04 | `brand` é rótulo textual via `CardBrand::label()`, `last4` tem 4 dígitos | Sim (Feature test com `Http::fake`) |
 | RF-05 | `ChargeCardPayment`/`CardBrand`/`TransactionStatus`/`PaymentPayloadBuilder` sem alteração de comportamento | Sim (suíte existente permanece verde) |
 | UI-01 | Luhn/bandeira inválida mantém botão desabilitado | Parcial (revisão de código/manual — sem test runner JS) |
-| UI-02 | Validade MM/AA inválida mantém botão desabilitado | Parcial (revisão de código/manual — sem test runner JS) |
+| UI-02 | Validade MM/yyyy inválida mantém botão desabilitado | Parcial (revisão de código/manual — sem test runner JS) |
 | UI-03 | CVV inválido (3/4 dígitos por bandeira) mantém botão desabilitado | Parcial (revisão de código/manual — sem test runner JS) |
 | UI-04 | Número do cartão é mascarado em grupos de 4 | Parcial (revisão de código/manual — sem test runner JS) |
 | UI-05 | `fetch` chama a rota de tokenização antes de `finalizarCompra()`; `cardToken` preenchido via `$wire.set()` | Sim (Feature test Livewire para o efeito em `cardToken`; fluxo `fetch` em si é manual) |

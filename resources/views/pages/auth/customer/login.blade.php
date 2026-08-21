@@ -11,6 +11,12 @@ new #[Layout('components.layout')] #[Title('Login — Cliente')] class extends C
     public string $email = '';
     public string $password = '';
     public bool $remember = false;
+    public ?string $from = null;
+
+    public function mount(): void
+    {
+        $this->from = request()->query('from') === 'carrinho' ? 'carrinho' : null;
+    }
 
     public function login(): void
     {
@@ -33,7 +39,7 @@ new #[Layout('components.layout')] #[Title('Login — Cliente')] class extends C
                 session()->forget('cart_session_id');
             }
 
-            $this->redirectRoute('carrinho');
+            $this->redirectRoute($this->from === 'carrinho' ? 'carrinho' : 'minha-conta.pedidos');
 
             return;
         }
@@ -69,7 +75,7 @@ new #[Layout('components.layout')] #[Title('Login — Cliente')] class extends C
                 Lembrar de mim
             </label>
 
-            <a href="{{ route('customer.password.request') }}" class="font-sans text-xs font-semibold text-brand" wire:navigate>Esqueceu sua senha?</a>
+            <a href="{{ route('customer.password.request', $from ? ['from' => $from] : []) }}" class="font-sans text-xs font-semibold text-brand" wire:navigate>Esqueceu sua senha?</a>
         </div>
 
         <button type="submit" class="mt-2 w-full rounded-lg bg-brand px-4 py-3 font-heading text-sm font-semibold text-white">Entrar</button>
@@ -77,7 +83,7 @@ new #[Layout('components.layout')] #[Title('Login — Cliente')] class extends C
 
     <p class="mt-6 text-center font-sans text-sm text-muted">
         Não tem conta?
-        <a href="{{ route('customer.register') }}" class="font-semibold text-brand" wire:navigate>Criar conta</a>
+        <a href="{{ route('customer.register', $from ? ['from' => $from] : []) }}" class="font-semibold text-brand" wire:navigate>Criar conta</a>
     </p>
 
     <p class="mt-2 text-center font-sans text-sm text-muted">

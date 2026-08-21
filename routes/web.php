@@ -1,6 +1,7 @@
 <?php
 
 use App\Actions\Cart\AddToCart;
+use App\Http\Controllers\Checkout\TokenizeCardController;
 use App\Http\Controllers\Pedido\ShowEmissaoController;
 use App\Http\Controllers\Pedido\StoreEmissaoController;
 use App\Http\Controllers\Webhooks\GfsisWebhookController;
@@ -22,6 +23,7 @@ Route::view('suporte/', 'pages.suporte')->name('suporte');
 
 Route::livewire('carrinho/', 'pages::carrinho')->name('carrinho');
 Route::livewire('checkout/', 'pages::checkout')->name('checkout');
+Route::post('checkout/tokenizar-cartao', TokenizeCardController::class)->name('checkout.tokenizar-cartao');
 Route::livewire('pedido/{id}/pagamento/', 'pages::pedido.pagamento')->name('pedido.pagamento');
 Route::get('pedido/{id}/emissao/', ShowEmissaoController::class)
     ->middleware(EnsureIssuanceAccessTokenIsValid::class)

@@ -8,6 +8,12 @@ use Livewire\Component;
 new #[Layout('components.layout')] #[Title('Esqueci minha senha — Cliente')] class extends Component {
     public string $email = '';
     public string $status = '';
+    public ?string $from = null;
+
+    public function mount(): void
+    {
+        $this->from = request()->query('from') === 'carrinho' ? 'carrinho' : null;
+    }
 
     public function sendResetLink(): void
     {
@@ -20,6 +26,14 @@ new #[Layout('components.layout')] #[Title('Esqueci minha senha — Cliente')] c
         ]);
 
         if ($status === Password::RESET_LINK_SENT) {
+            // O link de redefinição vai por e-mail (assíncrono) e não carrega query
+            // string — a intenção de voltar pro carrinho precisa atravessar essa
+            // lacuna via sessão; reset-password.blade.php lê e apaga essa chave
+            // quando a redefinição é concluída.
+            if ($this->from === 'carrinho') {
+                session(['customer_auth_intent' => 'carrinho']);
+            }
+
             $this->status = 'Enviamos um link de redefinição de senha para o seu e-mail.';
             $this->email = '';
 
@@ -53,6 +67,6 @@ new #[Layout('components.layout')] #[Title('Esqueci minha senha — Cliente')] c
     </form>
 
     <p class="mt-6 text-center font-sans text-sm text-muted">
-        <a href="{{ route('customer.login') }}" class="font-semibold text-brand" wire:navigate>Voltar ao login</a>
+        <a href="{{ route('customer.login', $from ? ['from' => $from] : []) }}" class="font-semibold text-brand" wire:navigate>Voltar ao login</a>
     </p>
 </main>
