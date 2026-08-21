@@ -12,6 +12,12 @@ new #[Layout('components.layout')] #[Title('Criar Conta — Cliente')] class ext
     public string $email = '';
     public string $password = '';
     public string $password_confirmation = '';
+    public ?string $from = null;
+
+    public function mount(): void
+    {
+        $this->from = request()->query('from') === 'carrinho' ? 'carrinho' : null;
+    }
 
     public function register(): void
     {
@@ -37,7 +43,7 @@ new #[Layout('components.layout')] #[Title('Criar Conta — Cliente')] class ext
             session()->forget('cart_session_id');
         }
 
-        $this->redirectRoute('carrinho');
+        $this->redirectRoute($this->from === 'carrinho' ? 'carrinho' : 'minha-conta.pedidos');
     }
 }; ?>
 
@@ -80,7 +86,7 @@ new #[Layout('components.layout')] #[Title('Criar Conta — Cliente')] class ext
 
     <p class="mt-6 text-center font-sans text-sm text-muted">
         Já tem conta?
-        <a href="{{ route('customer.login') }}" class="font-semibold text-brand" wire:navigate>Entrar</a>
+        <a href="{{ route('customer.login', $from ? ['from' => $from] : []) }}" class="font-semibold text-brand" wire:navigate>Entrar</a>
     </p>
 
     <p class="mt-2 text-center font-sans text-sm text-muted">

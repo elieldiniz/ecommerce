@@ -34,10 +34,20 @@ class CheckoutTest extends TestCase
 
         config([
             'services.safe2pay.base_url' => 'https://payment.safe2pay.com.br',
+            'services.safe2pay.installment_base_url' => 'https://api.safe2pay.com.br',
             'services.safe2pay.api_key_sandbox' => 'sandbox-key',
             'services.safe2pay.api_key_production' => 'production-key',
             'services.safe2pay.is_sandbox' => true,
         ]);
+
+        // Sem registrar nenhum 'Http::fake([...])' aqui (ele teria prioridade sobre qualquer fake
+        // que um teste declare depois — Http::fake() sempre mantém a PRIMEIRA regra registrada
+        // para um padrão de URL, não a mais recente). preventStrayRequests() sozinho já intercepta
+        // qualquer chamada não fakeada (lança StrayRequestException, capturada pelo catch(\Throwable)
+        // de FetchInstallmentValues) — suficiente para os ~15 testes que não têm nada a ver com
+        // parcelamento não tentarem rede real, já que "Cartão de crédito" está sempre na lista de
+        // formas de pagamento (RF-01/RF-03 rodam em toda renderização do checkout).
+        Http::preventStrayRequests();
 
         OrderStatus::factory()->create(['slug' => 'awaiting_payment']);
         OrderFulfillmentStatus::factory()->create(['slug' => 'awaiting_data']);
@@ -90,6 +100,12 @@ class CheckoutTest extends TestCase
     {
         $this->createPaymentMethods();
         $variant = $this->createProductVariant('200.00');
+        Http::fake(['api.safe2pay.com.br/*' => Http::response([
+            'HasError' => false,
+            'ResponseDetail' => ['Installments' => [
+                ['Installments' => 1, 'InstallmentValue' => '200.00', 'TotalValue' => '200.00', 'AppliedTax' => 0],
+            ]],
+        ], 200)]);
 
         $component = Livewire::test('pages::checkout', ['variant' => $variant->id])
             ->assertOk()
@@ -104,22 +120,151 @@ class CheckoutTest extends TestCase
         $component->assertNoRedirect();
     }
 
-    public function test_installment_options_never_exceed_max_installments_and_reflect_db_changes_on_next_render(): void
+    public function test_the_installment_dropdown_reflects_exactly_the_rows_returned_by_safe2pay(): void
     {
-        $this->createPaymentMethods(cardMaxInstallments: 12);
+        $this->createPaymentMethods();
+        $variant = $this->createProductVariant('200.00');
+        Http::fake(['api.safe2pay.com.br/*' => Http::response([
+            'HasError' => false,
+            'ResponseDetail' => ['Installments' => [
+                ['Installments' => 1, 'InstallmentValue' => '200.00', 'TotalValue' => '200.00', 'AppliedTax' => 0],
+                ['Installments' => 2, 'InstallmentValue' => '100.00', 'TotalValue' => '200.00', 'AppliedTax' => 0],
+                ['Installments' => 3, 'InstallmentValue' => '68.66', 'TotalValue' => '205.98', 'AppliedTax' => 2.99],
+            ]],
+        ], 200)]);
+
+        $html = Livewire::test('pages::checkout', ['variant' => $variant->id])
+            ->call('selecionarFormaPagamento', 'cartao')
+            ->html();
+
+        preg_match('/wire:model\.live="installments".*?<\/select>/s', $html, $matches);
+        $this->assertNotEmpty($matches, 'Select de parcelas não encontrado no HTML.');
+        $this->assertSame(3, substr_count($matches[0], '<option'));
+        $this->assertStringContainsString('1x '.Number::currency('200.00', in: 'BRL', locale: 'pt_BR').' sem juros ('.Number::currency('200.00', in: 'BRL', locale: 'pt_BR').')', $html);
+        $this->assertStringContainsString('2x '.Number::currency('100.00', in: 'BRL', locale: 'pt_BR').' sem juros ('.Number::currency('200.00', in: 'BRL', locale: 'pt_BR').')', $html);
+        $this->assertStringContainsString('3x '.Number::currency('68.66', in: 'BRL', locale: 'pt_BR').' ('.Number::currency('205.98', in: 'BRL', locale: 'pt_BR').')', $html);
+    }
+
+    public function test_the_cartao_badge_shows_the_maximum_installment_count_with_no_interest(): void
+    {
+        $this->createPaymentMethods();
+        $variant = $this->createProductVariant('200.00');
+        Http::fake(['api.safe2pay.com.br/*' => Http::response([
+            'HasError' => false,
+            'ResponseDetail' => ['Installments' => [
+                ['Installments' => 1, 'InstallmentValue' => '200.00', 'TotalValue' => '200.00', 'AppliedTax' => 0],
+                ['Installments' => 4, 'InstallmentValue' => '50.00', 'TotalValue' => '200.00', 'AppliedTax' => 0],
+                ['Installments' => 6, 'InstallmentValue' => '35.30', 'TotalValue' => '211.80', 'AppliedTax' => 5.9],
+            ]],
+        ], 200)]);
+
+        Livewire::test('pages::checkout', ['variant' => $variant->id])
+            ->assertSee('Até 4x sem juros');
+    }
+
+    public function test_the_cartao_badge_is_hidden_when_no_installment_option_is_interest_free(): void
+    {
+        $this->createPaymentMethods();
+        $variant = $this->createProductVariant('200.00');
+        Http::fake(['api.safe2pay.com.br/*' => Http::response([
+            'HasError' => false,
+            'ResponseDetail' => ['Installments' => [
+                ['Installments' => 1, 'InstallmentValue' => '204.00', 'TotalValue' => '204.00', 'AppliedTax' => 2],
+            ]],
+        ], 200)]);
+
+        Livewire::test('pages::checkout', ['variant' => $variant->id])
+            ->assertDontSee('sem juros');
+    }
+
+    public function test_a_failed_installment_value_query_disables_the_cartao_card_and_blocks_selection(): void
+    {
+        $this->createPaymentMethods();
+        $variant = $this->createProductVariant('200.00');
+        Http::fake(['api.safe2pay.com.br/*' => Http::response(['HasError' => true], 200)]);
+
+        $html = Livewire::test('pages::checkout', ['variant' => $variant->id])
+            ->call('selecionarFormaPagamento', 'cartao')
+            ->assertSet('paymentMethodSlug', 'pix')
+            ->html();
+
+        preg_match('/<button[^>]*data-payment-method="cartao"[^>]*>/s', $html, $matches);
+        $this->assertNotEmpty($matches, 'Botão do card "Cartão de crédito" não encontrado.');
+        $this->assertStringContainsString('disabled', $matches[0]);
+    }
+
+    public function test_a_recovered_installment_value_query_re_enables_the_cartao_selection(): void
+    {
+        $this->createPaymentMethods();
         $variant = $this->createProductVariant('200.00');
 
+        // Fake mutável em vez de Http::sequence(): a badge "Cartão de crédito" já consulta CT-01
+        // na renderização inicial da página (antes de qualquer ->call() explícito), então o número
+        // exato de chamadas até o primeiro ->call() não é previsível — o que importa é que TODAS as
+        // chamadas antes de $succeed=true falhem, e TODAS depois tenham sucesso.
+        $succeed = false;
+        Http::fake(['api.safe2pay.com.br/*' => function () use (&$succeed) {
+            if (! $succeed) {
+                return Http::response(['HasError' => true], 200);
+            }
+
+            return Http::response([
+                'HasError' => false,
+                'ResponseDetail' => ['Installments' => [
+                    ['Installments' => 1, 'InstallmentValue' => '200.00', 'TotalValue' => '200.00', 'AppliedTax' => 0],
+                ]],
+            ], 200);
+        }]);
+
+        $component = Livewire::test('pages::checkout', ['variant' => $variant->id])
+            ->call('selecionarFormaPagamento', 'cartao')
+            ->assertSet('paymentMethodSlug', 'pix');
+
+        $succeed = true;
+
+        $component->call('selecionarFormaPagamento', 'cartao')
+            ->assertSet('paymentMethodSlug', 'cartao');
+    }
+
+    public function test_two_consecutive_cartao_selections_with_the_same_subtotal_call_safe2pay_only_once(): void
+    {
+        $this->createPaymentMethods();
+        $variant = $this->createProductVariant('200.00');
+        Http::fake(['api.safe2pay.com.br/*' => Http::response([
+            'HasError' => false,
+            'ResponseDetail' => ['Installments' => [
+                ['Installments' => 1, 'InstallmentValue' => '200.00', 'TotalValue' => '200.00', 'AppliedTax' => 0],
+            ]],
+        ], 200)]);
+
         Livewire::test('pages::checkout', ['variant' => $variant->id])
             ->call('selecionarFormaPagamento', 'cartao')
-            ->assertSee('12x')
-            ->assertDontSee('13x');
+            ->call('selecionarFormaPagamento', 'pix')
+            ->call('selecionarFormaPagamento', 'cartao');
 
-        PaymentMethod::query()->where('slug', 'cartao')->update(['max_installments' => 3]);
+        Http::assertSentCount(1);
+    }
+
+    public function test_applying_a_coupon_that_changes_the_subtotal_triggers_a_new_installment_value_call(): void
+    {
+        $this->createPaymentMethods();
+        $variant = $this->createProductVariant('200.00');
+        $coupon = $this->createCoupon(['code' => 'DESC20']);
+        Http::fake(['api.safe2pay.com.br/*' => Http::response([
+            'HasError' => false,
+            'ResponseDetail' => ['Installments' => [
+                ['Installments' => 1, 'InstallmentValue' => '200.00', 'TotalValue' => '200.00', 'AppliedTax' => 0],
+            ]],
+        ], 200)]);
 
         Livewire::test('pages::checkout', ['variant' => $variant->id])
             ->call('selecionarFormaPagamento', 'cartao')
-            ->assertSee('3x')
-            ->assertDontSee('4x');
+            ->set('couponCode', $coupon->code)
+            ->call('aplicarCupom')
+            ->call('selecionarFormaPagamento', 'pix')
+            ->call('selecionarFormaPagamento', 'cartao');
+
+        Http::assertSentCount(2);
     }
 
     public function test_a_valid_submission_creates_exactly_one_order_and_one_payment(): void
@@ -165,7 +310,6 @@ class CheckoutTest extends TestCase
     {
         $this->createPaymentMethods();
         $variant = $this->createProductVariant('200.00');
-        Http::fake();
 
         Livewire::test('pages::checkout', ['variant' => $variant->id])
             ->set($this->validCustomerFields())
@@ -175,7 +319,10 @@ class CheckoutTest extends TestCase
             ->assertHasErrors('geral')
             ->assertNoRedirect();
 
-        Http::assertNothingSent();
+        // A badge de "Cartão de crédito" consulta CT-01 em toda renderização do checkout (RF-01/
+        // RF-03), então a garantia real deste teste é que nenhuma chamada de COBRANÇA (POST) é
+        // feita — não que zero chamadas HTTP ocorram no total.
+        Http::assertNotSent(fn ($request) => $request->method() === 'POST');
         $this->assertSame(1, Order::query()->count());
         $this->assertSame(0, Payment::query()->count());
     }
@@ -184,6 +331,14 @@ class CheckoutTest extends TestCase
     {
         $this->createPaymentMethods();
         $variant = $this->createProductVariant('200.00');
+        // Registrado antes do fake '*' abaixo (Http::fake mantém a primeira regra registrada por
+        // padrão de URL) para que a troca pra "cartao" adiante realmente consiga suceder.
+        Http::fake(['api.safe2pay.com.br/*' => Http::response([
+            'HasError' => false,
+            'ResponseDetail' => ['Installments' => [
+                ['Installments' => 1, 'InstallmentValue' => '200.00', 'TotalValue' => '200.00', 'AppliedTax' => 0],
+            ]],
+        ], 200)]);
         Http::fake(['*' => Http::response([
             'IdTransaction' => 1,
             'TXID' => 'TXID-1',
@@ -470,5 +625,37 @@ class CheckoutTest extends TestCase
         $this->assertNull($order->coupon_id);
         $this->assertSame('0.00', (string) $order->coupon_discount);
         $this->assertSame(0, CouponUse::query()->count());
+    }
+
+    public function test_checkout_layout_exposes_a_csrf_token_meta_tag(): void
+    {
+        $this->createPaymentMethods();
+        $this->createProductVariant();
+
+        $this->get('/checkout/')->assertSee('name="csrf-token"', false);
+    }
+
+    public function test_no_public_property_or_wire_model_exists_for_raw_card_fields(): void
+    {
+        $this->createPaymentMethods();
+        $variant = $this->createProductVariant();
+
+        $component = Livewire::test('pages::checkout', ['variant' => $variant->id])
+            ->set('paymentMethodSlug', 'cartao');
+
+        $publicProperties = array_map(
+            fn (\ReflectionProperty $property) => $property->getName(),
+            (new \ReflectionClass($component->instance()))->getProperties(\ReflectionProperty::IS_PUBLIC),
+        );
+
+        $forbiddenNames = ['cardNumber', 'cardHolder', 'cardExpiry', 'cardCvv', 'securityCode', 'expirationDate'];
+        $this->assertEmpty(array_intersect($publicProperties, $forbiddenNames));
+
+        $html = $component->html();
+        foreach (['s2p-card-number', 's2p-card-holder', 's2p-card-expiry', 's2p-card-cvv'] as $id) {
+            preg_match('/<input[^>]*id="'.$id.'"[^>]*>/', $html, $matches);
+            $this->assertNotEmpty($matches, "Input #{$id} not found in rendered HTML.");
+            $this->assertStringNotContainsString('wire:model', $matches[0]);
+        }
     }
 }

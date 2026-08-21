@@ -29,6 +29,7 @@ class ChargeCardPaymentTest extends TestCase
 
         config([
             'services.safe2pay.base_url' => 'https://payment.safe2pay.com.br',
+            'services.safe2pay.installment_base_url' => 'https://api.safe2pay.com.br',
             'services.safe2pay.api_key_sandbox' => 'sandbox-key',
             'services.safe2pay.api_key_production' => 'production-key',
             'services.safe2pay.is_sandbox' => true,
@@ -133,8 +134,8 @@ class ChargeCardPaymentTest extends TestCase
 
         (new ChargeCardPayment)->execute($order, '100.00', 'token', 3, 'visitor-abc');
 
-        Http::assertSent(fn ($request) => $request['ShouldUseAntiFraud'] === true
-            && ! empty($request['VisitorID']));
+        Http::assertSent(fn ($request) => ($request['ShouldUseAntiFraud'] ?? null) === true
+            && ! empty($request['VisitorID'] ?? null));
     }
 
     public function test_a_200_response_persists_the_five_fields_and_leaves_settlement_fields_null(): void
@@ -156,8 +157,12 @@ class ChargeCardPaymentTest extends TestCase
         $this->assertNull($payment->expected_settlement_date);
     }
 
-    public function test_a_divergent_front_total_blocks_before_any_http_call_and_creates_no_payment(): void
+    public function test_a_divergent_front_total_blocks_without_ever_calling_the_charge_endpoint(): void
     {
+        // RF-04: o guard agora consulta o parcelamento (leitura, GET) antes de comparar o
+        // total — a garantia que este teste protege é que o endpoint de COBRANÇA (POST
+        // /v2/payment) nunca é chamado para um total divergente, não que zero chamadas HTTP
+        // ocorram (a consulta de parcelamento em si é inofensiva/sem efeito colateral).
         $order = $this->createOrder();
         Http::fake();
 
@@ -168,7 +173,7 @@ class ChargeCardPaymentTest extends TestCase
             // esperado
         }
 
-        Http::assertNothingSent();
+        Http::assertNotSent(fn ($request) => $request->method() === 'POST');
         $this->assertSame(0, Payment::query()->count());
     }
 
@@ -212,5 +217,76 @@ class ChargeCardPaymentTest extends TestCase
         }
 
         $this->assertSame(0, Payment::query()->count());
+    }
+
+    public function test_when_the_selected_installment_has_applied_tax_the_guard_rejects_the_base_total(): void
+    {
+        $order = $this->createOrder();
+        Http::fake([
+            'api.safe2pay.com.br/*' => Http::response([
+                'HasError' => false,
+                'ResponseDetail' => ['Installments' => [
+                    ['Installments' => 3, 'InstallmentValue' => '36.63', 'TotalValue' => '109.90', 'AppliedTax' => 2.99],
+                ]],
+            ], 200),
+            'payment.safe2pay.com.br/*' => Http::response(['HasError' => true], 200),
+        ]);
+
+        try {
+            (new ChargeCardPayment)->execute($order, '100.00', 'token', 3, 'visitor-abc');
+            $this->fail('Esperava-se PaymentTotalMismatchException.');
+        } catch (PaymentTotalMismatchException) {
+            // esperado
+        }
+
+        Http::assertNotSent(fn ($request) => str_contains($request->url(), 'payment.safe2pay.com.br'));
+        $this->assertSame(0, Payment::query()->count());
+    }
+
+    public function test_when_the_selected_installment_has_applied_tax_the_guard_accepts_the_safe2pay_total_value(): void
+    {
+        $order = $this->createOrder();
+        Http::fake([
+            'api.safe2pay.com.br/*' => Http::response([
+                'HasError' => false,
+                'ResponseDetail' => ['Installments' => [
+                    ['Installments' => 3, 'InstallmentValue' => '36.63', 'TotalValue' => '109.90', 'AppliedTax' => 2.99],
+                ]],
+            ], 200),
+            'payment.safe2pay.com.br/*' => Http::response([
+                'ResponseDetail' => [
+                    'IdTransaction' => 138667690,
+                    'Status' => 3,
+                    'Tid' => '020006495642',
+                    'CreditCard' => ['CardNumber' => '402400******1111', 'Brand' => 1, 'Installments' => 3],
+                ],
+                'HasError' => false,
+            ], 200),
+        ]);
+
+        $payment = (new ChargeCardPayment)->execute($order, '109.90', 'token', 3, 'visitor-abc');
+
+        $this->assertSame('100.00', $payment->gross_amount);
+    }
+
+    public function test_when_the_installment_query_fails_the_guard_falls_back_to_the_base_total(): void
+    {
+        $order = $this->createOrder();
+        Http::fake([
+            'api.safe2pay.com.br/*' => Http::response([], 500),
+            'payment.safe2pay.com.br/*' => Http::response([
+                'ResponseDetail' => [
+                    'IdTransaction' => 138667690,
+                    'Status' => 3,
+                    'Tid' => '020006495642',
+                    'CreditCard' => ['CardNumber' => '402400******1111', 'Brand' => 1, 'Installments' => 3],
+                ],
+                'HasError' => false,
+            ], 200),
+        ]);
+
+        $payment = (new ChargeCardPayment)->execute($order, '100.00', 'token', 3, 'visitor-abc');
+
+        $this->assertSame('100.00', $payment->gross_amount);
     }
 }

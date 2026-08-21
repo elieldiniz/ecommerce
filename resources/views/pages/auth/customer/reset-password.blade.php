@@ -39,7 +39,9 @@ new #[Layout('components.layout')] #[Title('Redefinir senha — Cliente')] class
 
         if ($status === Password::PASSWORD_RESET) {
             session()->flash('status', 'Senha redefinida com sucesso. Faça login com sua nova senha.');
-            $this->redirectRoute('customer.login');
+
+            $hasCartIntent = session()->pull('customer_auth_intent') === 'carrinho';
+            $this->redirectRoute('customer.login', $hasCartIntent ? ['from' => 'carrinho'] : []);
 
             return;
         }

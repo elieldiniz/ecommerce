@@ -22,6 +22,7 @@ class ServicesConfigTest extends TestCase
         $this->assertArrayHasKey('api_key_production', $config);
         $this->assertArrayHasKey('is_sandbox', $config);
         $this->assertArrayHasKey('base_url', $config);
+        $this->assertArrayHasKey('installment_base_url', $config);
     }
 
     public function test_no_frontend_asset_references_the_safe2pay_api_key(): void

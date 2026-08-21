@@ -1,6 +1,7 @@
 <?php
 
 use App\Actions\Checkout\CreateOrderFromCart;
+use App\Actions\Checkout\FetchInstallmentValues;
 use App\Actions\Checkout\RecalculateOrderTotals;
 use App\Actions\Checkout\ValidateCoupon;
 use App\Actions\Payments\ChargeBoletoPayment;
@@ -10,6 +11,7 @@ use App\Exceptions\Payments\InstallmentLimitExceededException;
 use App\Exceptions\Payments\MissingVisitorIdException;
 use App\Exceptions\Payments\PaymentTotalMismatchException;
 use App\Exceptions\Payments\Safe2PayChargeFailedException;
+use App\Exceptions\Payments\Safe2PayInstallmentQueryFailedException;
 use App\Models\Coupon;
 use App\Models\Customer;
 use App\Models\CustomerAddress;
@@ -73,7 +75,14 @@ new #[Layout('components.checkout-layout', ['activeStep' => 2])] #[Title('Checko
     {
         $this->variant = $variant ?? ProductVariant::query()->where('is_active', true)->orderBy('id')->value('id');
         $this->paymentMethodSlug = PaymentMethod::query()->where('is_active', true)->orderBy('position')->value('slug') ?? 'pix';
-        $this->confirmedTotal = $this->totals['total'];
+
+        // RF-05: nunca carrega a página com "Cartão de crédito" já selecionado se a consulta
+        // de parcelamento (CT-01) estiver falhando — mesma trava aplicada em selecionarFormaPagamento().
+        if ($this->paymentMethodSlug === 'cartao' && ! $this->installmentQuote['success']) {
+            $this->paymentMethodSlug = 'pix';
+        }
+
+        $this->confirmedTotal = $this->resolveConfirmedTotal();
     }
 
     #[Computed]
@@ -131,19 +140,67 @@ new #[Layout('components.checkout-layout', ['activeStep' => 2])] #[Title('Checko
         return Coupon::query()->where('code', strtoupper(trim($this->couponCode)))->first();
     }
 
+    #[Computed]
+    public function cardPaymentMethod(): ?PaymentMethod
+    {
+        return $this->paymentMethods->firstWhere('slug', 'cartao');
+    }
+
     /**
-     * @return list<int>
+     * Consulta os valores de parcelamento (CT-01) para o subtotal vigente da forma "Cartão
+     * de crédito" — independente da forma atualmente selecionada, pois a badge do card é
+     * visível na lista mesmo com "Pix"/"Boleto" selecionado (RF-01, RF-03, RF-05, RF-06).
+     *
+     * @return array{success: bool, rows: list<array{installments: int, installment_value: string, total_value: string, applied_tax: string}>}
      */
     #[Computed]
-    public function installmentOptions(): array
+    public function installmentQuote(): array
     {
-        $paymentMethod = $this->selectedPaymentMethod;
+        $paymentMethod = $this->cardPaymentMethod;
 
-        if ($paymentMethod === null || $paymentMethod->slug !== 'cartao') {
-            return [1];
+        if ($paymentMethod === null) {
+            return ['success' => false, 'rows' => []];
         }
 
-        return range(1, max(1, $paymentMethod->max_installments));
+        $totals = (new RecalculateOrderTotals)->execute($this->cartItemsForTotals, $paymentMethod, $this->coupon);
+
+        try {
+            $rows = (new FetchInstallmentValues)->execute($totals['total']);
+        } catch (Safe2PayInstallmentQueryFailedException) {
+            return ['success' => false, 'rows' => []];
+        }
+
+        return ['success' => true, 'rows' => $rows];
+    }
+
+    /**
+     * "Até Nx sem juros" (RF-03), N = maior `installments` entre as linhas com
+     * `applied_tax = 0`; `null` (badge ocultada) quando nenhuma linha é sem juros.
+     */
+    #[Computed]
+    public function installmentBadgeText(): ?string
+    {
+        $free = collect($this->installmentQuote['rows'])->filter(fn (array $row): bool => (float) $row['applied_tax'] === 0.0);
+
+        if ($free->isEmpty()) {
+            return null;
+        }
+
+        return 'Até '.$free->max('installments').'x sem juros';
+    }
+
+    /**
+     * Texto de uma opção do dropdown de parcelas (RF-01, UI-01).
+     *
+     * @param  array{installments: int, installment_value: string, total_value: string, applied_tax: string}  $row
+     */
+    public function installmentOptionLabel(array $row): string
+    {
+        $installmentValue = Number::currency($row['installment_value'], in: 'BRL', locale: 'pt_BR');
+        $totalValue = Number::currency($row['total_value'], in: 'BRL', locale: 'pt_BR');
+        $suffix = (float) $row['applied_tax'] === 0.0 ? ' sem juros' : '';
+
+        return "{$row['installments']}x {$installmentValue}{$suffix} ({$totalValue})";
     }
 
     /**
@@ -196,18 +253,55 @@ new #[Layout('components.checkout-layout', ['activeStep' => 2])] #[Title('Checko
     /**
      * WHEN o cliente seleciona uma forma de pagamento, recalcula e exibe os 3 valores
      * sem recarregar a página (UI-01); parcelas voltam a 1 para nunca ultrapassar
-     * `max_installments` da forma recém-selecionada (UI-02).
+     * `max_installments` da forma recém-selecionada (UI-02). Nunca seleciona "cartao"
+     * enquanto a consulta de parcelamento estiver falhando (RF-05, UI-03).
      */
     public function selecionarFormaPagamento(string $slug): void
     {
+        if ($slug === 'cartao' && ! $this->installmentQuote['success']) {
+            return;
+        }
+
         $this->paymentMethodSlug = $slug;
         $this->installments = 1;
-        $this->confirmedTotal = $this->totals['total'];
+        $this->confirmedTotal = $this->resolveConfirmedTotal();
     }
 
     public function aplicarCupom(): void
     {
-        $this->confirmedTotal = $this->totals['total'];
+        $this->confirmedTotal = $this->resolveConfirmedTotal();
+    }
+
+    /**
+     * WHEN o cliente troca de parcela com "Cartão de crédito" selecionado, `confirmedTotal`
+     * precisa refletir o `total_value` da parcela escolhida quando ela tem juro (RF-04) —
+     * senão o guard de `ChargeCardPayment` rejeitaria toda cobrança parcelada com juro.
+     */
+    public function updatedInstallments(): void
+    {
+        if ($this->paymentMethodSlug === 'cartao') {
+            $this->confirmedTotal = $this->resolveConfirmedTotal();
+        }
+    }
+
+    /**
+     * Total a confirmar (RF-04): para "cartao", usa o `total_value` da parcela selecionada
+     * quando ela tem juro (`applied_tax != 0`); senão, o total base de `RecalculateOrderTotals`
+     * — mesmo valor usado para as demais formas de pagamento.
+     */
+    private function resolveConfirmedTotal(): string
+    {
+        if ($this->paymentMethodSlug !== 'cartao') {
+            return $this->totals['total'];
+        }
+
+        $row = collect($this->installmentQuote['rows'])->firstWhere('installments', $this->installments);
+
+        if ($row === null || (float) $row['applied_tax'] === 0.0) {
+            return $this->totals['total'];
+        }
+
+        return $row['total_value'];
     }
 
     /**
@@ -413,7 +507,7 @@ new #[Layout('components.checkout-layout', ['activeStep' => 2])] #[Title('Checko
     }
 }; ?>
 
-<main class="mx-auto grid max-w-6xl grid-cols-1 gap-6 px-6 py-8 md:grid-cols-3">
+<main x-data="cardCheckout()" class="mx-auto grid max-w-6xl grid-cols-1 gap-6 px-6 py-8 md:grid-cols-3">
     <div class="flex flex-col gap-6 md:col-span-2">
         {{-- Bloco: Seus dados --}}
         <section class="rounded-xl border border-border bg-white p-5">
@@ -527,8 +621,9 @@ new #[Layout('components.checkout-layout', ['activeStep' => 2])] #[Title('Checko
                         type="button"
                         wire:click="selecionarFormaPagamento('{{ $method->slug }}')"
                         data-payment-method="{{ $method->slug }}"
+                        @if ($method->slug === 'cartao' && ! $this->installmentQuote['success']) disabled @endif
                         @class([
-                            'rounded-lg p-4 text-left',
+                            'rounded-lg p-4 text-left disabled:cursor-not-allowed disabled:opacity-50',
                             'border-2 border-brand bg-highlight' => $paymentMethodSlug === $method->slug,
                             'border border-border-light bg-white' => $paymentMethodSlug !== $method->slug,
                         ])
@@ -536,13 +631,15 @@ new #[Layout('components.checkout-layout', ['activeStep' => 2])] #[Title('Checko
                         <div class="font-heading text-sm font-bold text-ink">{{ $method->name }}</div>
                         <div class="mt-1 font-sans text-xs text-muted">
                             @if ($method->slug === 'pix')
-                                Confirmação imediata
+                                Confirmação imediata · {{ (float) $method->discount_percentage > 0 ? rtrim(rtrim(number_format((float) $method->discount_percentage, 2, ',', '.'), '0'), ',').'% de desconto' : 'Sem desconto' }}
                             @elseif ($method->slug === 'cartao')
-                                Até {{ $method->max_installments }}x
+                                @if ($this->installmentBadgeText)
+                                    {{ $this->installmentBadgeText }} ·
+                                @endif
+                                {{ (float) $method->discount_percentage > 0 ? rtrim(rtrim(number_format((float) $method->discount_percentage, 2, ',', '.'), '0'), ',').'% de desconto' : 'Sem desconto' }}
                             @else
-                                Compensa em 1 a 3 dias úteis
+                                Compensa em 1 a 3 dias úteis · {{ (float) $method->discount_percentage > 0 ? rtrim(rtrim(number_format((float) $method->discount_percentage, 2, ',', '.'), '0'), ',').'% de desconto' : 'Sem desconto' }}
                             @endif
-                            · {{ (float) $method->discount_percentage > 0 ? rtrim(rtrim(number_format((float) $method->discount_percentage, 2, ',', '.'), '0'), ',').'% de desconto' : 'Sem desconto' }}
                         </div>
                     </button>
                 @endforeach
@@ -552,27 +649,43 @@ new #[Layout('components.checkout-layout', ['activeStep' => 2])] #[Title('Checko
                 <div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
                     <div>
                         <label class="mb-1 block font-sans text-xs font-semibold text-muted">Parcelas</label>
-                        <select wire:model="installments" class="w-full rounded-lg border border-border-light px-3 py-2.5 font-sans text-sm text-ink">
-                            @foreach ($this->installmentOptions as $option)
-                                <option value="{{ $option }}">{{ $option }}x</option>
-                            @endforeach
-                        </select>
+                        <div wire:loading.remove wire:target="selecionarFormaPagamento,aplicarCupom">
+                            <select wire:model.live="installments" class="w-full rounded-lg border border-border-light px-3 py-2.5 font-sans text-sm text-ink">
+                                @foreach ($this->installmentQuote['rows'] as $row)
+                                    <option value="{{ $row['installments'] }}">{{ $this->installmentOptionLabel($row) }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div wire:loading wire:target="selecionarFormaPagamento,aplicarCupom" class="rounded-lg border border-border-light px-3 py-2.5 font-sans text-sm text-muted">
+                            Carregando parcelas...
+                        </div>
                     </div>
                     <div>
                         <label class="mb-1 block font-sans text-xs font-semibold text-muted">Número do cartão</label>
-                        <input type="text" id="s2p-card-number" autocomplete="cc-number" class="w-full rounded-lg border border-border-light px-3 py-2.5 font-sans text-sm text-ink">
+                        <div class="relative">
+                            <input type="text" id="s2p-card-number" autocomplete="cc-number" inputmode="numeric" x-on:input="onCardNumberInput" x-on:blur="onCardNumberBlur" class="w-full rounded-lg border border-border-light px-3 py-2.5 pr-20 font-sans text-sm text-ink">
+                            <span
+                                x-show="brandDisplayName"
+                                x-text="brandDisplayName"
+                                class="absolute right-2 top-1/2 -translate-y-1/2 rounded-md border border-border-light bg-highlight px-2 py-1 font-sans text-[10px] font-bold uppercase tracking-wide text-ink"
+                                style="display: none;"
+                            ></span>
+                        </div>
+                        <p x-show="cardNumberError" x-text="cardNumberError" class="mt-1 font-sans text-xs text-[#8f2020]" style="display: none;"></p>
                     </div>
                     <div>
                         <label class="mb-1 block font-sans text-xs font-semibold text-muted">Nome impresso no cartão</label>
-                        <input type="text" id="s2p-card-holder" autocomplete="cc-name" class="w-full rounded-lg border border-border-light px-3 py-2.5 font-sans text-sm text-ink">
+                        <input type="text" id="s2p-card-holder" autocomplete="cc-name" x-model="holder" class="w-full rounded-lg border border-border-light px-3 py-2.5 font-sans text-sm text-ink">
                     </div>
                     <div>
                         <label class="mb-1 block font-sans text-xs font-semibold text-muted">Validade</label>
-                        <input type="text" id="s2p-card-expiry" placeholder="MM/AA" autocomplete="cc-exp" class="w-full rounded-lg border border-border-light px-3 py-2.5 font-sans text-sm text-ink">
+                        <input type="text" id="s2p-card-expiry" placeholder="MM/AAAA" autocomplete="cc-exp" inputmode="numeric" x-on:input="onExpiryInput" x-on:blur="onExpiryBlur" class="w-full rounded-lg border border-border-light px-3 py-2.5 font-sans text-sm text-ink">
+                        <p x-show="expiryError" x-text="expiryError" class="mt-1 font-sans text-xs text-[#8f2020]" style="display: none;"></p>
                     </div>
                     <div>
                         <label class="mb-1 block font-sans text-xs font-semibold text-muted">CVV</label>
-                        <input type="text" id="s2p-card-cvv" autocomplete="cc-csc" class="w-full rounded-lg border border-border-light px-3 py-2.5 font-sans text-sm text-ink">
+                        <input type="text" id="s2p-card-cvv" autocomplete="cc-csc" inputmode="numeric" x-on:input="onCvvInput" x-on:blur="onCvvBlur" class="w-full rounded-lg border border-border-light px-3 py-2.5 font-sans text-sm text-ink">
+                        <p x-show="cvvError" x-text="cvvError" class="mt-1 font-sans text-xs text-[#8f2020]" style="display: none;"></p>
                     </div>
                 </div>
             @endif
@@ -631,7 +744,14 @@ new #[Layout('components.checkout-layout', ['activeStep' => 2])] #[Title('Checko
             <div class="mt-4 rounded-lg border border-[#8f2020] bg-[#fbe9e9] px-3 py-2.5 font-sans text-xs text-[#8f2020]">{{ $message }}</div>
         @enderror
 
-        <button type="button" wire:click="finalizarCompra" class="mt-4 w-full rounded-lg bg-brand px-4 py-3 text-center font-heading text-sm font-semibold text-white">Finalizar compra</button>
+        <div x-show="tokenizeError" x-text="tokenizeError" class="mt-4 rounded-lg border border-[#8f2020] bg-[#fbe9e9] px-3 py-2.5 font-sans text-xs text-[#8f2020]" style="display: none;"></div>
+
+        <button
+            type="button"
+            x-on:click="submit('{{ $paymentMethodSlug }}')"
+            @if ($paymentMethodSlug === 'cartao') :disabled="!cardIsValid() || submitting" @endif
+            class="mt-4 w-full rounded-lg bg-brand px-4 py-3 text-center font-heading text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
+        >Finalizar compra</button>
     </aside>
 </main>
 

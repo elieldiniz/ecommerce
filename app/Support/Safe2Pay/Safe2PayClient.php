@@ -24,6 +24,11 @@ final class Safe2PayClient
         ]);
     }
 
+    public function tokenize(array $payload): Response
+    {
+        return $this->client()->post('/v2/token', $payload);
+    }
+
     public function query(string $transactionId): Response
     {
         return $this->client()->get("/v2/payment/{$transactionId}");
@@ -39,9 +44,27 @@ final class Safe2PayClient
         return $this->client()->delete("/v2/payment/{$transactionId}/estornar", $payload);
     }
 
+    /**
+     * Consulta os valores de parcelamento (CT-01) para um valor — host dedicado
+     * (`installment_base_url`, confirmado por teste real contra a Safe2Pay: `base_url`
+     * responde 404 para este endpoint). `$amount` é enviado como decimal, no mesmo
+     * formato já usado pela aplicação (`"180.00"`) — confirmado também por teste real
+     * que a Safe2Pay aceita o valor decimal diretamente, sem conversão para centavos.
+     */
+    public function installmentValue(string $amount): Response
+    {
+        return $this->installmentClient()->get('/v2/creditCard/installmentValue', ['amount' => $amount]);
+    }
+
     private function client(): PendingRequest
     {
         return Http::baseUrl((string) config('services.safe2pay.base_url'))
+            ->withHeaders(['X-API-KEY' => $this->apiKey()]);
+    }
+
+    private function installmentClient(): PendingRequest
+    {
+        return Http::baseUrl((string) config('services.safe2pay.installment_base_url'))
             ->withHeaders(['X-API-KEY' => $this->apiKey()]);
     }
 

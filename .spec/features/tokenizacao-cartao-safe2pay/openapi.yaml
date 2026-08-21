@@ -40,8 +40,12 @@ paths:
                   pattern: '^[0-9]{12,19}$'
                 expirationDate:
                   type: string
-                  description: Validade no formato MM/AA.
-                  pattern: '^(0[1-9]|1[0-2])/[0-9]{2}$'
+                  description: >-
+                    Validade no formato MM/yyyy (ano com 4 dígitos) — confirmado contra o
+                    sandbox real da Safe2Pay em POST /v2/payment (mesmo nome de campo
+                    ExpirationDate); a versão anterior deste contrato assumia MM/AA (2
+                    dígitos) por inferência da documentação, que se mostrou incorreta.
+                  pattern: '^(0[1-9]|1[0-2])/[0-9]{4}$'
                 securityCode:
                   type: string
                   description: Código de segurança (CVV para a maioria das bandeiras, CID para American Express).
