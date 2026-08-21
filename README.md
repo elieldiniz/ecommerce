@@ -150,6 +150,8 @@ docs/                     # Documentação técnica interna (fluxos, docs oficia
 
 Há dois guards de autenticação independentes: `web` (`App\Models\User`, painel administrativo, via Fortify) e `customer` (`App\Models\Customer`, área do cliente, com componentes Livewire próprios).
 
+Para uma visão funcional e técnica de cada módulo do sistema (Vendas, Produtos, Formas de Pagamento, Clientes, Relatórios, Filas e Recuperação, etc.) e de como eles se conectam entre si, ver a [Documentação dos módulos](docs/modules/README.md).
+
 ## Testes
 
 O projeto usa PHPUnit, com suítes `Unit` e `Feature` (`phpunit.xml`).
@@ -191,3 +193,8 @@ O CI (`.github/workflows/tests.yml`) executa `composer setup` seguido de `compos
 
 - **Safe2Pay**: gateway responsável pelas cobranças de Pix, Boleto e Cartão de crédito, e pelo webhook de atualização de status de pagamento. Detalhes da implementação: [Documentação da integração com Safe2Pay](docs/safe2pay.md).
 - **GFSIS**: sistema responsável pela emissão do certificado digital após confirmação do pagamento, com webhook próprio de atualização de status. Detalhes da implementação: [Documentação da integração com GFSIS](docs/gfsis.md).
+
+## Documentação adicional
+
+- [Documentação dos módulos](docs/modules/README.md) — visão funcional e técnica de cada módulo do sistema e como eles se relacionam.
+- [Fluxos técnicos](docs/fluxos-tecnicos.md) — fluxos ponta-a-ponta detalhados, decisões de implementação e questões em aberto.
