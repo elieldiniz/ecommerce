@@ -6,8 +6,10 @@ use App\Actions\Payments\ChargePixPayment;
 use App\Exceptions\Payments\InstallmentLimitExceededException;
 use App\Exceptions\Payments\MissingVisitorIdException;
 use App\Exceptions\Payments\PaymentTotalMismatchException;
+use App\Exceptions\Payments\Safe2PayChargeFailedException;
 use App\Models\Order;
 use App\Models\Payment;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Number;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
@@ -78,6 +80,15 @@ new #[Layout('components.checkout-layout', ['activeStep' => 2])] #[Title('Aguard
             return;
         } catch (InstallmentLimitExceededException|MissingVisitorIdException $e) {
             $this->addError('geral', $e->getMessage());
+
+            return;
+        } catch (Safe2PayChargeFailedException $e) {
+            Log::error('safe2pay.charge_failed', [
+                'order_id' => $order->id,
+                'order_number' => $order->number,
+                'response' => $e->rawResponse(),
+            ]);
+            $this->addError('geral', 'Não foi possível concluir o pagamento. Tente novamente em instantes.');
 
             return;
         }

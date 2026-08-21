@@ -121,6 +121,22 @@ class PaymentPayloadBuilderTest extends TestCase
         ], $payload['Customer']);
     }
 
+    public function test_build_address_includes_complement_when_present(): void
+    {
+        $customer = Customer::factory()->create();
+        CustomerAddress::factory()->for($customer)->create([
+            'is_primary' => true,
+            'complement' => 'Sala 2',
+        ]);
+        $paymentMethod = PaymentMethod::factory()->create(['slug' => 'pix']);
+        $order = Order::factory()->for($customer)->for($paymentMethod)->create();
+        OrderItem::factory()->for($order)->create();
+
+        $payload = (new PaymentPayloadBuilder)->base($order->fresh(['items', 'customer', 'paymentMethod']));
+
+        $this->assertSame('Sala 2', $payload['Customer']['Address']['Complement']);
+    }
+
     public function test_base_returns_the_common_envelope_fields(): void
     {
         config(['services.safe2pay.is_sandbox' => true]);

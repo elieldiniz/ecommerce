@@ -1,0 +1,88 @@
+openapi: 3.1.0
+info:
+  title: Digital Lock E-commerce — Tokenização de Cartão (Cofre de Chaves Safe2Pay)
+  version: "1.1.0"
+  description: >-
+    Contrato da rota interna nova POST /checkout/tokenizar-cartao (CT-01, CT-02).
+    Endpoint público (mesma acessibilidade da rota checkout, sem middleware auth),
+    consumido pelo frontend do checkout via fetch antes de finalizarCompra() (UI-05).
+    Encaminha os dados de cartão para POST /v2/token da Safe2Pay e nunca devolve
+    CardNumber/SecurityCode/ExpirationDate ao cliente (RF-01).
+servers:
+  - url: https://{host}
+    variables:
+      host:
+        default: example.com
+paths:
+  /checkout/tokenizar-cartao:
+    post:
+      operationId: tokenizeCard
+      summary: Tokeniza os dados de cartão via Safe2Pay Cofre de Chaves (POST /v2/token)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - holder
+                - cardNumber
+                - expirationDate
+                - securityCode
+              properties:
+                holder:
+                  type: string
+                  description: Nome impresso no cartão.
+                  maxLength: 180
+                cardNumber:
+                  type: string
+                  description: Número do cartão sem máscara (somente dígitos, sem espaços).
+                  pattern: '^[0-9]{12,19}$'
+                expirationDate:
+                  type: string
+                  description: >-
+                    Validade no formato MM/yyyy (ano com 4 dígitos) — confirmado contra o
+                    sandbox real da Safe2Pay em POST /v2/payment (mesmo nome de campo
+                    ExpirationDate); a versão anterior deste contrato assumia MM/AA (2
+                    dígitos) por inferência da documentação, que se mostrou incorreta.
+                  pattern: '^(0[1-9]|1[0-2])/[0-9]{4}$'
+                securityCode:
+                  type: string
+                  description: Código de segurança (CVV para a maioria das bandeiras, CID para American Express).
+                  pattern: '^[0-9]{3,4}$'
+      responses:
+        '200':
+          description: Tokenização bem-sucedida — HasError:false no envelope bruto da Safe2Pay (RF-01, RF-04).
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - token
+                  - brand
+                  - last4
+                properties:
+                  token:
+                    type: string
+                    description: Token do Cofre de Chaves da Safe2Pay, a ser enviado como PaymentObject.Token em ChargeCardPayment.
+                  brand:
+                    type: string
+                    description: 'Rótulo textual da bandeira via CardBrand::label() (ex.: "Visa", "Mastercard").'
+                  last4:
+                    type: string
+                    description: Últimos 4 dígitos do cartão, extraídos de ResponseDetail.CardNumber mascarado.
+                    pattern: '^[0-9]{4}$'
+        '422':
+          description: >-
+            Safe2Pay recusou a tokenização (HasError:true em ResponseDetail, RF-02) ou a
+            chamada HTTP a /v2/token falhou — nunca inclui a chave token (CT-02).
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - message
+                properties:
+                  message:
+                    type: string
+                    description: Mensagem genérica de erro, sem HasError/ErrorCode/corpo bruto da Safe2Pay (RF-03).

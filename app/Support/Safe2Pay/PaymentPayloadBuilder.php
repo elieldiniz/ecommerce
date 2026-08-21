@@ -51,7 +51,7 @@ final class PaymentPayloadBuilder
      */
     private function buildAddress(?CustomerAddress $address): array
     {
-        return [
+        $payload = [
             'ZipCode' => $address?->postal_code,
             'Street' => $address?->street,
             'Number' => $address?->number,
@@ -60,6 +60,12 @@ final class PaymentPayloadBuilder
             'StateInitials' => $address?->state,
             'CountryName' => 'Brasil',
         ];
+
+        if ($address?->complement !== null) {
+            $payload['Complement'] = $address->complement;
+        }
+
+        return $payload;
     }
 
     /**

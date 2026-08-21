@@ -73,7 +73,7 @@ new #[Layout('components.checkout-layout', ['activeStep' => 1])] #[Title('Carrin
         if ($customer) {
             $this->redirectRoute('checkout');
         } else {
-            $this->redirectRoute('customer.login');
+            $this->redirectRoute('customer.login', ['from' => 'carrinho']);
         }
     }
 }; ?>

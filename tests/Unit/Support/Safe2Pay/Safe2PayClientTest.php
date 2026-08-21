@@ -14,6 +14,7 @@ class Safe2PayClientTest extends TestCase
 
         config([
             'services.safe2pay.base_url' => 'https://payment.safe2pay.com.br',
+            'services.safe2pay.installment_base_url' => 'https://api.safe2pay.com.br',
             'services.safe2pay.api_key_sandbox' => 'sandbox-key',
             'services.safe2pay.api_key_production' => 'production-key',
         ]);
@@ -90,5 +91,52 @@ class Safe2PayClientTest extends TestCase
             && $request->method() === 'DELETE'
             && $request->hasHeader('X-API-KEY', 'sandbox-key')
             && $request['reason'] === 'test');
+    }
+
+    public function test_tokenize_posts_to_v2_token_with_sandbox_api_key_from_config(): void
+    {
+        config(['services.safe2pay.is_sandbox' => true]);
+        Http::fake(['*' => Http::response(['HasError' => false], 200)]);
+
+        (new Safe2PayClient)->tokenize(['Holder' => 'Maria Souza']);
+
+        Http::assertSent(fn ($request) => $request->url() === 'https://payment.safe2pay.com.br/v2/token'
+            && $request->method() === 'POST'
+            && $request->hasHeader('X-API-KEY', 'sandbox-key')
+            && $request['Holder'] === 'Maria Souza'
+            && ! array_key_exists('IsSandbox', $request->data()));
+    }
+
+    public function test_tokenize_uses_production_api_key_when_configured(): void
+    {
+        config(['services.safe2pay.is_sandbox' => false]);
+        Http::fake(['*' => Http::response(['HasError' => false], 200)]);
+
+        (new Safe2PayClient)->tokenize(['Holder' => 'Maria Souza']);
+
+        Http::assertSent(fn ($request) => $request->hasHeader('X-API-KEY', 'production-key')
+            && ! array_key_exists('IsSandbox', $request->data()));
+    }
+
+    public function test_installment_value_gets_the_dedicated_host_with_the_decimal_amount(): void
+    {
+        config(['services.safe2pay.is_sandbox' => true]);
+        Http::fake(['*' => Http::response(['HasError' => false], 200)]);
+
+        (new Safe2PayClient)->installmentValue('180.00');
+
+        Http::assertSent(fn ($request) => $request->url() === 'https://api.safe2pay.com.br/v2/creditCard/installmentValue?amount=180.00'
+            && $request->method() === 'GET'
+            && $request->hasHeader('X-API-KEY', 'sandbox-key'));
+    }
+
+    public function test_installment_value_uses_production_api_key_when_configured(): void
+    {
+        config(['services.safe2pay.is_sandbox' => false]);
+        Http::fake(['*' => Http::response(['HasError' => false], 200)]);
+
+        (new Safe2PayClient)->installmentValue('180.00');
+
+        Http::assertSent(fn ($request) => $request->hasHeader('X-API-KEY', 'production-key'));
     }
 }

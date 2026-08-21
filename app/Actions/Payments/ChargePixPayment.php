@@ -4,6 +4,7 @@ namespace App\Actions\Payments;
 
 use App\Actions\Checkout\RecalculateOrderTotals;
 use App\Exceptions\Payments\PaymentTotalMismatchException;
+use App\Exceptions\Payments\Safe2PayChargeFailedException;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Models\PaymentGateway;
@@ -41,6 +42,10 @@ class ChargePixPayment
 
         $response = (new Safe2PayClient)->charge($payload);
         $response->throw();
+
+        if ($response->json('HasError') === true) {
+            throw new Safe2PayChargeFailedException((array) $response->json());
+        }
 
         return Payment::query()->create([
             'order_id' => $order->id,

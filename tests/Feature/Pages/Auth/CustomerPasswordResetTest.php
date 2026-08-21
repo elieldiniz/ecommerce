@@ -91,6 +91,30 @@ class CustomerPasswordResetTest extends TestCase
         $this->assertTrue(Hash::check('new-password123', $customer->refresh()->password));
     }
 
+    public function test_a_cart_intent_from_forgot_password_survives_the_email_round_trip_and_chains_into_the_login_redirect(): void
+    {
+        Notification::fake();
+
+        $customer = Customer::factory()->create(['password' => 'old-password']);
+
+        Livewire::test('pages::auth.customer.forgot-password')
+            ->set('from', 'carrinho')
+            ->set('email', $customer->email)
+            ->call('sendResetLink');
+
+        Notification::assertSentTo($customer, CustomerResetPasswordNotification::class, function ($notification) use ($customer) {
+            Livewire::test('pages::auth.customer.reset-password', ['token' => $notification->token])
+                ->set('email', $customer->email)
+                ->set('password', 'new-password123')
+                ->set('password_confirmation', 'new-password123')
+                ->call('resetPassword')
+                ->assertHasNoErrors()
+                ->assertRedirect(route('customer.login', ['from' => 'carrinho']));
+
+            return true;
+        });
+    }
+
     public function test_password_cannot_be_reset_with_invalid_token(): void
     {
         $customer = Customer::factory()->create(['password' => 'old-password']);
